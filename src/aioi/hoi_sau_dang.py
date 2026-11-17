@@ -70,8 +70,12 @@ def viet_tra_cuu(engine: Any, conv: Any, li: Any, caus: list[str], goi: str, toi
     tools = [copy.deepcopy(c) for c in agent_ban.CONG_CU if c["name"] in agent_ban.CONG_CU_BOA]
     project = engine._projects.get(f.get("du_an")) if f.get("du_an") else None
 
+    co = [bool(khoi_gia)]   # có dữ kiện thật (căn đang rao gần, hoặc một công cụ trả ra nội dung) thì model mới được viết câu trả lời
+
     def chay(c: Any) -> str:
-        return agent_ban._khoi(engine, conv, project, c.name, dict(c.input or {})).strip() or "Không có dữ liệu này."
+        r = agent_ban._khoi(engine, conv, project, c.name, dict(c.input or {})).strip()
+        co[0] = co[0] or bool(r)
+        return r or "Không có dữ liệu này."
 
     gan = "\n".join(f"{'Khách' if t.role == 'user' else 'Em'}: {(t.content or '')[:300]}" for t in conv.history[-6:])
     try:
@@ -81,7 +85,14 @@ def viet_tra_cuu(engine: Any, conv: Any, li: Any, caus: list[str], goi: str, toi
         log.warning("tra_cuu: model hụt (%s)", type(e).__name__)
         return ""
     tin = (ra[0] if ra else "").strip()
-    return tin if tin and len(tin) <= 900 and tin.count("?") <= 1 else ""
+    log.warning("BOA tra cứu: gọi %d công cụ, có dữ kiện: %s", len(ra[2]) if ra else 0, co[0])
+    return tin if co[0] and tin and len(tin) <= 900 and tin.count("?") <= 1 else ""
+
+
+def tin_chua_co_du_kien(goi: str, toi: str) -> str:
+    """Hết lượt thử mà không tra ra dữ kiện nào: lời hẹn vẫn phải giữ — nói thật, không đoán; câu hỏi sang người phụ trách (code soạn, không qua model)."""
+    return (f"Dạ {goi} ơi, điều {goi} hỏi lúc nãy {toi} đã xem lại, hiện bên {toi} chưa có dữ liệu đủ chắc để trả lời nên {toi} xin phép không đoán ạ. "
+            f"{toi[:1].upper() + toi[1:]} đã chuyển câu hỏi cho người phụ trách xem thêm, có thông tin bên {toi} báo {goi} ngay.")
 
 
 def _tra_loi_tra_cuu(engine: Any, conv: Any, uk: str, bay_gio: datetime, gui: Callable[[str, str], bool]) -> tuple[str, str] | tuple[()] | None:
@@ -105,17 +116,17 @@ def _tra_loi_tra_cuu(engine: Any, conv: Any, uk: str, bay_gio: datetime, gui: Ca
     if ly_do_khong_nhan(conv, bay_gio, "tra_hen", engine._convstore, uk):
         return ()
     goi, toi = goi_toi(_detect_customer_pronoun(conv, ""), getattr(conv.assistant, "name", None))
-    tin = viet_tra_cuu(engine, conv, li, [str(d["cau"]) for d in ds], goi, toi)
+    caus = [str(d["cau"]) for d in ds]
+    tin = viet_tra_cuu(engine, conv, li, caus, goi, toi)
+    chuyen = False
     if not tin:
         for d in ds:
             d["lan"] = int(d.get("lan") or 0) + 1
-        con = [d for d in ds if d["lan"] < HEN_TRA_THU_TOI_DA]
-        if con:
-            f["_cho_tra_cuu"] = json.dumps(con, ensure_ascii=False)
-        else:
-            f.pop("_cho_tra_cuu", None)
-        luu()
-        return ()
+        if any(d["lan"] < HEN_TRA_THU_TOI_DA for d in ds):
+            f["_cho_tra_cuu"] = json.dumps(ds, ensure_ascii=False)
+            luu()
+            return ()
+        tin, chuyen = tin_chua_co_du_kien(goi, toi), True   # hết lượt thử: không bỏ rơi lời hẹn, không cho model đoán
     try:
         if not gui(uk, tin):
             return ()
@@ -124,6 +135,13 @@ def _tra_loi_tra_cuu(engine: Any, conv: Any, uk: str, bay_gio: datetime, gui: Ca
         return ()
     f.pop("_cho_tra_cuu", None)
     luu()
+    if chuyen:
+        bao = getattr(engine._convstore, "bao_can_nguoi", None)
+        try:
+            if callable(bao):
+                bao(uk, "Chủ hỏi điều bot chưa tra ra dữ liệu: " + "; ".join(caus))
+        except Exception as e:  # noqa: BLE001
+            log.warning("tra_cuu: báo người phụ trách hụt (%s)", type(e).__name__)
     return tin, "tra_cuu"
 
 

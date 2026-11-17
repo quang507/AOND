@@ -614,9 +614,10 @@ def khoi_tra_hen(caus: list[str]) -> str:
     """Việc của tin BOA trả lời điều FDA đã hẹn (SRS-5.1zzzzzzz526)."""
     ds = "; ".join(f"«{c}»" for c in caus)
     return ("\n\n=== VIỆC CỦA TIN NÀY — TRẢ LỜI ĐIỀU EM ĐÃ HẸN XEM KỸ: ===\n"
-            f"Lúc nãy khách hỏi: {ds}. Em đã hẹn xem rồi nhắn lại. Dùng công cụ tra khi cần, rồi trả lời đúng điều đó bằng dữ kiện tra được, "
-            "ngắn gọn. Về giá: chỉ đưa các căn thật đang rao ở khối dữ kiện dưới (nếu có), không tự định giá, không khuyên nên bán giá nào. "
-            "Điều nào không tra ra dữ kiện thì nói thật là em chưa có số liệu, không đoán. Tối đa một câu hỏi lại.\n")
+            f"Lúc nãy khách hỏi: {ds}. Em đã hẹn xem rồi nhắn lại. Gọi công cụ tra cho từng điều khách hỏi trước khi viết, rồi trả lời ngắn gọn. "
+            "Mỗi nhận định trong tin phải lấy từ kết quả công cụ hoặc khối dữ kiện dưới; điều nào không có dữ kiện thì nói thật là em chưa có "
+            "số liệu cho điều đó — không đoán, không trấn an, không khen chê giá. Về giá: chỉ đưa các căn thật đang rao ở khối dữ kiện dưới "
+            "(nếu có), không tự định giá, không khuyên nên bán giá nào. Tối đa một câu hỏi lại.\n")
 
 
 def khoi_kich_hoat_mg(kq: dict | None) -> str:
