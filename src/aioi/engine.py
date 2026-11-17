@@ -31,7 +31,7 @@ from . import gamification as g
 from . import phap_ly
 from .prompts import _dien_tich_mo_ho, khoi_nhan_vat, nhan_o_ngan, viec_phieu, viec_theo_khoi
 from .prompts import NHAN_VIEC_LUOT, khoi_doi_so, khoi_so_dang_nhan, prompt_gon_bat
-from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, LOC_KHACH, NHAN_DUONG_VAO, SU_THAT_CAN, khoi_loc_khach, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
+from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, LOC_KHACH, NHAN_DUONG_VAO, SU_THAT_CAN, khoi_kich_hoat_mg, khoi_loc_khach, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
 from .sdt import che_giay_to, che_sdt
@@ -1324,6 +1324,8 @@ def _ghi_su_that_can(conv: "Conversation", plan: dict, loi_khach: list[str]) -> 
 
 
 # (cụm khẳng định trên bản tin, điều kiện được phép). Chỉ đọc chữ của BẢN TIN bot viết.
+# SRS-5.1zzzzzzz524: mã kích hoạt môi giới do DB cấp lúc admin duyệt đăng ký (`dang_ky_moi_gioi_cap_ma`) — chuỗi máy sinh, không phải ý khách.
+_MA_KICH_HOAT = re.compile(r"(?i)(?<![0-9A-Z])AOND-[0-9A-F]{10}(?![0-9A-Z])")
 _KD_CHINH_CHU = re.compile(r"(?i)chính chủ")
 _KD_PHAP_LY = re.compile(r"(?i)(sổ hồng|sổ đỏ|sổ riêng|hoàn công|pháp lý (?:rõ ràng|đầy đủ|chuẩn|sạch|minh bạch))")
 _KD_HEM_XE_HOI = re.compile(r"(?i)(?<![\wÀ-ỹ])(hẻm xe hơi|hẻm ô tô|hxh)(?![\wÀ-ỹ])")
@@ -3467,7 +3469,8 @@ class Engine:
         # SRS-5.1zzzzzzz178: MỘT khối ưu tiên mỗi lượt, theo thứ tự cần người > pháp lý > ngoài việc > hỏi về (phí / uy tín / link / tình hình /
         # định giá); có khối ưu tiên thì không hỏi ô kế. Không có thì mới tới việc lượt thường (hỏi ô kế, giọng theo `GIONG`).
         uu_tien = ""
-        for ten_ut, lay in (("can_nguoi", lambda: khoi_can_nguoi(conv)), ("phap_ly", lambda: khoi_phap_ly(conv, self._can_cua_chu(conv))),
+        for ten_ut, lay in (("kich_hoat_mg", lambda: khoi_kich_hoat_mg(conv.y_luot.get("kich_hoat_mg"))),   # SRS-5.1zzzzzzz524
+                            ("can_nguoi", lambda: khoi_can_nguoi(conv)), ("phap_ly", lambda: khoi_phap_ly(conv, self._can_cua_chu(conv))),
                             ("loc_khach", lambda: khoi_loc_khach(conv.y_luot.get("loc_khach"))),   # SRS-5.1zzzzzzz521
                             ("ngoai_viec", lambda: khoi_ngoai_viec(conv)), ("hoi_ve", lambda: hoi_ve_khoi),
                             ("hoi_trung_ten", lambda: self._khoi_hoi_trung_ten(conv))):   # cùng thứ tự / cùng ngắt sớm như chuỗi `or` cũ
@@ -5370,8 +5373,20 @@ class Engine:
         # SRS-5.1zzzzzzz521 (bản anh Luận, FDA nhận diện 10): tin rác / hỏi dạo — AI đọc theo nghĩa, cụm trích phải có trong lời khách, và chỉ
         # khi khách chưa tỏ ý bán / mua, chưa khai căn nào. Dấu `_loc_khach` nằm trên mọi căn của hội thoại (kể cả căn mồi rỗng) để vòng nền
         # không chạy theo (`lqc.chu_dang_hen`). Lượt nào khách tỏ ý bán / mua thì gỡ dấu.
+        # SRS-5.1zzzzzzz524 (chủ dự án 17/11: "nối ba thứ thành một"): môi giới đã được duyệt nhắn mã kích hoạt → hệ thống nối đăng ký với
+        # Zalo này ngay (rpc `noi_moi_gioi`), lượt này không ghi ô, bot chỉ báo kết quả (`prompts.khoi_kich_hoat_mg`).
+        kich_hoat = None
+        m_kh = _MA_KICH_HOAT.search(conv.loi_khach_luot or "")
+        noi_mg = getattr(self._convstore, "noi_moi_gioi", None)
+        if m_kh and noi_mg is not None:
+            kich_hoat = noi_mg(m_kh.group(0).upper(), conv.user_key) or {"ok": False, "loi": "he_thong"}
+            plan["operations"] = []
+            plan.pop("buyer_lead", None)
+            if kich_hoat.get("ok"):
+                conv.user_type = SellerRole.MOI_GIOI
+            log.warning("Kích hoạt môi giới: %s", "xong " + str(kich_hoat.get("ma_moi_gioi")) if kich_hoat.get("ok") else "không nối (" + str(kich_hoat.get("loi")) + ")")
         loc = plan.get("loc_khach")
-        la_loc = (loc in LOC_KHACH and intent not in ("buy", "sell") and not has_seller_context
+        la_loc = (kich_hoat is None and loc in LOC_KHACH and intent not in ("buy", "sell") and not has_seller_context
                   and _vai_co_bang_chung(plan.get("loc_khach_trich_dan"), gan_khach))
         if la_loc:
             plan["operations"] = []
@@ -5439,6 +5454,8 @@ class Engine:
             conv.y_luot["ngoai_viec"] = conv.so_luot_ngoai_viec   # SRS-5.1zzzzzzz177
         if la_loc:
             conv.y_luot["loc_khach"] = loc   # SRS-5.1zzzzzzz521
+        if kich_hoat is not None:
+            conv.y_luot["kich_hoat_mg"] = kich_hoat   # SRS-5.1zzzzzzz524
         for k in ("xin_xem_ban_ve", "cau_hoi_du_an", "mo_ta_du_an"):   # Q5 (SRS-5.1zzzzzzz328): theo ý AI đọc, không so nguyên văn
             if _ai_co_y(plan.get(k)):
                 conv.y_luot[k] = True

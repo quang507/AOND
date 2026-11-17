@@ -43,7 +43,7 @@ tên hiển thị cũ/mới và thứ tự mở từng cụm là OPEN-27 nửa s
 **AOND là cách nhận và nuôi hàng; nhadat.cc là cách bán hàng.** Không có
 "chuyển dự án" — một sản phẩm, hai bản thiết kế, một bộ não ở giữa. Người thật
 đứng sau là **chủ nhà** (trả lời về căn của mình) và **admin** (mọi việc còn
-lại). *Trước 28/10/2026 người đứng giữa là CTV; nay bỏ* [nguồn: chủ dự án
+lại). *Từ 17/11/2026 môi giới đã duyệt được giới thiệu khách qua `/quan-ly`, admin vẫn là người dẫn khách (SRS-5.1zzzzzzz524).* *Trước 28/10/2026 người đứng giữa là CTV; nay bỏ* [nguồn: chủ dự án
 28/10/2026, chat — bỏ CTV].
 
 **DH-02 · Bốn bất biến** (luật ở `ba-pipeline`, hướng nào cũng giữ):

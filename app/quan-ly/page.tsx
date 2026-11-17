@@ -9,6 +9,7 @@ import { supabase, type Listing } from "@/lib/supabase";
 import { formatPrice, sanitizeDescription } from "@/lib/format";
 import { WARDS } from "@/lib/geo"; // một danh sách phường cho cả web (FR-171 j)
 import UploadAnh from "@/components/UploadAnh";
+import KhuMoiGioi from "@/components/KhuMoiGioi";
 
 // Vòng đời tin FR-139 — đúng 5 trạng thái của CHECK trên listings.status.
 // (Nhãn tiếng Anh cũ đã bỏ: migration FR-139 dịch hết dữ liệu sang tiếng Việt
@@ -118,6 +119,9 @@ export default function Page() {
           Đăng xuất ({email})
         </button>
       </div>
+
+      {/* SRS-5.1zzzzzzz524: kích hoạt môi giới, chuẩn của mình, khách giới thiệu. Hiện sau khi dòng sellers của tài khoản đã có. */}
+      {sellerId && <KhuMoiGioi />}
 
       <form onSubmit={submit} className="mt-6 rounded-king border border-line bg-white p-5">
         <h2 className="font-bold">Đăng tin mới - một câu là đủ</h2>

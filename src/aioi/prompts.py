@@ -596,6 +596,23 @@ def khoi_loc_khach(loai: str | None) -> str:
     return ""
 
 
+def khoi_kich_hoat_mg(kq: dict | None) -> str:
+    """Việc của lượt khi khách vừa nhắn mã kích hoạt môi giới (SRS-5.1zzzzzzz524) — hệ thống đã nối (hoặc từ chối) trước khi model viết."""
+    if not kq:
+        return ""
+    if kq.get("ok"):
+        ma = kq.get("ma_moi_gioi") or ""
+        return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH VỪA KÍCH HOẠT TÀI KHOẢN MÔI GIỚI (hệ thống đã nối xong): ===\n"
+                f"Mã môi giới của khách: {ma}. Việc lượt này: báo đã kích hoạt xong kèm mã môi giới; nói từ giờ căn gửi qua Zalo này sẽ hiện ở "
+                f"trang quản lý {_WEB}/quan-ly, ở đó cũng gửi được khách cần mua, thuê; rồi mời khách gửi căn đang nhận bán, cho thuê. "
+                "Không hỏi lại vai, không xin thông tin cá nhân, không nhắc lại mã kích hoạt.\n")
+    ly_do = {"da_noi_zalo": "mã này đã được kích hoạt bằng một Zalo khác", "tai_khoan_da_noi": "Zalo này đã nối với một mã môi giới khác"}.get(
+        kq.get("loi") or "", "mã không đúng hoặc đăng ký chưa được duyệt")
+    return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH NHẮN MÃ KÍCH HOẠT MÔI GIỚI NHƯNG CHƯA NỐI ĐƯỢC (hệ thống đã kiểm): ===\n"
+            f"Lý do: {ly_do}. Việc lượt này: nói ngắn là mã chưa kích hoạt được vì lý do đó, nhờ khách kiểm lại mã bên em đã gửi; "
+            "khách cần thì em báo người phụ trách. Không đoán mã, không hỏi thông tin cá nhân.\n")
+
+
 SU_THAT_CAN: tuple[tuple[str, tuple[str, ...], str], ...] = (
     # SRS-5.1zzzzzzz435: mã và mô tả lấy từ `schema.LOAI_PHAP_LY` — một nguồn với cột `legal_status`, bản tin và câu hỏi theo sau.
     ("phap_ly_trang_thai", MA_PHAP_LY_AI,

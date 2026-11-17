@@ -28,7 +28,7 @@ mở rộng mà không lệch khỏi yêu cầu ở `02-requirements.md`.
 | `BOT` | Bộ não hội thoại (B và S) | Lõi Python `src/aioi/` trên máy 146 "NguyetTu" (Windows, Task Scheduler `AOND Core`, `C:\aond\aond_core`, cổng 8000), endpoint `POST /chat-reply`; một lõi cho cả người mua lẫn người bán, vai theo ý định từng lượt (SRS-5.1zzzzzzz153) |
 | `KENH` | Kênh Zalo | Bridge `zca-js` 2.2.0 (`bot/bridge-zca/index.mjs`) trên tài khoản Zalo cá nhân (clone), HAI tiến trình trên máy 146 (`C:\aond\bridge-zca`, Task Scheduler): số ký gửi (`AOND Zalo Bridge`, `/send` :5005) và số tư vấn người mua (`AOND Zalo Bridge Tu Van`, :5006, `SO_NHAN=tu_van`) (SRS-5.1zzzzzzz210, SRS-5.1zzzzzzz401). Zalo OA không dùng |
 | `SEL` | Phía người bán | Cùng lõi, nhánh bán; `/quan-ly` + `/dang-nhap` cho NMG trên web |
-| `ADM` | Admin | `/admin`, `/admin/tin-nhan`, `/admin/cau-chuan`, `/admin/danh-gia`, `/admin/moi-gioi`, `/admin/dang-tin`, `/admin/ro-hang`; việc nội bộ (câu khách hỏi, lịch xem, cần người thật) đi thẳng admin qua `reminders` → `escalation-feed` → bridge; cảnh báo ntfy |
+| `ADM` | Admin | `/admin`, `/admin/tin-nhan`, `/admin/cau-chuan`, `/admin/danh-gia`, `/admin/moi-gioi`, `/admin/khach-gioi-thieu`, `/admin/dang-tin`, `/admin/ro-hang`; việc nội bộ (câu khách hỏi, lịch xem, cần người thật) đi thẳng admin qua `reminders` → `escalation-feed` → bridge; cảnh báo ntfy |
 
 **CTV không còn là phân hệ** (chủ dự án 28/10/2026: "bỏ hẳn CTV đi"). Mọi việc từng giao CTV nay giao admin, hoặc chủ nhà
 khi tin có chủ nhà trên hệ thống (SRS-5.1zzzzzzz165, SRS-5.1zzzzzzz170, SRS-5.1zzzzzzz172, SRS-5.1zzzzzzz173).
@@ -801,13 +801,22 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz524 · Nối đăng ký môi giới với Zalo và tài khoản web; môi giới giới thiệu khách (17/11/2026)
+Chủ dự án 17/11, sau khi xem cổng agent của HiFriendz: "nối ba thứ thành một đi thì bên mình có khách riêng và môi giới đem khách về". **Đảo quyết định 28/10** (bỏ đội cộng tác viên, SRS-237): môi giới nay cũng đem khách về; người dẫn khách vẫn là admin.
+- **Mã:** admin duyệt đăng ký → DB cấp mã môi giới `MG0001…` và mã kích hoạt `AOND-XXXXXXXXXX` (trigger `dang_ky_moi_gioi_cap_ma`); `/admin/moi-gioi` hiện hai mã kèm nút sao chép lời nhắn.
+- **Nối** (`noi_moi_gioi`, migration `20261117c`): môi giới nhắn mã kích hoạt cho bot trên Zalo (`engine._MA_KICH_HOAT` → `supabase_store.noi_moi_gioi`, bot báo kết quả qua `prompts.khoi_kich_hoat_mg`) hoặc nhập ở `/quan-ly`. Hai kênh về MỘT dòng `sellers` (dòng có Zalo ID là dòng sống, tin của dòng kia chuyển sang); mỗi kênh nối một lần cho một đăng ký.
+- **`/quan-ly`** (`components/KhuMoiGioi.tsx`): ô kích hoạt; sau khi kích hoạt hiện mã môi giới, chuẩn của chính mình (`toi_la_moi_gioi` → `chuan_nmg`), form gửi khách cần mua / thuê và danh sách khách kèm nhật ký.
+- **Khách giới thiệu:** bảng `khach_gioi_thieu` + `khach_gioi_thieu_nhat_ky`; môi giới gửi qua `gui_khach_gioi_thieu` (phải xác nhận khách đồng ý; khách đang được chăm thì không nhận lần hai; tối đa 30 khách / ngày); admin xử lý ở `/admin/khach-gioi-thieu` qua `cap_nhat_khach_gioi_thieu`, mỗi bước một dòng nhật ký mà môi giới đọc được.
+- **Thử:** migration áp kèm khối tự kiểm (dữ liệu thử tự huỷ): nối web trước rồi Zalo sau về một dòng, Zalo khác bị từ chối, khách trùng bị chặn, người lạ đọc 0 dòng, trạng thái sai bị từ chối, 3 dòng nhật ký. Kết quả bắn thử bot và web ghi ở cuối mục khi có.
+- **Chưa làm:** mức chi cho môi giới khi khách chốt (chủ dự án chưa đưa số); gửi khách qua Zalo (mới có form web); `/moi-gioi` chưa hiện khu vực từng môi giới.
+
 ### SRS-5.1zzzzzzz523 · Môi giới đăng ký bằng form trên web, admin quản lý (17/11/2026)
 Chủ dự án 17/11, sau khi xem batdongsan.com.vn và hifriendz.com: "Form trên web như HiFriendz và có trang trong admin quản lý đi".
 - **Form** `/moi-gioi/dang-ky` (`components/FormDangKyMoiGioi.tsx`, lựa chọn ở `lib/moi-gioi.ts`): cá nhân hay sàn, họ tên, số điện thoại có Zalo, khu vực (13 cụm, tối đa 5), loại nhà đất, công ty, kinh nghiệm, số căn đang nhận, lời nhắn, ô đồng ý xử lý dữ liệu. Không thu căn cước hay tài khoản ngân hàng. Trang `/moi-gioi` đổi nút chính thành "Đăng ký tham gia", Zalo là lối phụ.
 - **DB** (migration `20261117b`): bảng `dang_ky_moi_gioi`; web ghi qua hàm `gui_dang_ky_moi_gioi(jsonb)` — kiểm dữ liệu, chuẩn số điện thoại, một số chỉ đăng ký một lần / 24 giờ, cả bảng tối đa 40 lượt / giờ. Chỉ admin đọc; admin chỉ sửa được bốn cột xử lý.
 - **Admin** `/admin/moi-gioi`: lọc theo trạng thái (mới → đã liên hệ → đã duyệt / từ chối), nút mở Zalo theo số, ghi chú nội bộ; thanh bên hiện số đăng ký mới.
 - **Thử:** hàm chạy trong giao dịch huỷ 6 ca rồi áp; form trên bản build thật báo lỗi đúng ô khi bỏ trống và ghi được một dòng thử; quyền kiểm bằng giả lập phiên: admin đọc và sửa được, người lạ 0 dòng, cột người đăng ký khai không sửa được. Trang admin lúc đã đăng nhập chưa xem bằng mắt (không có phiên admin).
-- **Chưa làm:** bot chưa nối dòng đăng ký với người nhắn Zalo; trang `/moi-gioi` chưa hiện khu vực của từng môi giới; chưa có mã môi giới gắn khách giới thiệu.
+- **Chưa làm:** trang `/moi-gioi` chưa hiện khu vực của từng môi giới. (Nối với Zalo / web và mã môi giới gắn khách giới thiệu: làm ở SRS-524.)
 
 ### SRS-5.1zzzzzzz522 · Che thông tin cá nhân trên ảnh sổ; khung Gemini trả theo thang 0–1000 (17/11/2026)
 Chủ dự án 17/11: "làm mấy cái này đi". Bản anh Luận (`boa-phaply.md`): ảnh sổ che số sổ, tên, số định danh, mã QR trước khi lưu / đưa đi.
@@ -869,8 +878,3 @@ Chủ dự án: "Sửa luôn". Bản ghi: `Ban-thu-FDA-BOA_16-11-2026.md` (ngoà
 Chủ dự án: "tin $$$$ giờ chia ra con FDA hay BOA làm thì viết ra nhé". Chỉ khi công tắc `AIOI_DONG_TRICH_XUAT` bật.
 - **Lượt chat:** dòng đầu thành `$$$$$ [FDA] [đã trích xuất: …]` (`che_do_test.chu_thich`).
 - **Tin vòng nền tự nhắn:** gửi trước một tin phụ `$$$$$ [BOA — việc]` (`che_do_test.nhan_boa`, `server._gui_boa`): nhắc khi im · xin ảnh sau đăng · hỏi sau đăng · chấm ảnh · hỏi còn bán · giữ kết nối · nhắc theo lịch · báo căn mới. Tin phụ không vào lịch sử chat; gửi hụt thì tin thật vẫn đi.
-
-### SRS-5.1zzzzzzz514 · Gemini là đường chính thì chờ lâu hơn, model quá hạn chỉ nghỉ 1 phút (16/11/2026)
-Bắn thử 2 cuộc chat trên 146 (chủ dự án: "bắn thử 2 test"): 4 lượt đầu chạy bằng `gemini-3.1-flash-lite`, từ lượt 5 bot chỉ trả câu giữ chỗ. Log: `gemini-3.5-flash` quá hạn 15 s một lần → nghỉ 10 phút; `flash-lite` quá hạn nốt → cả hai nghỉ, Groq trả 403. Đo lại ngay sau: lượt công cụ cỡ thật chỉ 3–5 s — quá hạn là nhất thời, luật nghỉ 10 phút mới làm sập.
-- **`llm/du_phong.py`:** khi công tắc chỉ-Gemini bật, mỗi lần gọi chờ tới 30 s (trước 15), cả vòng 70 s (trước 40), model quá hạn nghỉ 60 s (trước 600). Đường dự phòng thường (Claude chính) giữ số cũ.
-- **Còn lại:** khoá Groq trên 146 đang bị từ chối (403) — hết Gemini là không còn đường nào.

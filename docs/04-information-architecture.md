@@ -36,11 +36,11 @@ flowchart TD
     DT --> ZL["Zalo cá nhân, hai số (ngoài site)"]
     H --> ZL
     DS["/ds/{token} — danh sách riêng, noindex"] --> DT
-    DN["/dang-nhap"] --> QL["/quan-ly — tin của tôi"]
+    DN["/dang-nhap"] --> QL["/quan-ly — tin của tôi, kích hoạt môi giới, khách giới thiệu"]
     DN --> TKH["/tai-khoan"]
     DN --> YT["/yeu-thich"]
     DN --> AD["/admin"] --> ADT["/admin/dang-tin"]
-    AD --> ADX["/admin/tin-nhan · /admin/ro-hang (+/json) · /admin/cau-chuan · /admin/danh-gia · /admin/moi-gioi"]
+    AD --> ADX["/admin/tin-nhan · /admin/ro-hang (+/json) · /admin/cau-chuan · /admin/danh-gia · /admin/moi-gioi · /admin/khach-gioi-thieu"]
     SM["/sitemap.xml · /robots.txt"]
     APIT["/api/tin (trang kế, tự tải khi cuộn) · /api/tin-da-go"]
 ```
@@ -60,7 +60,7 @@ flowchart TD
 | IA-09 | `/raoban/xac-nhan` | Bản bóc tách để S sửa + upload ảnh | ❌ | FR-94, FR-96 | ⛔ gộp — upload ảnh ở `/quan-ly` |
 | IA-10 | `/raoban/quan-ly` → thật `/quan-ly` | Tin của tôi + ô một câu rao + upload ảnh (`UploadAnh`) + câu hỏi chờ trả lời | ❌ | FR-98 | 🟡 tin của tôi có; câu hỏi chờ trả lời chưa |
 | IA-11 | `/ds/{token}` | Danh sách riêng cho một B (`noindex, nofollow`, robots chặn) | ❌ | FR-100 | ✅ trang có; bot chưa tự tạo (UF-12) |
-| IA-12 | `/admin` (?tab=todo·crm·stats·ops), `/admin/tin-nhan` (ô admin gửi tin, SRS-5.1zzzzzzz216), `/admin/ro-hang` (+`/json`), `/admin/dang-tin`, `/admin/cau-chuan` (câu chuẩn + câu mẫu cố định, SRS-5.1zzzzzzz88 / 106), `/admin/danh-gia` (khách chấm sao AI, SRS-5.1zzzzzzz104), `/admin/moi-gioi` (môi giới đăng ký từ form web, SRS-5.1zzzzzzz523); `/admin/mau-cau`, `/admin/prompt` gỡ 18/10/2026 (SRS-5.1zzzzzzz46) | Khung CRM (09/09/2026, bố cục theo ZaloCRM): thanh navy với tab theo phân hệ, ô tìm, chuông việc, avatar; Header/Footer công khai ẩn dưới `/admin` | ❌ | FR-70…81, FR-127, FR-152, FR-175, FR-180 | ✅ đã dựng |
+| IA-12 | `/admin` (?tab=todo·crm·stats·ops), `/admin/tin-nhan` (ô admin gửi tin, SRS-5.1zzzzzzz216), `/admin/ro-hang` (+`/json`), `/admin/dang-tin`, `/admin/cau-chuan` (câu chuẩn + câu mẫu cố định, SRS-5.1zzzzzzz88 / 106), `/admin/danh-gia` (khách chấm sao AI, SRS-5.1zzzzzzz104), `/admin/moi-gioi` (môi giới đăng ký từ form web, cấp mã khi duyệt, SRS-5.1zzzzzzz523 / 524), `/admin/khach-gioi-thieu` (khách môi giới gửi, SRS-5.1zzzzzzz524); `/admin/mau-cau`, `/admin/prompt` gỡ 18/10/2026 (SRS-5.1zzzzzzz46) | Khung CRM (09/09/2026, bố cục theo ZaloCRM): thanh navy với tab theo phân hệ, ô tìm, chuông việc, avatar; Header/Footer công khai ẩn dưới `/admin` | ❌ | FR-70…81, FR-127, FR-152, FR-175, FR-180 | ✅ đã dựng |
 | IA-13 | `/du-an/{slug}` | Trang dự án + giỏ hàng (tin `project_id`), ISR (dựng khi có người xem, làm mới mỗi giờ) | ✅ | FR-117, FR-113 | ✅ đã dựng |
 | IA-14 | `/api/search` (`/api/listing/parse` (gỡ 02/11/2026, SRS-5.1zzzzzzz333 — bóc câu rao do lõi Python làm bằng AI)) | Route handler JSON, không phải trang | ❌ robots chặn `/api/` | FR-09 | ✅ đã dựng |
 | IA-15 | `/mua-ban`, `/cho-thue` | Lưới listing theo giao dịch, lọc bằng searchParams (`unstable_cache`) | ✅ (❌ khi có `q` hoặc tham số lọc) | FR-07, FR-08 | ✅ đã dựng |

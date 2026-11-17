@@ -1234,6 +1234,20 @@ class SupabaseConversationStore(KhoNguoiMua):
 
     _TEN_HANG = {"vang": "Vàng", "bac": "Bạc", "dong": "Đồng"}
 
+    def noi_moi_gioi(self, ma: str, user_key: str) -> dict | None:
+        """Nối đăng ký môi giới đã duyệt với Zalo đang nhắn bằng mã kích hoạt (rpc `noi_moi_gioi`, SRS-5.1zzzzzzz524).
+        {"ok": True, "ma_moi_gioi", "ho_ten"} hoặc {"ok": False, "loi"}; kho không cấu hình / lỗi mạng → None."""
+        if not self.is_configured or not ma or not user_key:
+            return None
+        try:
+            d = self._request("POST", "rpc/noi_moi_gioi", data={"p_ma": ma, "p_zalo": user_key})
+        except Exception as e:  # noqa: BLE001
+            log.warning("noi_moi_gioi lỗi: %s", type(e).__name__)
+            return None
+        if isinstance(d, dict) and d.get("ok"):
+            self.__dict__.setdefault("_hang_nho", {}).pop(user_key, None)   # hạng / loại người rao vừa đổi
+        return d if isinstance(d, dict) else None
+
     def hang_nguoi_ban(self, user_key: str, moi: bool = False) -> str | None:
         """Hạng người rao theo DB (`diem_nguoi_ban` → `hang_theo_diem`) — MỘT nguồn với trigger gắn nhãn "cần kiểm chứng thêm"
         (SRS-5.1zzzzzzz466 / 472). Chưa có dòng người bán → "Đồng" (0 căn). Không tạo người bán. Nhớ 30 giây (`moi` = đọc lại);

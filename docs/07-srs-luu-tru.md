@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz514 · Gemini là đường chính thì chờ lâu hơn, model quá hạn chỉ nghỉ 1 phút (16/11/2026)
+Bắn thử 2 cuộc chat trên 146 (chủ dự án: "bắn thử 2 test"): 4 lượt đầu chạy bằng `gemini-3.1-flash-lite`, từ lượt 5 bot chỉ trả câu giữ chỗ. Log: `gemini-3.5-flash` quá hạn 15 s một lần → nghỉ 10 phút; `flash-lite` quá hạn nốt → cả hai nghỉ, Groq trả 403. Đo lại ngay sau: lượt công cụ cỡ thật chỉ 3–5 s — quá hạn là nhất thời, luật nghỉ 10 phút mới làm sập.
+- **`llm/du_phong.py`:** khi công tắc chỉ-Gemini bật, mỗi lần gọi chờ tới 30 s (trước 15), cả vòng 70 s (trước 40), model quá hạn nghỉ 60 s (trước 600). Đường dự phòng thường (Claude chính) giữ số cũ.
+- **Còn lại:** khoá Groq trên 146 đang bị từ chối (403) — hết Gemini là không còn đường nào.
+
 ### SRS-5.1zzzzzzz513 · Lấy bộ tài liệu agent của anh Luận; FDA theo khách đang hăng, hẹn mà giữ hứng (16/11/2026)
 Chủ dự án: "kiểm tra các phần này của repo anh Luận… lấy về phần lớn áp lên cái của mình". So `docs/agents/` bản anh Luận (7 file) với code: bốn chuyên môn BOA (ảnh, pháp lý, lợi thế, giá) đã chạy từ SRS-425…476; phần chưa có là nguyên tắc tiếp khách của FDA.
 - **`docs/agents/` (README, fda, boa):** một danh tính, ranh FDA ↔ BOA là độ nghiêng, 4 nhiệm vụ FDA, vai người gửi, 10 nhận diện kèm tình trạng theo code, bảng 4 chuyên môn BOA, chỗ khác bản anh Luận (3 tin / ngày, FDA có công cụ, có phía mua, ảnh sổ chưa che). Chi tiết câu mẫu vẫn ở `lqc-listing-quality-controller.md`.

@@ -13,7 +13,7 @@ import { IconBell, IconChart, IconChat, IconEdit, IconGrid, IconList, IconLogout
 
 type Tab = { href: string; label: string; Icon: (p: { className?: string }) => ReactNode; khop: (p: string, tab: string | null) => boolean };
 type Nhom = { ten: string; tabs: Tab[] };
-type Chuong = { viec: number; loi: number; zaloLoi: boolean; mgMoi: number };
+type Chuong = { viec: number; loi: number; zaloLoi: boolean; mgMoi: number; khachMoi: number };
 
 const NHOM: Nhom[] = [
   {
@@ -26,6 +26,8 @@ const NHOM: Nhom[] = [
       { href: "/admin?tab=crm", label: "Khách hàng", Icon: IconUsers, khop: (p, t) => p === "/admin" && t === "crm" },
       // SRS-5.1zzzzzzz523: môi giới đăng ký từ form web /moi-gioi/dang-ky.
       { href: "/admin/moi-gioi", label: "Môi giới đăng ký", Icon: IconShield, khop: (p) => p.startsWith("/admin/moi-gioi") },
+      // SRS-5.1zzzzzzz524: khách mua / thuê do môi giới gửi.
+      { href: "/admin/khach-gioi-thieu", label: "Khách môi giới gửi", Icon: IconUsers, khop: (p) => p.startsWith("/admin/khach-gioi-thieu") },
     ],
   },
   {
@@ -53,7 +55,7 @@ function useChuong(pathname: string) {
       if (!song || !user) return;
       setEmail(user.email ?? null);
       const d1 = new Date(Date.now() - 86400e3).toISOString();
-      const [v, l, z, mg] = await Promise.all([
+      const [v, l, z, mg, kh] = await Promise.all([
         supabase.from("reminders").select("id", { count: "exact", head: true }).eq("status", "pending").in("kind", ["escalation", "report"]),
         // Đếm theo LOẠI lỗi, không đếm từng dòng: một sự cố lặp 80 lần vẫn là MỘT
         // việc phải xử. Trước bản này chuông đứng "99+" trong khi ô "Cần xử lý"
@@ -64,11 +66,12 @@ function useChuong(pathname: string) {
         supabase.from("bridge_dang_nhap").select("trang_thai, yeu_cau_quet_lai").eq("id", 1).maybeSingle(),
         // SRS-5.1zzzzzzz523: đăng ký môi giới chưa ai xử lý → con số cạnh mục "Môi giới đăng ký".
         supabase.from("dang_ky_moi_gioi").select("id", { count: "exact", head: true }).eq("trang_thai", "moi"),
+        supabase.from("khach_gioi_thieu").select("id", { count: "exact", head: true }).eq("trang_thai", "moi"),
       ]);
       const loai = new Set(((l.data ?? []) as { source: string | null }[]).map((x) => x.source ?? "?"));
       const dn = z.data as { trang_thai: string; yeu_cau_quet_lai: boolean } | null;
       const zaloLoi = !!dn && (dn.trang_thai !== "dang_nhap" || dn.yeu_cau_quet_lai);
-      if (song) setChuong({ viec: v.count ?? 0, loi: loai.size, zaloLoi, mgMoi: mg.count ?? 0 });
+      if (song) setChuong({ viec: v.count ?? 0, loi: loai.size, zaloLoi, mgMoi: mg.count ?? 0, khachMoi: kh.count ?? 0 });
     });
     return () => { song = false; };
   }, [pathname]);
@@ -98,6 +101,9 @@ function DauMuc({ t, on, chuong, ngang }: { t: Tab; on: boolean; chuong: Chuong 
       {loiTab && <span aria-label="đang lỗi" className="inline-block h-2 w-2 rounded-full bg-brand" />}
       {t.href === "/admin/moi-gioi" && !!chuong?.mgMoi && (
         <span aria-label={`${chuong.mgMoi} đăng ký mới`} className="rounded bg-brand px-1.5 py-0.5 text-[11px] font-bold leading-none text-white tabular-nums">{chuong.mgMoi}</span>
+      )}
+      {t.href === "/admin/khach-gioi-thieu" && !!chuong?.khachMoi && (
+        <span aria-label={`${chuong.khachMoi} khách mới`} className="rounded bg-brand px-1.5 py-0.5 text-[11px] font-bold leading-none text-white tabular-nums">{chuong.khachMoi}</span>
       )}
     </Link>
   );

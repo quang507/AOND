@@ -33,7 +33,7 @@ export default function Page() {
 
   const nap = async () => {
     const { data, error } = await supabase.from("dang_ky_moi_gioi")
-      .select("id, created_at, loai, ho_ten, so_dien_thoai, khu_vuc, loai_bds, cong_ty, kinh_nghiem, so_can, ghi_chu, trang_thai, ghi_chu_admin, xu_ly_luc, xu_ly_boi")
+      .select("id, created_at, loai, ho_ten, so_dien_thoai, khu_vuc, loai_bds, cong_ty, kinh_nghiem, so_can, ghi_chu, trang_thai, ghi_chu_admin, xu_ly_luc, xu_ly_boi, seller_id, ma_moi_gioi, ma_kich_hoat")
       .order("created_at", { ascending: false }).limit(500);
     if (error) { setLoi(error.message); return; }
     setLoi(null);
@@ -62,6 +62,7 @@ export default function Page() {
     if (error) { setLoi(`Chưa lưu được: ${error.message}`); return; }
     setLoi(null);
     setDong((ds) => ds.map((x) => (x.id === d.id ? { ...x, ...moi } : x)));
+    if (doi.trang_thai === "duyet") await nap();   // DB vừa cấp mã môi giới + mã kích hoạt (SRS-5.1zzzzzzz524)
     if ("ghi_chu_admin" in doi) setNhap((n) => { const m = { ...n }; delete m[d.id]; return m; });
   };
 
@@ -132,6 +133,23 @@ export default function Page() {
                   {d.so_can != null && <div className="flex gap-2"><dt className="w-24 shrink-0 text-mute">Đang nhận</dt><dd className="text-navy tabular-nums">{d.so_can} căn</dd></div>}
                 </dl>
                 {d.ghi_chu && <p className="mt-2 break-words text-sm text-navy">“{d.ghi_chu}”</p>}
+                {d.ma_moi_gioi && d.ma_kich_hoat && (
+                  <div className="mt-3 rounded-md border border-line bg-cream/50 px-3 py-2 text-sm">
+                    <p className="text-navy">
+                      Mã môi giới <strong className="tabular-nums">{d.ma_moi_gioi}</strong> · Mã kích hoạt{" "}
+                      <strong className="select-all tabular-nums">{d.ma_kich_hoat}</strong>{" "}
+                      <Badge tone={d.seller_id ? "ok" : "warn"}>{d.seller_id ? "Đã kích hoạt" : "Chưa kích hoạt"}</Badge>
+                    </p>
+                    <p className="mt-1 text-xs text-mute">
+                      Gửi mã kích hoạt cho môi giới qua Zalo. Họ nhắn mã đó cho trợ lý trên Zalo, và nhập ở trang quản lý sau khi đăng nhập, để tin gửi
+                      qua Zalo và tài khoản web về chung một hồ sơ. Mã chỉ gửi riêng cho đúng người.
+                    </p>
+                    <button type="button" className="mt-1.5 text-xs font-semibold text-brand hover:underline"
+                            onClick={() => { void navigator.clipboard?.writeText(`Đăng ký môi giới của anh chị đã được duyệt. Mã môi giới: ${d.ma_moi_gioi}. Mã kích hoạt: ${d.ma_kich_hoat}. Anh chị nhắn mã kích hoạt này cho trợ lý trên Zalo, hoặc đăng nhập aond.vercel.app/quan-ly rồi nhập mã, để quản lý tin và gửi khách.`).catch(() => {}); }}>
+                      Sao chép lời nhắn gửi môi giới
+                    </button>
+                  </div>
+                )}
 
                 <label className="mt-3 block">
                   <span className="mb-1 block text-xs font-semibold text-mute">Ghi chú nội bộ</span>

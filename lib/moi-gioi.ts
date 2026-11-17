@@ -56,6 +56,9 @@ export type DangKyMG = {
   ghi_chu_admin: string | null;
   xu_ly_luc: string | null;
   xu_ly_boi: string | null;
+  seller_id: string | null;
+  ma_moi_gioi: string | null;
+  ma_kich_hoat: string | null;
 };
 
 /** Số điện thoại di động Việt Nam sau khi bỏ dấu cách, dấu chấm, +84 — cùng luật với `gui_dang_ky_moi_gioi` trên DB. */
@@ -64,3 +67,39 @@ export function chuanSoDienThoai(s: string): string | null {
   if (so.startsWith("84") && so.length === 11) so = "0" + so.slice(2);
   return /^0[35789]\d{8}$/.test(so) ? so : null;
 }
+
+// ── Khách môi giới giới thiệu (SRS-5.1zzzzzzz524) ──
+export type TrangThaiKhach = "moi" | "da_tiep_nhan" | "dang_cham_soc" | "da_xem_nha" | "chot" | "khong_thanh";
+export const THU_TU_KHACH: TrangThaiKhach[] = ["moi", "da_tiep_nhan", "dang_cham_soc", "da_xem_nha", "chot", "khong_thanh"];
+export const TRANG_THAI_KHACH: Record<TrangThaiKhach, string> = {
+  moi: "Mới gửi",
+  da_tiep_nhan: "Đã tiếp nhận",
+  dang_cham_soc: "Đang chăm sóc",
+  da_xem_nha: "Đã xem nhà",
+  chot: "Đã chốt",
+  khong_thanh: "Không thành",
+};
+
+export type NhatKyKhach = { id: string; khach_id: string; luc: string; vai: "moi_gioi" | "admin"; ai: string; viec: string; ghi_chu: string | null };
+export type KhachGioiThieu = {
+  id: string;
+  created_at: string;
+  seller_id: string;
+  ten_khach: string;
+  so_dien_thoai: string;
+  nhu_cau: "mua" | "thue";
+  khu_vuc: string | null;
+  ngan_sach: string | null;
+  ma_tin: string | null;
+  ghi_chu: string | null;
+  trang_thai: TrangThaiKhach;
+  nguoi_phu_trach: string | null;
+  cap_nhat_luc: string | null;
+};
+export type HoSoMoiGioi = {
+  seller_id: string;
+  ma_moi_gioi: string | null;
+  ten: string | null;
+  co_zalo: boolean;
+  chuan: { dang_rao: number; chot_6_thang: number; tong_6_thang: number; ty_le_chot: number; dat_chuan: boolean } | null;
+};
