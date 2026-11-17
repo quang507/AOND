@@ -801,6 +801,13 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz519 · Không hỏi lại số ngang khi đã có chiều dài; sự thật của căn là trường bắt buộc (17/11/2026)
+Chủ dự án (chat thử 17/11, khách "nhà cấp 4… ngang 4 dài 16, sổ hồng riêng"): "SHR rớt là lỗi", "hỏi thừa … là lỗi, sửa đi".
+- **Hỏi thừa:** `engine` chỉ coi là có hai chiều lô khi ô chữ có dạng "4x16" (`_hai_chieu_lo`), còn AI bóc "ngang 4 dài 16" thành `mat_tien` + `dai_m` → cứ model không trả `so_ngang` là bot hỏi "số 4 là ngang căn hay hẻm". Nay có `dai_m` thì không hỏi.
+- **Rớt sổ hồng riêng:** các mã `prompts.SU_THAT_CAN` (giấy tờ, hoàn công, lối vào, số ngang, tình trạng nhà) là trường tuỳ chọn của `ghi_y_khach`, flash-lite bỏ qua cả cụm. Nay là trường bắt buộc (chưa nói thì `chua_ro`); cổng cụm trích giữ nguyên.
+- **Cỡ:** hỏi thông tin 58.357 → 58.449 ký tự. `do-prompt.py` 3/3.
+- **Bắn lại đúng tin đó trên 146 (flash-lite):** hết câu hỏi thừa, soạn bản tin ngay lượt đầu, ghi `so_hong_rieng` · `ngang_can` · `hem`. Còn lại: lượt này model không ghi ô chiều dài 16 (bản tin vẫn viết 4x16m); bản tin có "sầm uất", "khách quan tâm nhiều lắm" không có trong lời khách.
+
 ### SRS-5.1zzzzzzz518 · Nhà nát bán như đất và nhà chưa xây xong đổi bộ câu hỏi, góc ảnh (17/11/2026)
 Chủ dự án: "triển khai code luôn đi" (bản r2 của anh Luận; nhận diện 4 và 6 ở `docs/agents/fda.md` còn một phần).
 - **Một mã, AI đọc theo nghĩa:** `tinh_trang_nha` (`prompts.SU_THAT_CAN`) thêm `ban_nhu_dat`, `dang_xay`; engine ghi `_tinh_trang_nha` khi cụm trích có trong lời khách (đường sẵn có, không dò từ khoá).
@@ -864,9 +871,3 @@ Chủ dự án: "ít lượt đọc, ít prompt mà vẫn luân chuyển tốt g
 - **`docs/fda-boa-mot-ho-so.md`:** hồ sơ chung mỗi người bán (ô tin, sổ tay hẹn / bận / từ chối / lo ngại, tin viết sẵn `tin_ke`, phiên bản) là chỗ bàn giao duy nhất; FDA một lượt gọi trả tool `ket_qua_luot` (ghi + bằng chứng, lời, `hoi_o`, sổ tay, tin kế), code vẫn làm trọng tài và gọi lại khi lệch; BOA gửi `tin_ke` khi còn hợp lệ (0 lượt gọi); ảnh đọc một lần cho cả QC lẫn ô.
 - **Ước tính:** lượt hỏi thông tin 3 → 1 lượt gọi, tin đầu 4 → 1, ảnh 2 → 1 lượt đọc. Bốn giai đoạn đo riêng, chạy trên ID thử trước rồi xoá đường cũ.
 - **Cần chủ dự án:** GĐ 3 (gộp hai bước thành một lượt gọi) đụng cách làm của quyết định 03/11; GĐ 1, 2, 4 làm được không cần quyết.
-
-### SRS-5.1zzzzzzz509 · FDA / BOA: mọi tin chủ động do FDA viết bằng cùng nhân vật và giọng lượt chat (16/11/2026)
-Sếp 16/11: "LQC giờ gọi là BOA, con bot hôm rày gọi là FDA, tất cả đều chat với cùng 1 tên Kh•ải, H•ải". Soát thấy bốn vòng nền tự viết tin bằng bốn prompt riêng, không có GIỌNG; hai prompt mở bằng "Bạn là …, trợ lý (của) sàn nhà đất" — khách nghe hai giọng.
-- **Một hàm `prompts.build_tin_chu_dong_system`:** `khoi_nhan_vat` (nhân vật + GIỌNG, như lượt chat) + luật chung của tin chủ động (một tin, nối chuyện, không chào / giới thiệu lại, tối đa một câu hỏi) + dữ kiện căn + VIỆC. Nhắc khi im giữa chừng (`build_nhac_hoi_lai_system`), xin ảnh sau đăng (`build_xin_anh_nhac_system`), hỏi sau đăng (`build_hoi_sau_dang_nhac_system`) và Image LQC (`qc_anh.viet_tin_nhan`) chỉ còn đưa VIỆC vào. BOA (`lqc.py`, các vòng nền) vẫn chọn việc và giờ nhắn như cũ; giữ kết nối / hỏi còn bán vẫn câu mẫu.
-- **Tài liệu:** thuật ngữ FDA / BOA ở `docs/00-glossary.md`, ghi chú tên mới đầu `docs/lqc-listing-quality-controller.md`. Tên module giữ (`lqc.py`…).
-- **Cỡ:** prompt mỗi tin chủ động 325–1.228 → 4.287–5.070 ký tự (thêm GIỌNG ≈ 1.200 token); trần 3 tin chủ động / người bán / ngày nên tốn thêm không đáng kể. Lượt chat không đổi (62.325). Kiểm: import, thử `qc_anh.viet_tin_nhan` với model giả, `do-prompt.py` 3/3, truyvet sạch. Chưa chạy thật với Claude.

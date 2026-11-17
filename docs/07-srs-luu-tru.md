@@ -73,6 +73,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz509 · FDA / BOA: mọi tin chủ động do FDA viết bằng cùng nhân vật và giọng lượt chat (16/11/2026)
+Sếp 16/11: "LQC giờ gọi là BOA, con bot hôm rày gọi là FDA, tất cả đều chat với cùng 1 tên Kh•ải, H•ải". Soát thấy bốn vòng nền tự viết tin bằng bốn prompt riêng, không có GIỌNG; hai prompt mở bằng "Bạn là …, trợ lý (của) sàn nhà đất" — khách nghe hai giọng.
+- **Một hàm `prompts.build_tin_chu_dong_system`:** `khoi_nhan_vat` (nhân vật + GIỌNG, như lượt chat) + luật chung của tin chủ động (một tin, nối chuyện, không chào / giới thiệu lại, tối đa một câu hỏi) + dữ kiện căn + VIỆC. Nhắc khi im giữa chừng (`build_nhac_hoi_lai_system`), xin ảnh sau đăng (`build_xin_anh_nhac_system`), hỏi sau đăng (`build_hoi_sau_dang_nhac_system`) và Image LQC (`qc_anh.viet_tin_nhan`) chỉ còn đưa VIỆC vào. BOA (`lqc.py`, các vòng nền) vẫn chọn việc và giờ nhắn như cũ; giữ kết nối / hỏi còn bán vẫn câu mẫu.
+- **Tài liệu:** thuật ngữ FDA / BOA ở `docs/00-glossary.md`, ghi chú tên mới đầu `docs/lqc-listing-quality-controller.md`. Tên module giữ (`lqc.py`…).
+- **Cỡ:** prompt mỗi tin chủ động 325–1.228 → 4.287–5.070 ký tự (thêm GIỌNG ≈ 1.200 token); trần 3 tin chủ động / người bán / ngày nên tốn thêm không đáng kể. Lượt chat không đổi (62.325). Kiểm: import, thử `qc_anh.viet_tin_nhan` với model giả, `do-prompt.py` 3/3, truyvet sạch. Chưa chạy thật với Claude.
+
 ### SRS-5.1zzzzzzz508 · Chính sách phí mỗi ý một chỗ ở lượt khách hỏi phí (16/11/2026)
 Mục 3.4 kế hoạch rút gọn: trong một lời nhắc lượt phí, "chỉ thu khi giao dịch thành công" lặp ~7 lần, mức phí theo vai 3–4 lần, bốn ý chính sách liệt kê ở cả lời dặn lẫn `CHINH_SACH_PHI`.
 - **Một nguồn mỗi ý:** bốn ý chính sách chỉ ở `CHINH_SACH_PHI`; mức theo vai ở `BUSINESS_CONTEXT` / dòng VAI NGƯỜI RAO (`_fee_hint`, nay chỉ vai + mức); câu khách nghe ở câu mẫu `bao_phi` (không đổi chữ). Lời nhắc "0.75 tháng = ba phần tư của MỘT tháng" chuyển vào `khoi_bao_phi`, chỉ đi kèm khi cho thuê.
