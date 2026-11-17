@@ -600,6 +600,23 @@ def _vong_xoa_logo() -> None:
 if os.environ.get("XOA_LOGO", "bat") != "tat" and _settings.supabase_service_role_key:
     threading.Thread(target=_vong_xoa_logo, daemon=True, name="xoa-logo").start()
 
+def _vong_che_so() -> None:
+    """SRS-5.1zzzzzzz522 — anh giay to moi (bucket rieng): to den thong tin ca nhan, goc giu o thu muc goc/ (logic o `che_so`). Tat: CHE_SO=tat."""
+    from . import che_so
+    time.sleep(180)
+    while True:
+        try:
+            ra = che_so.chay_mot_luot(_engine)
+            if ra:
+                log.warning("Che so: %d anh (%s)", len(ra), ", ".join(ra))
+        except Exception as e:  # noqa: BLE001
+            _so_loi.ghi_loi("che so", f"{type(e).__name__}: {e}"[:200])
+        time.sleep(XOA_LOGO_CHU_KY_GIAY)
+
+
+if os.environ.get("CHE_SO", "bat") != "tat" and _settings.supabase_service_role_key:
+    threading.Thread(target=_vong_che_so, daemon=True, name="che-so").start()
+
 HOI_SAU_DANG_CHU_KY_GIAY = int(os.environ.get("HOI_SAU_DANG_CHU_KY_GIAY", "600"))
 
 
