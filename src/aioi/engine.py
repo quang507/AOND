@@ -1769,6 +1769,8 @@ def _o_duoc_hoi(conv: "Conversation") -> set[str]:
         cho |= _KHOI_O.get(k, frozenset())
     if cho & _O_DIEN_TICH:
         cho |= _O_DIEN_TICH
+    if conv.y_luot.get("_gia_chua_quy"):   # SRS-5.1zzzzzzz520: giá chủ cho chưa quy ra tiền — câu hỏi số tiền là đúng việc của lượt
+        cho |= {"gia"}
     return cho
 
 
@@ -4886,6 +4888,7 @@ class Engine:
             # SRS-5.1zzzzzzz520 (bản anh Luận, FDA nhận diện 9: giá tính bằng vàng): chủ ĐÃ cho giá mà DB không quy ra tiền (`parse_vnd` trả
             # null với "50 cây vàng") — bản trước bot hỏi lại "giá bao nhiêu". Nay hỏi chủ mức đó quy ra khoảng bao nhiêu tiền; bot không tự quy.
             web["gia_chua_quy"] = str(conv.prop.fields["gia"])[:60]
+            conv.y_luot["_gia_chua_quy"] = True   # lưới soát ô hỏi: lượt này được hỏi ô giá dù ô đã có chữ (`_o_duoc_hoi`)
         if "phuong" in (web.get("thieu") or []):
             # SRS-5.1zzzzzzz359 (chủ dự án 02/11: phường "gắn lên bản đồ để biết chứ không hỏi khách"; ca thật 01–02/11: khách duyệt "Ok" → bot
             # "Chỉ cần thêm phường là em đưa tin lên web ngay… nhà anh thuộc phường nào ạ?"; "ừ đăng đi em" → "em tra ra khu này là Xã Nhà Bè,
