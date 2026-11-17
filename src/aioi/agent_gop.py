@@ -318,7 +318,7 @@ def cong_cu(schema: dict[str, Any], chia: dict[str, Any]) -> list[dict[str, Any]
 
 def cong_cu_viet(chia: dict[str, Any]) -> list[dict[str, Any]]:
     """Công cụ bước 2: chỉ đọc + tra cứu — bước ghi đã đóng (không còn công cụ ghi để gọi)."""
-    return [_tra_cong_cu(chia)] + copy.deepcopy(agent_ban.CONG_CU)
+    return [_tra_cong_cu(chia)] + copy.deepcopy(agent_ban.cong_cu_fda())   # SRS-5.1zzzzzzz526: FDA không tra cứu trong lượt
 
 
 HUONG_DAN_GHI = (

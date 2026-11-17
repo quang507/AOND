@@ -25,7 +25,8 @@ from .bao_can_moi import trong_khung_gio
 IM_TOI_THIEU_GIAY = int(os.environ.get("SAU_DANG_NHAC_GIAY", "600"))
 CHO_KHI_LO_GIAY = int(os.environ.get("HOI_SAU_DANG_CHO_GIAY", str(24 * 3600)))
 TOI_DA_LO_LIEN = int(os.environ.get("HOI_SAU_DANG_LO_LIEN", "2"))
-TRAN_NGAY = int(os.environ.get("TIN_CHU_DONG_MOT_NGAY", "3"))
+# SRS-5.1zzzzzzz526 (chủ dự án 18/11: "làm giống sếp"): bản anh Luận "tối đa ~1 nhắc / ngày" — mặc định 3 (chốt 12/11) về 1.
+TRAN_NGAY = int(os.environ.get("TIN_CHU_DONG_MOT_NGAY", "1"))
 KHOANG_CHU_DONG_GIAY = 240
 LOAI_NHIP_RIENG = ("giu_ket_noi", "con_ban")
 
@@ -166,9 +167,10 @@ def ly_do_khong_nhan(conv: Any, bay_gio: datetime, loai: str = "hoi", kho: Any =
         return "đang chat"
     if getattr(conv, "nhuong_san_den", 0) > ts:
         return "nhường sân"
-    if so_tin_chu_dong_hom_nay(conv, bay_gio) >= TRAN_NGAY:
+    # "tra_hen" (SRS-5.1zzzzzzz526): tin trả lời điều BOT đã hẹn xem kỹ — lời hứa phải giữ, không tính trần ngày, không chờ câu hỏi cũ.
+    if loai != "tra_hen" and so_tin_chu_dong_hom_nay(conv, bay_gio) >= TRAN_NGAY:
         return "đủ tin hôm nay"
-    if loai not in LOAI_NHIP_RIENG and loai != "nhac_hen":   # nhắc lời hẹn: chủ đã hứa, không chờ câu hỏi cũ được đáp
+    if loai not in LOAI_NHIP_RIENG and loai not in ("nhac_hen", "tra_hen"):   # nhắc lời hẹn: chủ đã hứa, không chờ câu hỏi cũ được đáp
         # Số lời bot liền nhau ở cuối (sau tin cuối của chủ): 1 = bot vừa đáp chủ; ≥ 2 = đã có tin chủ động chủ chưa đáp.
         duoi = 0
         for t in reversed(hs):

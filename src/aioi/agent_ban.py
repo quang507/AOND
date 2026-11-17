@@ -15,6 +15,7 @@ tra. Chạy cho mọi người bán (công tắc AGENT_BAN gỡ ở Đợt 8).""
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import Any
 
@@ -115,6 +116,20 @@ CONG_CU: list[dict[str, Any]] = [
 ]
 _TEN = {c["name"] for c in CONG_CU}
 
+# SRS-5.1zzzzzzz526 (chủ dự án 18/11: "làm giống sếp"; bản anh Luận: giác quan của FDA chỉ có lời khách, việc cần nhìn / tra / ngẫm thì hẹn
+# lại cho BOA). FDA_TRA_CUU=bat trả lại đủ công cụ tra cứu trong lượt như trước 18/11.
+TRA_CUU_FDA_BAT = os.environ.get("FDA_TRA_CUU", "tat") == "bat"
+# FDA giữ: điều khách đã gửi (rổ hàng, bộ nhớ dự án, giá đã gửi) và phí của chính bên em.
+CONG_CU_FDA_GIU = ("ro_hang", "bo_nho_du_an", "gia_da_gui", "tinh_phi_moi_gioi")
+# BOA tra khi trả lời điều đã hẹn. Không có định giá tự động và gợi ý bớt giá: bản anh Luận cấm định giá / khuyên giá — giá chỉ so căn thật
+# đang rao (`so_sanh`).
+CONG_CU_BOA = ("tra_du_an", "du_an_trong_khu", "kiem_tra_phap_ly_so", "tham_dinh_quy_hoach", "tra_cuu_phong_thuy")
+
+
+def cong_cu_fda() -> list[dict[str, Any]]:
+    """Công cụ đọc FDA được dùng trong lượt chat."""
+    return CONG_CU if TRA_CUU_FDA_BAT else [c for c in CONG_CU if c["name"] in CONG_CU_FDA_GIU]
+
 
 def _khoi(engine: Any, conv: Any, project: Any, ten: str, vao: dict[str, Any] | None = None) -> str:
     """Thân công cụ = hàm khối cũ của engine + các công cụ định giá, pháp lý và phí môi giới."""
@@ -190,7 +205,7 @@ def chay(engine: Any, conv: Any, project: Any, system: str, max_tokens: int) -> 
     kho_du_an = project is not None and bool(getattr(project, "units", None))
     huong_dan = HUONG_DAN + (_AGENT_TOOL_GUIDE if kho_du_an else "")
     he = system.replace(RANH_GIOI_CACHE, huong_dan + RANH_GIOI_CACHE, 1) if RANH_GIOI_CACHE in system else system + huong_dan
-    cong_cu = CONG_CU + (engine._inventory_tools() if kho_du_an else [])
+    cong_cu = cong_cu_fda() + (engine._inventory_tools() if kho_du_an else [])
     tin: list[dict] = [{"role": m.role, "content": m.content} for m in conv.messages()]
     ket: list[str] = []
     da_goi: list[str] = []

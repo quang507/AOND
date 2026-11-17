@@ -510,7 +510,8 @@ def _vong_bao_can_moi() -> None:
         time.sleep(BAO_CAN_MOI_CHU_KY_GIAY)
 
 
-if os.environ.get("BAO_CAN_MOI", "bat") != "tat" and _settings.supabase_service_role_key:
+# SRS-5.1zzzzzzz526: phía mua tắt (PHIA_MUA) thì không báo căn mới cho người mua.
+if os.environ.get("BAO_CAN_MOI", "bat") != "tat" and os.environ.get("PHIA_MUA", "tat") == "bat" and _settings.supabase_service_role_key:
     threading.Thread(target=_vong_bao_can_moi, daemon=True, name="bao-can-moi").start()
 
 GIU_KET_NOI_CHU_KY_GIAY = int(os.environ.get("GIU_KET_NOI_CHU_KY_GIAY", "1800"))

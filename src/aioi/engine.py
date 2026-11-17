@@ -31,7 +31,7 @@ from . import gamification as g
 from . import phap_ly
 from .prompts import _dien_tich_mo_ho, khoi_nhan_vat, nhan_o_ngan, viec_phieu, viec_theo_khoi
 from .prompts import NHAN_VIEC_LUOT, khoi_doi_so, khoi_so_dang_nhan, prompt_gon_bat
-from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, LOC_KHACH, NHAN_DUONG_VAO, SU_THAT_CAN, khoi_kich_hoat_mg, khoi_loc_khach, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
+from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, LOC_KHACH, NHAN_DUONG_VAO, SU_THAT_CAN, khoi_hen_tra_cuu, khoi_kich_hoat_mg, khoi_loc_khach, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
 from .sdt import che_giay_to, che_sdt
@@ -1326,6 +1326,10 @@ def _ghi_su_that_can(conv: "Conversation", plan: dict, loi_khach: list[str]) -> 
 # (cụm khẳng định trên bản tin, điều kiện được phép). Chỉ đọc chữ của BẢN TIN bot viết.
 # SRS-5.1zzzzzzz524: mã kích hoạt môi giới do DB cấp lúc admin duyệt đăng ký (`dang_ky_moi_gioi_cap_ma`) — chuỗi máy sinh, không phải ý khách.
 _MA_KICH_HOAT = re.compile(r"(?i)(?<![0-9A-Z])AOND-[0-9A-F]{10}(?![0-9A-Z])")
+# SRS-5.1zzzzzzz526 (chủ dự án 18/11: "làm giống sếp" — bản anh Luận: FDA chỉ nhận rao bán, ai tới mua / tìm thuê thì dẫn đúng chỗ): phía mua
+# TẮT theo mặc định; khách cần mua / thuê được chuyển cho người phụ trách (`bao_can_nguoi`). PHIA_MUA=bat trả lại vòng tư vấn mua như trước.
+PHIA_MUA_BAT = os.environ.get("PHIA_MUA", "tat") == "bat"
+HEN_TRA_CUU_GIU = 3   # số câu hẹn tra cứu giữ cho một căn
 _KD_CHINH_CHU = re.compile(r"(?i)chính chủ")
 _KD_PHAP_LY = re.compile(r"(?i)(sổ hồng|sổ đỏ|sổ riêng|hoàn công|pháp lý (?:rõ ràng|đầy đủ|chuẩn|sạch|minh bạch))")
 _KD_HEM_XE_HOI = re.compile(r"(?i)(?<![\wÀ-ỹ])(hẻm xe hơi|hẻm ô tô|hxh)(?![\wÀ-ỹ])")
@@ -3472,6 +3476,7 @@ class Engine:
         for ten_ut, lay in (("kich_hoat_mg", lambda: khoi_kich_hoat_mg(conv.y_luot.get("kich_hoat_mg"))),   # SRS-5.1zzzzzzz524
                             ("can_nguoi", lambda: khoi_can_nguoi(conv)), ("phap_ly", lambda: khoi_phap_ly(conv, self._can_cua_chu(conv))),
                             ("loc_khach", lambda: khoi_loc_khach(conv.y_luot.get("loc_khach"))),   # SRS-5.1zzzzzzz521
+                            ("hen_tra_cuu", lambda: khoi_hen_tra_cuu(conv.y_luot.get("hen_tra_cuu"))),   # SRS-5.1zzzzzzz526
                             ("ngoai_viec", lambda: khoi_ngoai_viec(conv)), ("hoi_ve", lambda: hoi_ve_khoi),
                             ("hoi_trung_ten", lambda: self._khoi_hoi_trung_ten(conv))):   # cùng thứ tự / cùng ngắt sớm như chuỗi `or` cũ
             note_cu = conv.pending_name_note
@@ -5146,6 +5151,8 @@ class Engine:
         """Lượt AI lập thao tác: đọc tin khách theo nghĩa, ghi các thuộc tính hội thoại (vai, ý mua / bán, duyệt, hỏi về,
         xưng hô, y_luot) và TRẢ kế hoạch — chưa đụng rổ hàng (`_ap_dung_ke_hoach`). `gop`: lượt chat thường (`_handle`) — người bán đi vòng
         agent gộp (SRS-5.1zzzzzzz371); đường ảnh / tệp giữ form."""
+        if not PHIA_MUA_BAT and conv.role == "buyer":   # SRS-5.1zzzzzzz526: phía mua tắt — hội thoại mua cũ đọc bằng đường người bán
+            conv.role, conv.vong_mua = "unknown", None
         # With a BASKET (>1 căn) the seller acts on ONE căn per message, but a reference may span
         # turns ("...phải nó không?" → "nó đó em") — so read from just AFTER the PREVIOUS user
         # turn: the latest user line plus the bot's question(s) right before it (confirm context),
@@ -5324,7 +5331,17 @@ class Engine:
             intent = "buy"
         so_luot = SO_TU_VAN if conv.so_nhan == SO_TU_VAN else "ky_gui"
         doi_so = mo_lai = False
-        if intent == "buy" and not (has_seller_context and dang_giua_viec_ban):
+        chuyen_mua = False
+        if not PHIA_MUA_BAT:
+            # SRS-5.1zzzzzzz526: phía mua tắt — không lượt nào vào vai mua. Khách tỏ ý mua / thuê (không phải đang giữa việc bán) → lượt này
+            # chuyển người phụ trách (khối `khoi_loc_khach("mua")` + `bao_can_nguoi` bên dưới); còn lại là việc của người bán như mọi lượt.
+            chuyen_mua = intent == "buy" and not (has_seller_context and dang_giua_viec_ban)
+            if chuyen_mua:
+                plan["operations"] = []
+                plan.pop("buyer_lead", None)
+            if intent == "sell" or has_seller_context:
+                conv.role, conv.so_vai = "seller", so_luot
+        elif intent == "buy" and not (has_seller_context and dang_giua_viec_ban):
             conv.so_vai = so_luot
             conv.role = "buyer"
             if conv.buyer_lead is None:
@@ -5393,13 +5410,32 @@ class Engine:
         loc = plan.get("loc_khach")
         la_loc = (kich_hoat is None and loc in LOC_KHACH and intent not in ("buy", "sell") and not has_seller_context
                   and _vai_co_bang_chung(plan.get("loc_khach_trich_dan"), gan_khach))
-        if la_loc:
+        # SRS-5.1zzzzzzz526: khách cần mua / thuê khi phía mua tắt — cùng cơ chế lọc: dấu "mua" (khi khách chưa có việc bán nào) để các lượt
+        # sau không hỏi thông tin căn và vòng nền không nhắn; báo người phụ trách MỘT lần mỗi hội thoại (`_da_bao_mua`).
+        mua_cu = (not PHIA_MUA_BAT and kich_hoat is None and intent != "sell" and not has_seller_context
+                  and any(x.prop.fields.get("_loc_khach") == "mua" for x in conv.listings))
+        la_mua = kich_hoat is None and (chuyen_mua or mua_cu)
+        if la_mua:
+            la_loc, loc = True, "mua"
+            if not has_seller_context:
+                for x in conv.listings:
+                    x.prop.fields["_loc_khach"] = "mua"
+            if chuyen_mua and not any(x.prop.fields.get("_da_bao_mua") for x in conv.listings):
+                bao = getattr(self._convstore, "bao_can_nguoi", None)
+                try:
+                    if bao is not None and bao(conv.user_key, "Khách cần mua / thuê: " + (conv.loi_khach_luot or "")[:140], None, "buyer"):
+                        for x in conv.listings:
+                            x.prop.fields["_da_bao_mua"] = "1"
+                except Exception as e:  # noqa: BLE001 — báo hụt thì lượt vẫn đáp khách, lượt sau báo lại
+                    log.warning("Báo người phụ trách (khách mua) lỗi: %s", type(e).__name__)
+            log.warning("Khách cần mua / thuê: chuyển người phụ trách")
+        elif la_loc:
             plan["operations"] = []
             plan.pop("buyer_lead", None)
             for x in conv.listings:
                 x.prop.fields["_loc_khach"] = loc
             log.warning("Lọc khách: %s", loc)
-        elif intent in ("buy", "sell"):
+        elif intent == "sell" or (PHIA_MUA_BAT and intent == "buy"):
             for x in conv.listings:
                 x.prop.fields.pop("_loc_khach", None)
         # Hỏi về gì / tự xưng gì (SRS-5.1zzzzzzz54): "hỏi về" theo ý AI đọc (SRS-5.1zzzzzzz281); xưng hô nhận khi cụm trích có thật trong một
@@ -5461,6 +5497,23 @@ class Engine:
             conv.y_luot["loc_khach"] = loc   # SRS-5.1zzzzzzz521
         if kich_hoat is not None:
             conv.y_luot["kich_hoat_mg"] = kich_hoat   # SRS-5.1zzzzzzz524
+        if not agent_ban.TRA_CUU_FDA_BAT and conv.role != "buyer" and kich_hoat is None and not la_loc:
+            # SRS-5.1zzzzzzz526: khách hỏi điều phải tra cứu / so sánh — FDA không có công cụ tra trong lượt nên không đoán, hẹn; câu hỏi ghi
+            # vào căn đang nói (`_cho_tra_cuu`) để vòng nền trả lời (`hoi_sau_dang._tra_loi_tra_cuu`). Câu hỏi giá (hoi_ve = dinh_gia) đi cùng đường.
+            cau_tc = plan.get("can_tra_cuu")
+            hen_tc = (cau_tc.strip()[:200] if isinstance(cau_tc, str) and cau_tc.strip()
+                      and _vai_co_bang_chung(plan.get("can_tra_cuu_trich_dan"), gan_khach) else None)
+            if conv.hoi_ve_luot == "dinh_gia":
+                hen_tc, conv.hoi_ve_luot = hen_tc or "giá căn của khách so với các căn đang rao quanh đó", None
+            if hen_tc:
+                conv.y_luot["hen_tra_cuu"] = hen_tc
+                fc = conv.prop.fields
+                try:
+                    ds_tc = [d for d in json.loads(fc.get("_cho_tra_cuu") or "[]") if isinstance(d, dict)]
+                except ValueError:
+                    ds_tc = []
+                fc["_cho_tra_cuu"] = json.dumps((ds_tc + [{"cau": hen_tc, "luc": int(time.time())}])[-HEN_TRA_CUU_GIU:], ensure_ascii=False)
+                log.warning("Hẹn tra cứu: đã ghi 1 câu")
         for k in ("xin_xem_ban_ve", "cau_hoi_du_an", "mo_ta_du_an"):   # Q5 (SRS-5.1zzzzzzz328): theo ý AI đọc, không so nguyên văn
             if _ai_co_y(plan.get(k)):
                 conv.y_luot[k] = True
