@@ -603,9 +603,10 @@ def khoi_kich_hoat_mg(kq: dict | None) -> str:
     if kq.get("ok"):
         ma = kq.get("ma_moi_gioi") or ""
         return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH VỪA KÍCH HOẠT TÀI KHOẢN MÔI GIỚI (hệ thống đã nối xong): ===\n"
-                f"Mã môi giới của khách: {ma}. Việc lượt này: báo đã kích hoạt xong kèm mã môi giới; nói từ giờ căn gửi qua Zalo này sẽ hiện ở "
+                f"Việc lượt này: báo đã kích hoạt xong và nói rõ MÃ MÔI GIỚI của khách là {ma} (mã AOND-… khách vừa nhắn là mã kích hoạt, đã dùng "
+                f"xong, không nhắc lại); nói từ giờ căn gửi qua Zalo này sẽ hiện ở "
                 f"trang quản lý {_WEB}/quan-ly, ở đó cũng gửi được khách cần mua, thuê; rồi mời khách gửi căn đang nhận bán, cho thuê. "
-                "Không hỏi lại vai, không xin thông tin cá nhân, không nhắc lại mã kích hoạt.\n")
+                "Không hỏi lại vai, không xin thông tin cá nhân.\n")
     ly_do = {"da_noi_zalo": "mã này đã được kích hoạt bằng một Zalo khác", "tai_khoan_da_noi": "Zalo này đã nối với một mã môi giới khác"}.get(
         kq.get("loi") or "", "mã không đúng hoặc đăng ký chưa được duyệt")
     return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH NHẮN MÃ KÍCH HOẠT MÔI GIỚI NHƯNG CHƯA NỐI ĐƯỢC (hệ thống đã kiểm): ===\n"
