@@ -1,7 +1,21 @@
 # Kiến trúc agent — FDA và BOA
 
-> Lấy từ bộ `docs/agents/` của anh Luận (16/11/2026), chỉnh theo code và các quyết định của repo này (SRS-5.1zzzzzzz513).
+> Lấy từ bộ `docs/agents/` của anh Luận (16/11/2026; mục 0 thêm 17/11 theo commit `59e3ac3` của anh), chỉnh theo code và các quyết định của repo này (SRS-5.1zzzzzzz513).
 > Chi tiết: [`fda.md`](fda.md) · [`boa.md`](boa.md). Bàn giao dữ liệu giữa hai bên: [`../fda-boa-mot-ho-so.md`](../fda-boa-mot-ho-so.md).
+
+## 0. Mốc r1 → r2
+
+Anh Luận đánh dấu bước nhảy bằng **sự có mặt của BOA**:
+
+| | r1 | r2 |
+|---|---|---|
+| Agent | Chỉ FDA | FDA + BOA |
+| Nhịp | Trong lượt chat | Thêm vòng nền |
+| Việc | Lấy tin → soạn rao | + Soi ảnh / sổ / lợi thế / giá, chủ động chăm tin |
+| Giác quan | Lời khách | + Đọc ảnh, tra căn đang rao gần, đối chiếu sổ ↔ nhà |
+
+- **Repo anh Luận** (`luan8560/aond`): `r1` là tag ở commit `207a145` (26/10); r2 mới có tài liệu (`59e3ac3`, 17/11), nhánh `r2-boa` chưa có code.
+- **Repo này đã chạy r2:** BOA (tên cũ LQC) chạy từ 12/11/2026, trạng thái từng câu mẫu ở [`../lqc-listing-quality-controller.md`](../lqc-listing-quality-controller.md) §4. Không tách tag hay nhánh, mọi thứ ở `main`.
 
 ## 1. Khách chỉ thấy một người
 
@@ -29,6 +43,9 @@ FDA và BOA là tên nội bộ; khách không bao giờ biết có hai bộ má
 | Nhịp | Trong lượt chat, đáp ngay | Vòng nền, có thời gian xem lại |
 | Việc | Lấy tin tới ngưỡng rao, soạn bản tin, báo phí | Soi tin đã lên web, nhắn một việc đáng nhất |
 | Code | `engine.py`, `agent_gop.py`, `prompts.py` | `lqc.py`, `qc_anh.py`, `hoi_sau_dang.py`, `followup.py` |
+
+BOA có bốn chuyên môn (ảnh · pháp lý · lợi thế · giá, xem `boa.md`). Bản anh Luận để ngỏ hai chuyên môn về sau: ghép khách mua (Matcher) và hâm tin nguội
+(Re-engagement). Ở đây đã có một phần: báo căn mới cho người mua (`bao_can_moi.py`), hỏi còn bán sau 20 ngày, giữ kết nối sau 6 ngày.
 
 ## 3. Ranh FDA ↔ BOA là độ nghiêng, không phải bức tường
 

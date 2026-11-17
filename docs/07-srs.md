@@ -834,6 +834,7 @@ Chủ dự án: "kiểm tra các phần này của repo anh Luận… lấy về
 - **`prompts.GIONG`** thêm một đoạn: khách đang hăng thì theo khách, hưởng ứng thật, hỏi nối, không cắt ngang / nhắc còn thiếu / gạt "để sau"; việc lượt này chưa có dữ liệu để xem ảnh hay so giá thì không đoán, hẹn xem kỹ rồi nhắn lại.
 - **Cỡ:** GIONG 3.112 → 3.547 / 4.000, LEAN 6.078 → 6.513 / 8.000; lượt hỏi thông tin 57.586 → 58.021 ký tự. `do-prompt.py` 3/3.
 - **Chưa làm:** lọc khách hỏi dạo / spam, bộ câu hỏi riêng cho nhà nát bán như đất, điểm chất lượng BOA cộng vào điểm uy tín.
+- **Soát lại 17/11:** repo anh Luận chỉ thêm commit tài liệu `59e3ac3` (tag `r1` ở `207a145`, nhánh `r2-boa` chưa có code). Lấy về mục 0 "r1 → r2" và hai chuyên môn để ngỏ (Matcher, Re-engagement) vào `docs/agents/README.md`; repo này đã ở r2.
 
 ### SRS-5.1zzzzzzz512 · Gemini chạy được vòng công cụ; công tắc chỉ-Gemini tới 29/11 (16/11/2026)
 Chủ dự án: "dùng gemini free đi … làm công tắc đi, đến ngày 29 là có credit anthropic lại". Trước bản này dự phòng Gemini chỉ trả chữ nên mọi lượt đi đường form cũ.
