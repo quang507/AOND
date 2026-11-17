@@ -5,7 +5,7 @@ Mỗi ảnh giấy tờ (`listing_media`, bucket `listing-private`, `media_type`
 1. model vision của lõi trả các khung 0–1 của thông tin CÁ NHÂN: họ tên người, số CCCD / CMND / định danh, năm sinh, địa chỉ thường trú
    của người, số phát hành / số vào sổ, mã QR / mã vạch, chữ ký. Số thửa, số tờ, diện tích, địa chỉ thửa đất, loại đất để nguyên —
    bên em cần các số đó để đối chiếu;
-2. tô đen các khung (Pillow, nới vài px);
+2. tô đen các khung (Pillow), nới rộng theo chiều ngang vì khung model trả hay hụt mép chữ;
 3. ảnh GỐC chép sang `listing-private/<uuid tin>/goc/<tên>` trước, chép xong mới ghi đè bản đã che lên đúng khoá cũ (admin mở giấy tờ ở
    CRM thấy bản đã che) và sinh lại bản nhỏ 480;
 4. đánh dấu `variants.che_so` = khoá ảnh gốc ("" = bỏ qua: không phải giấy tờ / model không thấy vùng nào / tệp không đọc được).
@@ -25,7 +25,10 @@ from .xoa_logo import DUOI_ANH, HONG_TOI_DA, _danh_dau, _dinh_dang, _goc, _tai, 
 log = logging.getLogger("aioi.che_so")
 
 TOI_DA_MOT_LUOT = 10
-NOI_KHUNG = 0.006   # nới khung model trả, theo cạnh ngắn ảnh — khung hay hụt mép chữ
+# Nới khung model trả. Thử 17/11 trên tờ sổ giả (Gemini flash-lite): khung đúng dòng nhưng hụt mép trái / phải tới 3,5 % bề ngang — lộ ba
+# số cuối căn cước. Che dư vô hại, che thiếu là lộ, nên nới ngang rộng hơn hẳn nới dọc.
+NOI_NGANG = 0.045   # theo bề ngang ảnh, mỗi bên
+NOI_DOC = 0.008     # theo chiều cao ảnh, mỗi bên
 _hong: dict[str, int] = {}
 
 SCHEMA: dict[str, Any] = {
@@ -77,10 +80,10 @@ def to_den(data: bytes, vung: list[tuple[float, float, float, float]], khoa: str
         log.warning("che_so: đọc ảnh hụt (%s)", type(e).__name__)
         return None
     w, h = im.size
-    no = max(2, round(min(w, h) * NOI_KHUNG))
+    nx, ny = max(2, round(w * NOI_NGANG)), max(2, round(h * NOI_DOC))
     ve = ImageDraw.Draw(im)
     for x0, y0, x1, y1 in vung:
-        ve.rectangle((max(0, int(x0 * w) - no), max(0, int(y0 * h) - no), min(w, int(x1 * w + 0.999) + no), min(h, int(y1 * h + 0.999) + no)),
+        ve.rectangle((max(0, int(x0 * w) - nx), max(0, int(y0 * h) - ny), min(w, int(x1 * w + 0.999) + nx), min(h, int(y1 * h + 0.999) + ny)),
                      fill=(0, 0, 0))
     dinh_dang, _ = _dinh_dang(khoa)
     ra = io.BytesIO()
