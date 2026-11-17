@@ -807,6 +807,7 @@ Chủ dự án: "triển khai code luôn đi" (bản r2 của anh Luận; nhận
 - **`schema.Property`:** `ban_nhu_dat()` → hỏi kích thước, đường vào, giấy tờ, quy hoạch; bỏ kết cấu, diện tích nhà, bàn giao. `dang_xay()` → bỏ bàn giao / nội thất / hiện trạng, thêm tiến độ và ngày bàn giao. Cả hai bỏ cụm "chi tiết nhà" sau đăng.
 - **Ảnh và bản tin:** `goc_anh_goi_y` xin góc như đất / công trình đang thi công; `qc_anh` không tính thiếu ảnh nội thất, phối cảnh của căn chưa xong không bị coi là không khớp; dòng "Tình trạng nhà" của bản tin cấm tả phòng ốc.
 - **Cỡ (ký tự):** hỏi thông tin 58.326 → 58.357, M1 chào 113.545 → 113.796; GIONG, LEAN không đổi. `do-prompt.py` 3/3.
+- **Bắn thử 17/11 trên 146 (flash-lite, 3 cuộc `thu-518*`):** "nhà nát … bán giá đất" → ghi `ban_nhu_dat`, không hỏi số tầng / phòng, bản tin tả đất. "Đang xây tới tầng 2" → model không trả mã, bot đi như nhà thường; nói rõ "đang xây chưa xong, chưa bàn giao" → ghi `dang_xay`. Chưa thử lượt xin ảnh và chấm ảnh.
 - **Chưa làm:** lọc hỏi dạo / spam (chưa có chat thật để định nghĩa), đổi giá vàng (không có nguồn giá), điểm BOA vào điểm uy tín (phải sửa hàm DB), che thông tin trên ảnh sổ.
 
 ### SRS-5.1zzzzzzz517 · Gemini chỉ dùng flash-lite; quá hạn thì thử khoá kế trước khi cho model nghỉ (16/11/2026)
