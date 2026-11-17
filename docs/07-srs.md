@@ -801,6 +801,15 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz520 · Điểm chất lượng bốn mảng BOA vào điểm uy tín; vòng nền xét tin điểm thấp trước; giá không quy ra tiền thì hỏi chủ (17/11/2026)
+Chủ dự án 17/11, sau khi đối chiếu việc chưa làm với bộ `docs/agents/` của anh Luận: "có docs thì làm đi".
+- **Điểm BOA** (`diem_boa.py`, tiền định, 0–1 mỗi mảng): pháp lý theo thang anh Luận (sổ riêng 0,6 … giấy tay 0; ảnh sổ đã đọc +0,3; hoàn công +0,1); vị thế = số điểm vị thế cụ thể / 3; giá = có giá 0,4 + chủ đã xem căn đang rao gần 0,3 + rõ thương lượng 0,3; ảnh = điểm Image LQC. Mảng chưa có gì để chấm thì không trừ.
+- **Vào điểm:** một cơ chế "chỉnh 0,75–1" như ảnh (SRS-424). Lượt chat: `engine.do_du_tin`, mỗi mảng tối đa −2,5 / 100 độ đủ. DB: bộ điểm ghi theo tin ở `boc_tach._diem_boa`; `diem_tin` nhân bốn mục pháp lý / giá / tiềm năng / ảnh (migration `20261117a`) → `diem_nguoi_ban` → hạng. **Sửa lời SRS-513:** điểm ảnh trước đây mới vào điểm tin bot nói ở lượt chat, chưa vào hạng trên DB.
+- **Soi tin điểm thấp:** vòng nền `hoi_sau_dang` xếp tin đang rao theo điểm BOA tăng dần. Trần 3 tin / ngày, 10 câu / căn giữ nguyên.
+- **Giá tính bằng vàng:** DB không quy ra tiền (`parse_vnd` trả null) nên tin kẹt và bot hỏi lại "giá bao nhiêu". Nay bot hỏi chủ mức đó quy ra khoảng bao nhiêu tiền, không tự quy đổi (`gia_chua_quy`).
+- **Thử:** migration chạy trong giao dịch huỷ rồi áp — 1.207 tin cũ giữ nguyên tổng điểm; tin mẫu 73 → 69 khi cả bốn mảng thấp, chuỗi điểm hỏng giữ 73.
+- **Chưa làm:** che thông tin trên ảnh sổ (không có ảnh sổ để thử); lọc hỏi dạo / spam (tài liệu anh Luận mới một dòng, chưa nói nhận ra rồi làm gì).
+
 ### SRS-5.1zzzzzzz519 · Không hỏi lại số ngang khi đã có chiều dài; sự thật của căn là trường bắt buộc (17/11/2026)
 Chủ dự án (chat thử 17/11, khách "nhà cấp 4… ngang 4 dài 16, sổ hồng riêng"): "SHR rớt là lỗi", "hỏi thừa … là lỗi, sửa đi".
 - **Hỏi thừa:** `engine` chỉ coi là có hai chiều lô khi ô chữ có dạng "4x16" (`_hai_chieu_lo`), còn AI bóc "ngang 4 dài 16" thành `mat_tien` + `dai_m` → cứ model không trả `so_ngang` là bot hỏi "số 4 là ngang căn hay hẻm". Nay có `dai_m` thì không hỏi.
@@ -849,7 +858,7 @@ Chủ dự án: "kiểm tra các phần này của repo anh Luận… lấy về
 - **`docs/agents/` (README, fda, boa):** một danh tính, ranh FDA ↔ BOA là độ nghiêng, 4 nhiệm vụ FDA, vai người gửi, 10 nhận diện kèm tình trạng theo code, bảng 4 chuyên môn BOA, chỗ khác bản anh Luận (3 tin / ngày, FDA có công cụ, có phía mua, ảnh sổ chưa che). Chi tiết câu mẫu vẫn ở `lqc-listing-quality-controller.md`.
 - **`prompts.GIONG`** thêm một đoạn: khách đang hăng thì theo khách, hưởng ứng thật, hỏi nối, không cắt ngang / nhắc còn thiếu / gạt "để sau"; việc lượt này chưa có dữ liệu để xem ảnh hay so giá thì không đoán, hẹn xem kỹ rồi nhắn lại.
 - **Cỡ:** GIONG 3.112 → 3.547 / 4.000, LEAN 6.078 → 6.513 / 8.000; lượt hỏi thông tin 57.586 → 58.021 ký tự. `do-prompt.py` 3/3.
-- **Chưa làm (soát lại 17/11):** lọc khách hỏi dạo / spam; quy đổi giá vàng; che thông tin trên ảnh sổ (mới che chữ trong bản đọc giấy tờ); điểm riêng của pháp lý / lợi thế / giá cộng vào điểm uy tín — điểm ảnh thì đã nối từ SRS-424 (`engine.do_du_tin`: ảnh 30% độ đủ của tin, điểm chấm ảnh chỉnh 0,75–1). Nhà nát bán như đất và nhà đang xây đã làm ở SRS-518.
+- **Chưa làm (soát lại 17/11):** lọc khách hỏi dạo / spam; quy đổi giá vàng; che thông tin trên ảnh sổ (mới che chữ trong bản đọc giấy tờ); điểm riêng của pháp lý / lợi thế / giá cộng vào điểm uy tín — điểm ảnh thì đã nối từ SRS-424 (`engine.do_du_tin`: ảnh 30% độ đủ của tin, điểm chấm ảnh chỉnh 0,75–1; mới ở điểm tin lượt chat). Điểm bốn mảng và giá vàng làm ở SRS-520. Nhà nát bán như đất và nhà đang xây đã làm ở SRS-518.
 - **Tên gọi:** bản anh Luận dùng "LQC" cho riêng chuyên môn ảnh (BOA số 1); ở đây `lqc.py` điều phối mọi tin chủ động (vai BOA chung), `qc_anh.py` là BOA số 1. Chưa đổi tên tệp.
 - **Soát lại 17/11:** repo anh Luận chỉ thêm commit tài liệu `59e3ac3` (tag `r1` ở `207a145`, nhánh `r2-boa` chưa có code). Lấy về mục 0 "r1 → r2" và hai chuyên môn để ngỏ (Matcher, Re-engagement) vào `docs/agents/README.md`; repo này đã ở r2.
 
@@ -866,9 +875,3 @@ Làm theo `docs/fda-boa-mot-ho-so.md` (chủ dự án: "thiết kế có rồi t
 - **Image LQC:** `qc_anh.cham` nhận kết quả lượt trước trong sổ; chỉ tải + gửi ảnh chưa có nhãn, ảnh cũ đi bằng nhãn chữ (đánh số 1..n, ảnh mới số tiếp theo); bộ chỉ bớt ảnh thì lọc kết quả cũ, không gọi model. Ảnh nghi cũ còn hiện giữ nguyên, đổi số theo bộ mới.
 - **Không làm:** tin viết sẵn cho BOA (tốn hơn tiết kiệm — lý do ở thiết kế mục 0); gộp ghi + viết thành một lượt gọi (chờ đo trên model thật).
 - **Cỡ (`do-prompt.py`, ký tự):** chào 85.919 → 57.178 (4 → 2 lượt gọi), hỏi thông tin 62.325 → 57.586 (3 → 2), duyệt 64.277 → 59.436, hỏi phí 64.433 → 59.590, trình bản tin 81.081 → 76.328; khách mua nhắn số ký gửi lần đầu 77.069 → 112.732 (3 lượt gọi như cũ). `do-prompt.py` stub bước viết trả kèm dòng tự khai. Kiểm: import, `do-prompt.py` 3/3, thử `tach_khai_hoi` / `_cung_loi` / `qc_anh.cham` với dữ liệu giả, truyvet. Chưa chạy thật với Claude.
-
-### SRS-5.1zzzzzzz510 · Bản thiết kế FDA / BOA một hồ sơ (đề xuất, 16/11/2026)
-Chủ dự án: "ít lượt đọc, ít prompt mà vẫn luân chuyển tốt giữa FDA và BOA". Chỉ tài liệu, chưa đổi code.
-- **`docs/fda-boa-mot-ho-so.md`:** hồ sơ chung mỗi người bán (ô tin, sổ tay hẹn / bận / từ chối / lo ngại, tin viết sẵn `tin_ke`, phiên bản) là chỗ bàn giao duy nhất; FDA một lượt gọi trả tool `ket_qua_luot` (ghi + bằng chứng, lời, `hoi_o`, sổ tay, tin kế), code vẫn làm trọng tài và gọi lại khi lệch; BOA gửi `tin_ke` khi còn hợp lệ (0 lượt gọi); ảnh đọc một lần cho cả QC lẫn ô.
-- **Ước tính:** lượt hỏi thông tin 3 → 1 lượt gọi, tin đầu 4 → 1, ảnh 2 → 1 lượt đọc. Bốn giai đoạn đo riêng, chạy trên ID thử trước rồi xoá đường cũ.
-- **Cần chủ dự án:** GĐ 3 (gộp hai bước thành một lượt gọi) đụng cách làm của quyết định 03/11; GĐ 1, 2, 4 làm được không cần quyết.

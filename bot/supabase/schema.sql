@@ -2801,6 +2801,24 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.diem_boa(p jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ IMMUTABLE
+ SET search_path TO 'public'
+AS $function$
+declare
+  v jsonb;
+begin
+  v := (p->>'_diem_boa')::jsonb;
+  if v is null or jsonb_typeof(v) <> 'object' then return '{}'::jsonb; end if;
+  return coalesce((select jsonb_object_agg(e.key, least(1, greatest(0, (e.value #>> '{}')::numeric)))
+                     from jsonb_each(v) e where jsonb_typeof(e.value) = 'number'), '{}'::jsonb);
+exception when others then
+  return '{}'::jsonb;   -- chuỗi hỏng thì coi như chưa chấm, không làm hỏng điểm tin
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.diem_nguoi_ban(p_seller_id uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -2920,6 +2938,7 @@ declare
   la_dat   boolean := l.property_type in ('dat', 'dat_nong_nghiep', 'dat_kinh_doanh');
   la_thue  boolean := l.deal = 'cho_thue' and not (l.property_type in ('dat', 'dat_nong_nghiep', 'dat_kinh_doanh'));
   tn_biet  boolean;
+  cl       jsonb;
 begin
   if l.id is null then return null; end if;
   f := public.o_boc_tach(l.boc_tach);
@@ -3011,6 +3030,13 @@ begin
       else 'vài tấm ảnh (nhà, sổ, hẻm — ảnh nào cũng được)' end);
   elsif so_anh < 3 then thieu := array_append(thieu, format('thêm ảnh cho đủ 3 tấm (đang có %s)', so_anh)); end if;
 
+  -- SRS-5.1zzzzzzz520: điểm chất lượng BOA chỉnh bốn mục trong khoảng 0,75–1; mảng chưa chấm giữ nguyên.
+  cl := public.diem_boa(l.boc_tach);
+  d_pl  := round(d_pl  * (0.75 + 0.25 * coalesce((cl->>'phap_ly')::numeric, 1)))::int;
+  d_gia := round(d_gia * (0.75 + 0.25 * coalesce((cl->>'gia')::numeric, 1)))::int;
+  d_tn  := round(d_tn  * (0.75 + 0.25 * coalesce((cl->>'vi_the')::numeric, 1)))::int;
+  d_anh := round(d_anh * (0.75 + 0.25 * coalesce((cl->>'anh')::numeric, 1)))::int;
+
   return jsonb_build_object(
     'diem', d_vi_tri + d_dt + d_kc + d_pl + d_gia + d_tn + d_cta + d_anh,
     'chi_tiet', jsonb_build_object(
@@ -3018,7 +3044,8 @@ begin
       'gia', d_gia, 'tiem_nang', d_tn, 'goi_hanh_dong', d_cta, 'anh', d_anh),
     'thieu', to_jsonb(thieu),
     'co_anh', co_anh,
-    'so_anh', so_anh);
+    'so_anh', so_anh,
+    'chat_luong', cl);
 end $function$
 ;
 
@@ -7467,6 +7494,8 @@ revoke all on function public.day_ro_ccrb_toi_nmg(p_listing_id uuid) from public
 grant execute on function public.day_ro_ccrb_toi_nmg(p_listing_id uuid) to service_role;
 revoke all on function public.deals_chan_xoa_da_chot() from public, anon, authenticated;
 grant execute on function public.deals_chan_xoa_da_chot() to service_role;
+revoke all on function public.diem_boa(p jsonb) from public, anon, authenticated;
+grant execute on function public.diem_boa(p jsonb) to service_role;
 revoke all on function public.diem_nguoi_ban(p_seller_id uuid) from public, anon, authenticated;
 grant execute on function public.diem_nguoi_ban(p_seller_id uuid) to authenticated;
 grant execute on function public.diem_nguoi_ban(p_seller_id uuid) to service_role;

@@ -76,5 +76,5 @@ Luật này nằm trong khối GIỌNG của FDA (`prompts.GIONG`).
 | FDA chỉ có lời khách, việc cần tra thì hẹn BOA | FDA có công cụ (đọc ảnh trong lượt, so giá, tra dự án, quy hoạch) nên nhiều việc làm ngay; chỉ hẹn khi lượt đó chưa có dữ liệu |
 | FDA chỉ rao bán | Có cả phía mua (số tư vấn) |
 | Hứa "em xoá thông tin trên ảnh sổ" | Chỉ nói "để em kiểm, không đăng" |
-| Điểm chất lượng của BOA cộng vào điểm uy tín | Mới nối điểm ảnh (ảnh 30% độ đủ của tin, điểm chấm ảnh chỉnh 0,75–1 — SRS-424); pháp lý, lợi thế, giá chưa có điểm riêng |
-| Mỗi ngày soi lại tin điểm còn thấp | Vòng nền đi theo hàng câu hỏi còn thiếu của từng căn, không theo điểm |
+| Điểm chất lượng của BOA cộng vào điểm uy tín | Đã nối cả bốn mảng (SRS-520, `diem_boa.py`): mỗi mảng 0–1, chỉnh mục của nó trong khoảng 0,75–1 ở điểm tin lượt chat và ở `diem_tin` trên DB (→ hạng) |
+| Mỗi ngày soi lại tin điểm còn thấp | Vòng nền chạy liên tục trong khung giờ, xét tin điểm BOA thấp trước (SRS-520) |

@@ -38,7 +38,7 @@ Vai đọc theo nghĩa lời khách ("ae hợp tác", "chủ gửi em bán" → 
 | 6 | Nhà hiện hữu hay hình thành trong tương lai | Nhà đang xây: hỏi tiến độ, ngày bàn giao; xin ảnh công trình / mặt bằng, không xin ảnh nội thất (SRS-518) | ✅ |
 | 7 | Pháp lý sơ bộ | 9 loại giấy, câu mơ hồ thì hỏi lại | ✅ |
 | 8 | Tiếng lóng, viết tắt | Khối HIỂU TIẾNG NGHỀ + kiến thức nghề | ✅ |
-| 9 | Đơn vị, quy ước số | tỏi / củ / 5t5, ngang × dài kiểm chéo với diện tích; chưa quy đổi giá vàng | 🟡 |
+| 9 | Đơn vị, quy ước số | tỏi / củ / 5t5, ngang × dài kiểm chéo với diện tích; giá tính bằng vàng thì bot hỏi chủ quy ra tiền, không tự quy đổi (SRS-520) | ✅ |
 | 10 | Khách thật hay hỏi dạo, spam | — | ❌ |
 
 ## 4. Giọng

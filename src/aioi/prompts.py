@@ -1615,7 +1615,11 @@ def _khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str
     # nhánh SRS-212 / 214 / 240 (kể phường cho khách chọn, hỏi số nhà / gần chợ để tra, ghi tạm "A / B").
     thieu_phuong = "phuong" in thieu
     thieu = [o for o in thieu if o != "phuong"]
-    if thieu:
+    if "gia" in thieu and web.get("gia_chua_quy"):   # SRS-5.1zzzzzzz520: chủ đã cho giá, hệ thống không quy ra tiền được
+        ly_do = (f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): khách đã cho giá \"{web['gia_chua_quy']}\" nhưng web cần giá tính bằng tiền. {cam}")
+        viec = ("nói web cần giá bằng tiền, rồi hỏi khách mức giá đó quy ra khoảng bao nhiêu tiền để em rao. Em không tự quy đổi, không "
+                "nêu con số nào khách chưa nói.")
+    elif thieu:
         nhan = ", ".join(FIELD_LABELS[o].split(" (")[0] for o in thieu)
         hoi = FIELD_LABELS[thieu[0]]
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu {nhan}. {cam}"

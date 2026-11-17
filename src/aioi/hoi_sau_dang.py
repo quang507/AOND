@@ -138,10 +138,13 @@ def chay_mot_luot(engine: Any, gui: Callable[[str, str], bool],
     bay_gio = bay_gio or datetime.now(timezone.utc)
     if not trong_khung_gio(bay_gio):
         return []
-    chon = "&select=id,code,sellers!listings_seller_id_fkey(zalo_user_id,name)&order=updated_at.desc&limit=200"
-    # Căn có lời hẹn của chủ (SRS-5.1zzzzzzz476) xét trước — kể cả căn chưa đăng (chủ hẹn gửi ảnh lúc đang khai).
-    rows = (kho._get("listings?boc_tach->>_hen_luc=not.is.null" + chon) or []) + (
-        kho._get("listings?status=in.(dang_ban,dang_quan_tam)&boc_tach->>_da_bao_dang=eq.1" + chon) or [])
+    from .diem_boa import trung_binh
+    chon = "&select=id,code,diem_boa:boc_tach->>_diem_boa,sellers!listings_seller_id_fkey(zalo_user_id,name)&order=updated_at.desc&limit=200"
+    # Căn có lời hẹn của chủ (SRS-5.1zzzzzzz476) xét trước — kể cả căn chưa đăng (chủ hẹn gửi ảnh lúc đang khai). Sau đó là tin đang rao,
+    # tin điểm chất lượng BOA thấp đi trước (SRS-5.1zzzzzzz520; bản anh Luận: "mỗi ngày soi lại listing đang rao mà điểm chất lượng còn thấp").
+    rows = (kho._get("listings?boc_tach->>_hen_luc=not.is.null" + chon) or []) + sorted(
+        kho._get("listings?status=in.(dang_ban,dang_quan_tam)&boc_tach->>_da_bao_dang=eq.1" + chon) or [],
+        key=lambda r: trung_binh(r.get("diem_boa")))
     ra: list[dict] = []
     da_xet: set[str] = set()
     for r in rows or []:

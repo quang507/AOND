@@ -73,6 +73,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz510 · Bản thiết kế FDA / BOA một hồ sơ (đề xuất, 16/11/2026)
+Chủ dự án: "ít lượt đọc, ít prompt mà vẫn luân chuyển tốt giữa FDA và BOA". Chỉ tài liệu, chưa đổi code.
+- **`docs/fda-boa-mot-ho-so.md`:** hồ sơ chung mỗi người bán (ô tin, sổ tay hẹn / bận / từ chối / lo ngại, tin viết sẵn `tin_ke`, phiên bản) là chỗ bàn giao duy nhất; FDA một lượt gọi trả tool `ket_qua_luot` (ghi + bằng chứng, lời, `hoi_o`, sổ tay, tin kế), code vẫn làm trọng tài và gọi lại khi lệch; BOA gửi `tin_ke` khi còn hợp lệ (0 lượt gọi); ảnh đọc một lần cho cả QC lẫn ô.
+- **Ước tính:** lượt hỏi thông tin 3 → 1 lượt gọi, tin đầu 4 → 1, ảnh 2 → 1 lượt đọc. Bốn giai đoạn đo riêng, chạy trên ID thử trước rồi xoá đường cũ.
+- **Cần chủ dự án:** GĐ 3 (gộp hai bước thành một lượt gọi) đụng cách làm của quyết định 03/11; GĐ 1, 2, 4 làm được không cần quyết.
+
 ### SRS-5.1zzzzzzz509 · FDA / BOA: mọi tin chủ động do FDA viết bằng cùng nhân vật và giọng lượt chat (16/11/2026)
 Sếp 16/11: "LQC giờ gọi là BOA, con bot hôm rày gọi là FDA, tất cả đều chat với cùng 1 tên Kh•ải, H•ải". Soát thấy bốn vòng nền tự viết tin bằng bốn prompt riêng, không có GIỌNG; hai prompt mở bằng "Bạn là …, trợ lý (của) sàn nhà đất" — khách nghe hai giọng.
 - **Một hàm `prompts.build_tin_chu_dong_system`:** `khoi_nhan_vat` (nhân vật + GIỌNG, như lượt chat) + luật chung của tin chủ động (một tin, nối chuyện, không chào / giới thiệu lại, tối đa một câu hỏi) + dữ kiện căn + VIỆC. Nhắc khi im giữa chừng (`build_nhac_hoi_lai_system`), xin ảnh sau đăng (`build_xin_anh_nhac_system`), hỏi sau đăng (`build_hoi_sau_dang_nhac_system`) và Image LQC (`qc_anh.viet_tin_nhan`) chỉ còn đưa VIỆC vào. BOA (`lqc.py`, các vòng nền) vẫn chọn việc và giờ nhắn như cũ; giữ kết nối / hỏi còn bán vẫn câu mẫu.

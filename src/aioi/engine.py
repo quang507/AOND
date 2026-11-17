@@ -227,6 +227,7 @@ def chat_luong_anh(li: "Listing") -> float | None:
     return max(0.0, min(float(d), 100.0)) / 100 if isinstance(d, (int, float)) and not isinstance(d, bool) else None
 
 
+TRU_MOI_MANG = 0.025    # SRS-5.1zzzzzzz520: xem `do_du_tin`
 SAN_CHAT_LUONG = 0.75   # SRS-5.1zzzzzzz424: điểm QC chỉ chỉnh nhẹ — bộ ảnh QC chấm 0 vẫn giữ 3/4 phần ảnh theo số lượng
 
 
@@ -240,7 +241,12 @@ def do_du_tin(li: "Listing", anh_du: int, so_anh: int | None = None) -> float:
     so_luong = min(so_anh / max(anh_du, 1), 1.0)
     cl = chat_luong_anh(li)
     phan_anh = so_luong if cl is None else so_luong * (SAN_CHAT_LUONG + (1 - SAN_CHAT_LUONG) * cl)
-    return (1 - TRONG_SO_ANH) * li.prop.completeness() + TRONG_SO_ANH * phan_anh
+    # SRS-5.1zzzzzzz520 (bản anh Luận: mỗi mảng BOA một điểm chất lượng cộng vào điểm uy tín): pháp lý / vị thế / giá chỉnh nhẹ như ảnh —
+    # mỗi mảng tối đa mất `TRU_MOI_MANG` (2,5 / 100 độ đủ, đúng bằng mức của mục 10 điểm trên DB `diem_tin`); mảng chưa chấm thì không trừ.
+    from .diem_boa import chat_luong_boa
+    boa = chat_luong_boa(li)
+    tru = sum(TRU_MOI_MANG * (1 - boa[m]) for m in ("phap_ly", "vi_the", "gia") if m in boa)
+    return max((1 - TRONG_SO_ANH) * li.prop.completeness() + TRONG_SO_ANH * phan_anh - tru, 0.0)
 
 # 19/10/2026 (SRS-5.1zzzzzzz55): các bộ dò từ khoá _looks_descriptive / _wants_project_facts / _wants_media /
 # _looks_like_reference_doc / _affirms / _denies đã gỡ — lượt AI lập thao tác đọc theo nghĩa (xin_xem_ban_ve, cau_hoi_du_an,
@@ -4876,6 +4882,10 @@ class Engine:
         except Exception as e:  # noqa: BLE001
             log.warning("trang_thai_web lỗi: %s", e)
             return {"len_web": None}
+        if "gia" in (web.get("thieu") or []) and conv.prop.fields.get("gia"):
+            # SRS-5.1zzzzzzz520 (bản anh Luận, FDA nhận diện 9: giá tính bằng vàng): chủ ĐÃ cho giá mà DB không quy ra tiền (`parse_vnd` trả
+            # null với "50 cây vàng") — bản trước bot hỏi lại "giá bao nhiêu". Nay hỏi chủ mức đó quy ra khoảng bao nhiêu tiền; bot không tự quy.
+            web["gia_chua_quy"] = str(conv.prop.fields["gia"])[:60]
         if "phuong" in (web.get("thieu") or []):
             # SRS-5.1zzzzzzz359 (chủ dự án 02/11: phường "gắn lên bản đồ để biết chứ không hỏi khách"; ca thật 01–02/11: khách duyệt "Ok" → bot
             # "Chỉ cần thêm phường là em đưa tin lên web ngay… nhà anh thuộc phường nào ạ?"; "ừ đăng đi em" → "em tra ra khu này là Xã Nhà Bè,

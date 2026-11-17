@@ -31,8 +31,9 @@ Thang pháp lý (chắc → yếu): sổ riêng → sổ chung → hoàn công c
 
 Thứ tự khi nhiều mảng cùng muốn hỏi: ảnh → pháp lý → hợp đồng thuê → lợi thế → so sánh → giá.
 
+Điểm chất lượng (SRS-520, `diem_boa.py`): mỗi mảng một số 0–1 tính từ điều chủ đã nói và giấy đã đọc, chỉnh mục của nó trong điểm tin trong khoảng 0,75–1 (lượt chat và `diem_tin` trên DB). Vòng nền xét tin điểm thấp trước.
+
 ## 4. Chưa có
 
-- Điểm riêng của pháp lý, lợi thế, giá cộng vào điểm uy tín của tin (điểm ảnh đã nối: `engine.do_du_tin`, SRS-424).
 - Che thông tin cá nhân trên ảnh sổ.
 - Giao dịch thật để dẫn "tháng trước bên em chốt căn…" (code đã đọc được, kho chưa có giao dịch).

@@ -29,6 +29,7 @@ from .mua import KhoNguoiMua
 from .revenue import SALE_FEE_RATE
 from .sdt import che_so_ca_nhan
 from .prompts import FIELD_LABELS, nhan_o_ngan
+from .diem_boa import KHOA_LUU, chuoi_luu
 from .schema import HOUSE_TYPES, LOAI_PHAP_LY, O_NOI_BO, TYPE_TO_GROUP, Property, dien_tich_tu_kich_thuoc, so_met
 
 # Số câu chuẩn tối đa đưa vào prompt (SRS-5.1zzzzzzz180). Mỗi dòng ≈ 300–900 ký tự; khối nằm trong phần cache nên 16 dòng chỉ là
@@ -1078,8 +1079,10 @@ class SupabaseConversationStore(KhoNguoiMua):
                     # `_thong_so_ai` (SRS-5.1zzzzzzz94): thông số / loại BĐS do lõi AI quyết — hai trigger đoán bằng regex trên mô tả
                     # (`listings_boc_thong_so`, `listings_fill_property_type`, 20261002a) đứng ngoài. Bắn thử KB5 21/10: mô tả bản nháp
                     # "lộ giới 20m" bị regex đọc lại thành `alley_width_m` = 20 trên căn mặt tiền, đè chỗ lõi để trống.
-                    "boc_tach": {**fields, **({"_hoan": sorted(li.prop.hoan)} if getattr(li.prop, "hoan", None) else {}),
-                                 "_thong_so_ai": True},
+                    # `_diem_boa` (SRS-5.1zzzzzzz520): điểm chất lượng bốn mảng BOA tính lại mỗi lần ghi — `diem_tin` trên DB đọc.
+                    "boc_tach": {**{k: v for k, v in fields.items() if k != KHOA_LUU},
+                                 **({"_hoan": sorted(li.prop.hoan)} if getattr(li.prop, "hoan", None) else {}),
+                                 **({KHOA_LUU: diem} if (diem := chuoi_luu(li)) else {}), "_thong_so_ai": True},
                     "updated_at": now_iso,
                 }
                 if fields.get("dia_chi"):
