@@ -189,6 +189,7 @@ def tra_luat(o: str, schema: dict[str, Any], chia: dict[str, Any]) -> str:
 
 def _cong_cu_ghi(schema: dict[str, Any]) -> list[dict[str, Any]]:
     """Năm công cụ ghi, đầu vào cắt từ schema form bán gọn (không viết lại định nghĩa ô) — chuyển từ agent_boc.py (SRS-310, gỡ ở SRS-5.1zzzzzzz371)."""
+    from .prompts import SU_THAT_CAN
     p = schema["properties"]
     op = p["operations"]["items"]["properties"]
     lay = lambda *ks: {k: copy.deepcopy(op[k]) for k in ks if k in op}
@@ -206,8 +207,11 @@ def _cong_cu_ghi(schema: dict[str, Any]) -> list[dict[str, Any]]:
                           "required": ["status"]}},
         {"name": "bo_can", "description": "Ngưng rao (ẩn, giữ dữ liệu) vài căn / chỉ giữ vài căn / cả rổ — hệ thống hỏi khách xác nhận trước.",
          "input_schema": {"type": "object", "properties": bo, "required": ["op"]}},
+        # SRS-5.1zzzzzzz519 (chat thử 17/11 trên Gemini flash-lite: khách nói "sổ hồng riêng", "trong hẻm", "ngang 4 dài 16" mà không mã nào
+        # được ghi): sự thật của căn là trường tuỳ chọn nên model yếu bỏ qua cả cụm. Nay BẮT BUỘC trả đủ từng mã (chưa nói thì "chua_ro") —
+        # engine vẫn chỉ nhận mã có cụm trích nằm trong lời khách (`_ghi_su_that_can`).
         {"name": "ghi_y_khach", "description": "Ý khách lượt này ngoài ô tin: vai, ý định, duyệt bản nháp, xin đăng, hỏi về, cần người thật…",
-         "input_schema": {"type": "object", "properties": y}},
+         "input_schema": {"type": "object", "properties": y, "required": [k for k, _, _ in SU_THAT_CAN if k in y]}},
     ]
 
 

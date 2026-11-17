@@ -3361,8 +3361,11 @@ class Engine:
         # SRS-5.1zzzzzzz493) thì không hỏi — bước viết không còn tự quyết.
         # Q4 (a): một lần mỗi căn; bị gỡ (việc khác thắng) thì trả cờ và đánh dấu `_mt_cho_hoi` — lượt sau hỏi dù khách không nhắc lại mặt tiền.
         f_mt = conv.prop.fields
-        if ("mat_tien" in captured or f_mt.get("_mt_cho_hoi")) and f_mt.get("mat_tien") and not _hai_chieu_lo(f_mt) and not f_mt.get("_mt_da_hoi") \
-                and f_mt.get("_so_ngang") != "ngang_can":
+        # SRS-5.1zzzzzzz519 (chat thử 17/11: khách "ngang 4 dài 16" mà bot vẫn hỏi số 4 là ngang căn hay hẻm): `_hai_chieu_lo` chỉ thấy dạng
+        # "4x16" trong ô chữ, còn AI bóc "ngang 4 dài 16" thành hai số `mat_tien` + `dai_m` (SRS-409). Đã có chiều dài lô thì con số ngang là
+        # của căn — không hỏi.
+        if ("mat_tien" in captured or f_mt.get("_mt_cho_hoi")) and f_mt.get("mat_tien") and not _hai_chieu_lo(f_mt) and not f_mt.get("dai_m") \
+                and not f_mt.get("_mt_da_hoi") and f_mt.get("_so_ngang") != "ngang_can":
             f_mt["_mt_da_hoi"] = "1"
             f_mt.pop("_mt_cho_hoi", None)
             system += _hoi("mat_tien", khoi_hoi_mat_tien(f_mt.get("mat_tien", "")),
