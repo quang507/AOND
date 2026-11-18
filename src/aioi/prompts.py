@@ -580,10 +580,22 @@ LUAT_DAP_CHUA_CHON = ("KHÁCH ĐÁP CHƯA CHỌN: câu em vừa hỏi là câu c
                       "đó để trống, có dịp (khách mua hỏi tới) mới nhắc lại. Phương án nào khách tự nói ra mới là ý của khách.")
 # Sự thật của căn do AI đọc theo nghĩa (SRS-5.1zzzzzzz320) — (khoá, giá trị, mô tả cho schema). Engine ghi vào ô nội bộ "_<khoá>" khi cụm trích
 # có trong lời khách; lưới bản tin (`engine._khang_dinh_khong_co_du_lieu`) chỉ đối chiếu các ô này + vai, không đọc lời khách.
+def _cau_khach_gt(kq: dict | None) -> str:
+    """Câu thêm cho lượt khách mua khi khách vừa nhắn mã khách / số điện thoại của một hồ sơ môi giới gửi (SRS-5.1zzzzzzz527)."""
+    if not kq:
+        return ""
+    if kq.get("ok"):
+        return (f"Khách này do {kq.get('ten_moi_gioi') or 'một anh/chị môi giới'} giới thiệu, hệ thống đã ghi vào hồ sơ: nói thêm một câu "
+                "là em đã nhận thông tin giới thiệu này.\n")
+    if kq.get("loi") == "da_noi":
+        return "Mã khách vừa nhắn đã gắn với một Zalo khác: nói em đã báo anh/chị phụ trách kiểm lại, không nói gì thêm về mã.\n"
+    return "Mã khách vừa nhắn chưa khớp hồ sơ nào: nhờ khách xem lại mã với anh/chị môi giới đã giới thiệu rồi nhắn lại giúp em.\n"
+
+
 LOC_KHACH = ("spam", "hoi_dao")   # SRS-5.1zzzzzzz521: mã lọc khách (ô nội bộ `_loc_khach` trên mọi căn của hội thoại)
 
 
-def khoi_loc_khach(loai: str | None) -> str:
+def khoi_loc_khach(loai: str | None, khach_gt: dict | None = None) -> str:
     """Việc của lượt khi tin khách là tin rác / hỏi dạo (SRS-5.1zzzzzzz521): đáp ngắn, không hỏi dồn, không mở tin."""
     if loai == "spam":
         return ("\n\n=== ƯU TIÊN LƯỢT NÀY — TIN VỪA NHẮN LÀ QUẢNG CÁO / TIN RÁC (hệ thống đã đọc): ===\n"
@@ -593,7 +605,8 @@ def khoi_loc_khach(loai: str | None) -> str:
         return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH CẦN MUA / THUÊ NHÀ ĐẤT (hệ thống đã chuyển cho người phụ trách): ===\n"
                 "Trên Zalo này em nhận ký gửi bán và cho thuê; nhu cầu tìm mua, tìm thuê do anh/chị phụ trách bên em tư vấn trực tiếp. Việc lượt "
                 "này: ghi nhận ngắn điều khách cần, nói em đã chuyển cho anh/chị phụ trách liên hệ lại ngay trên Zalo này, và mời khách xem "
-                f"trước các căn đang rao ở {_WEB}. Không tự gợi ý căn, không báo giá, không hẹn lịch xem, không xin số điện thoại.\n")
+                f"trước các căn đang rao ở {_WEB}. Không tự gợi ý căn, không báo giá, không hẹn lịch xem, không xin số điện thoại.\n"
+                + _cau_khach_gt(khach_gt))
     if loai == "hoi_dao":
         return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH CHỈ HỎI CHO BIẾT, CHƯA CÓ NHU CẦU (hệ thống đã đọc): ===\n"
                 "Việc lượt này: trả lời ngắn điều khách hỏi nếu em nắm, rồi nói khi nào cần gửi bán, cho thuê hay tìm mua thì nhắn em. "

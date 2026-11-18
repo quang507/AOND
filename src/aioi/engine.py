@@ -1326,6 +1326,15 @@ def _ghi_su_that_can(conv: "Conversation", plan: dict, loi_khach: list[str]) -> 
 # (cụm khẳng định trên bản tin, điều kiện được phép). Chỉ đọc chữ của BẢN TIN bot viết.
 # SRS-5.1zzzzzzz524: mã kích hoạt môi giới do DB cấp lúc admin duyệt đăng ký (`dang_ky_moi_gioi_cap_ma`) — chuỗi máy sinh, không phải ý khách.
 _MA_KICH_HOAT = re.compile(r"(?i)(?<![0-9A-Z])AOND-[0-9A-F]{10}(?![0-9A-Z])")
+# SRS-5.1zzzzzzz527: mã khách môi giới đưa cho khách mình giới thiệu (`khach_gioi_thieu.ma_khach`), khách nhắn cho trợ lý để nối hồ sơ.
+_MA_KHACH = re.compile(r"(?i)(?<![0-9A-Z])KH-?[0-9A-F]{8}(?![0-9A-Z])")
+
+
+def _them_khach_gt(kq: dict | None) -> str:
+    """Câu thêm vào tin báo admin khi khách này do một môi giới gửi (SRS-5.1zzzzzzz527)."""
+    if not (kq or {}).get("ok"):
+        return ""
+    return f" Khách do môi giới {kq.get('ma_moi_gioi') or '?'} ({kq.get('ten_moi_gioi') or 'chưa có tên'}) gửi, mã {kq.get('ma_khach')}."
 # SRS-5.1zzzzzzz526 (chủ dự án 18/11: "làm giống sếp" — bản anh Luận: FDA chỉ nhận rao bán, ai tới mua / tìm thuê thì dẫn đúng chỗ): phía mua
 # TẮT theo mặc định; khách cần mua / thuê được chuyển cho người phụ trách (`bao_can_nguoi`). PHIA_MUA=bat trả lại vòng tư vấn mua như trước.
 PHIA_MUA_BAT = os.environ.get("PHIA_MUA", "tat") == "bat"
@@ -3475,7 +3484,7 @@ class Engine:
         uu_tien = ""
         for ten_ut, lay in (("kich_hoat_mg", lambda: khoi_kich_hoat_mg(conv.y_luot.get("kich_hoat_mg"))),   # SRS-5.1zzzzzzz524
                             ("can_nguoi", lambda: khoi_can_nguoi(conv)), ("phap_ly", lambda: khoi_phap_ly(conv, self._can_cua_chu(conv))),
-                            ("loc_khach", lambda: khoi_loc_khach(conv.y_luot.get("loc_khach"))),   # SRS-5.1zzzzzzz521
+                            ("loc_khach", lambda: khoi_loc_khach(conv.y_luot.get("loc_khach"), conv.y_luot.get("khach_gt"))),   # SRS-5.1zzzzzzz521
                             ("hen_tra_cuu", lambda: khoi_hen_tra_cuu(conv.y_luot.get("hen_tra_cuu"))),   # SRS-5.1zzzzzzz526
                             ("ngoai_viec", lambda: khoi_ngoai_viec(conv)), ("hoi_ve", lambda: hoi_ve_khoi),
                             ("hoi_trung_ten", lambda: self._khoi_hoi_trung_ten(conv))):   # cùng thứ tự / cùng ngắt sớm như chuỗi `or` cũ
@@ -5407,6 +5416,26 @@ class Engine:
             if kich_hoat.get("ok"):
                 conv.user_type = SellerRole.MOI_GIOI
             log.warning("Kích hoạt môi giới: %s", "xong " + str(kich_hoat.get("ma_moi_gioi")) if kich_hoat.get("ok") else "không nối (" + str(kich_hoat.get("loi")) + ")")
+        # SRS-5.1zzzzzzz527: khách do môi giới giới thiệu — lời khách có mã khách (KH-…) hoặc số điện thoại khớp một hồ sơ đang mở → hệ thống
+        # ghi Zalo này vào hồ sơ (rpc `noi_khach_gioi_thieu`) để tin báo admin nói rõ môi giới nào gửi. Nhắn mã là khách tới để mua / thuê:
+        # lượt này chuyển người phụ trách như mọi khách mua. Mã không gạch mà không khớp thì coi như chữ thường, bỏ qua.
+        khach_gt = gt_moi = None
+        noi_kgt = getattr(self._convstore, "noi_khach_gioi_thieu", None)
+        if kich_hoat is None and not PHIA_MUA_BAT and noi_kgt is not None:
+            m_k = _MA_KHACH.search(conv.loi_khach_luot or "")
+            sdt_k = None if m_k else tim_sdt(conv.loi_khach_luot or "")
+            if m_k or sdt_k:
+                kq_k = noi_kgt(conv.user_key, m_k.group(0).upper() if m_k else None, sdt_k) or {}
+                if kq_k.get("ok"):
+                    khach_gt = kq_k
+                    gt_moi = kq_k if kq_k.get("moi") else None
+                elif m_k and "-" in m_k.group(0) and kq_k.get("loi") in ("khong_khop", "da_noi"):
+                    khach_gt = {"ok": False, "loi": kq_k.get("loi")}
+                if khach_gt is not None and (m_k or not has_seller_context):
+                    chuyen_mua = True
+                    plan["operations"] = []
+                    plan.pop("buyer_lead", None)
+                log.warning("Khách giới thiệu: %s", "đã nối " + str(kq_k.get("ma_khach")) if kq_k.get("ok") else "không nối (" + str(kq_k.get("loi")) + ")")
         loc = plan.get("loc_khach")
         la_loc = (kich_hoat is None and loc in LOC_KHACH and intent not in ("buy", "sell") and not has_seller_context
                   and _vai_co_bang_chung(plan.get("loc_khach_trich_dan"), gan_khach))
@@ -5420,10 +5449,16 @@ class Engine:
             if not has_seller_context:
                 for x in conv.listings:
                     x.prop.fields["_loc_khach"] = "mua"
-            if chuyen_mua and not any(x.prop.fields.get("_da_bao_mua") for x in conv.listings):
+            da_bao_mua = any(x.prop.fields.get("_da_bao_mua") for x in conv.listings)
+            if chuyen_mua and (not da_bao_mua or gt_moi is not None):   # báo một lần; hồ sơ giới thiệu vừa nối thì báo thêm một tin có tên môi giới
                 bao = getattr(self._convstore, "bao_can_nguoi", None)
                 try:
-                    if bao is not None and bao(conv.user_key, "Khách cần mua / thuê: " + (conv.loi_khach_luot or "")[:140], None, "buyer"):
+                    gt_bao = khach_gt if (khach_gt or {}).get("ok") else None
+                    if gt_bao is None and noi_kgt is not None:   # không mã, không số ở lượt này: Zalo này đã nối hồ sơ nào từ trước chưa
+                        gt_bao = noi_kgt(conv.user_key, None, None)
+                    gt_moi = None
+                    if bao is not None and bao(conv.user_key, "Khách cần mua / thuê: " + (conv.loi_khach_luot or "")[:140], None, "buyer",
+                                               _them_khach_gt(gt_bao)):
                         for x in conv.listings:
                             x.prop.fields["_da_bao_mua"] = "1"
                 except Exception as e:  # noqa: BLE001 — báo hụt thì lượt vẫn đáp khách, lượt sau báo lại
@@ -5438,6 +5473,13 @@ class Engine:
         elif intent == "sell" or (PHIA_MUA_BAT and intent == "buy"):
             for x in conv.listings:
                 x.prop.fields.pop("_loc_khach", None)
+        if gt_moi is not None:   # SRS-5.1zzzzzzz527: người đang ký gửi để lại số trùng một khách môi giới gửi — lượt vẫn là việc bán, chỉ báo admin
+            bao = getattr(self._convstore, "bao_can_nguoi", None)
+            try:
+                if bao is not None:
+                    bao(conv.user_key, "Người đang ký gửi trùng số với một khách môi giới gửi", None, "seller", _them_khach_gt(gt_moi))
+            except Exception as e:  # noqa: BLE001
+                log.warning("Báo người phụ trách (khách giới thiệu) lỗi: %s", type(e).__name__)
         # Hỏi về gì / tự xưng gì (SRS-5.1zzzzzzz54): "hỏi về" theo ý AI đọc (SRS-5.1zzzzzzz281); xưng hô nhận khi cụm trích có thật trong một
         # trong sáu lượt khách gần nhất (xưng hô giữ qua các lượt).
         conv.hoi_ve_luot = None
@@ -5495,6 +5537,8 @@ class Engine:
             conv.y_luot["ngoai_viec"] = conv.so_luot_ngoai_viec   # SRS-5.1zzzzzzz177
         if la_loc:
             conv.y_luot["loc_khach"] = loc   # SRS-5.1zzzzzzz521
+            if loc == "mua" and khach_gt is not None:
+                conv.y_luot["khach_gt"] = khach_gt   # SRS-5.1zzzzzzz527
         if kich_hoat is not None:
             conv.y_luot["kich_hoat_mg"] = kich_hoat   # SRS-5.1zzzzzzz524
         if not agent_ban.TRA_CUU_FDA_BAT and conv.role != "buyer" and kich_hoat is None and not la_loc:

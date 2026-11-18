@@ -80,7 +80,7 @@ export const TRANG_THAI_KHACH: Record<TrangThaiKhach, string> = {
   khong_thanh: "Không thành",
 };
 
-export type NhatKyKhach = { id: string; khach_id: string; luc: string; vai: "moi_gioi" | "admin"; ai: string; viec: string; ghi_chu: string | null };
+export type NhatKyKhach = { id: string; khach_id: string; luc: string; vai: "moi_gioi" | "admin" | "he_thong"; ai: string; viec: string; ghi_chu: string | null };
 export type KhachGioiThieu = {
   id: string;
   created_at: string;
@@ -95,6 +95,10 @@ export type KhachGioiThieu = {
   trang_thai: TrangThaiKhach;
   nguoi_phu_trach: string | null;
   cap_nhat_luc: string | null;
+  // SRS-5.1zzzzzzz527: mã môi giới đưa cho khách; khách nhắn mã (hoặc số điện thoại) cho trợ lý thì hồ sơ nối với Zalo của khách.
+  ma_khach: string;
+  noi_zalo_luc: string | null;
+  da_co_truoc: "nguoi_mua" | "nguoi_ban" | null;
   // SRS-5.1zzzzzzz525: phần chi cho môi giới, có sau khi admin chốt.
   loai_chot: "ban" | "thue" | null;
   gia_chot_vnd: number | null;
@@ -106,7 +110,7 @@ export type KhachGioiThieu = {
 };
 export const COT_KHACH =
   "id, created_at, seller_id, ten_khach, so_dien_thoai, nhu_cau, khu_vuc, ngan_sach, ma_tin, ghi_chu, trang_thai, nguoi_phu_trach, cap_nhat_luc, " +
-  "loai_chot, gia_chot_vnd, phi_cong_ty_vnd, hoa_hong_ty_le, hoa_hong_vnd, hoa_hong_trang_thai, hoa_hong_chi_luc";
+  "ma_khach, noi_zalo_luc, da_co_truoc, loai_chot, gia_chot_vnd, phi_cong_ty_vnd, hoa_hong_ty_le, hoa_hong_vnd, hoa_hong_trang_thai, hoa_hong_chi_luc";
 /** Tỷ lệ chi cho môi giới giới thiệu khách, trên phí công ty thu được (bảng `cau_hinh_moi_gioi`, admin chỉnh). */
 export type MucChiMG = { ty_le_ban: number; ty_le_thue: number };
 export const MUC_CHI_MAC_DINH: MucChiMG = { ty_le_ban: 0.2, ty_le_thue: 0.2 };

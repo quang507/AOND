@@ -225,11 +225,18 @@ export default function KhuMoiGioi() {
                     <span className="font-semibold text-navy">{k.ten_khach}</span>
                     <span className="text-sm text-mute tabular-nums">{k.so_dien_thoai}</span>
                     <span className="text-sm text-mute">{k.nhu_cau === "thue" ? "Cần thuê" : "Cần mua"}{k.khu_vuc ? ` · ${k.khu_vuc}` : ""}</span>
+                    {k.noi_zalo_luc && <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">Khách đã nhắn Zalo</span>}
                     <span className={`ml-auto rounded-md px-2 py-0.5 text-xs font-semibold ${
                       k.trang_thai === "chot" ? "bg-emerald-50 text-emerald-800" : k.trang_thai === "khong_thanh" ? "bg-cream text-mute" : "bg-brand/10 text-brand"}`}>
                       {TRANG_THAI_KHACH[k.trang_thai]}
                     </span>
                   </button>
+                  {!k.noi_zalo_luc && k.trang_thai !== "chot" && k.trang_thai !== "khong_thanh" && (
+                    <p className="mt-1 text-sm text-mute">
+                      Mã khách <strong className="select-all text-navy tabular-nums">{k.ma_khach}</strong>: nhờ khách nhắn mã này cho trợ lý
+                      trên Zalo, hồ sơ sẽ ghi đúng là khách của anh chị.
+                    </p>
+                  )}
                   {k.hoa_hong_vnd != null && (
                     <p className="mt-1 text-sm text-navy">
                       Phần của anh chị: <strong className="tabular-nums">{tienDong(k.hoa_hong_vnd)}</strong>{" "}

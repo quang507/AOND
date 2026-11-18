@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-17 22:56 (giờ VN)
+-- Sinh lúc: 2026-11-18 16:26 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -344,7 +344,11 @@ create table if not exists public.khach_gioi_thieu (
   hoa_hong_ty_le numeric,
   hoa_hong_vnd bigint,
   hoa_hong_trang_thai text,
-  hoa_hong_chi_luc timestamp with time zone
+  hoa_hong_chi_luc timestamp with time zone,
+  ma_khach text not null default ('KH-'::text || upper(substr(replace((gen_random_uuid())::text, '-'::text, ''::text), 1, 8))),
+  zalo_user_id text,
+  noi_zalo_luc timestamp with time zone,
+  da_co_truoc text
 );
 
 create table if not exists public.khach_gioi_thieu_nhat_ky (
@@ -913,6 +917,9 @@ do $d$ begin
   alter table public.interests add constraint interests_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['quan_tam'::text, 'khong_hop'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.khach_gioi_thieu add constraint khach_gioi_thieu_da_co_truoc_check CHECK ((da_co_truoc = ANY (ARRAY['nguoi_mua'::text, 'nguoi_ban'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.khach_gioi_thieu add constraint khach_gioi_thieu_gia_chot_vnd_check CHECK ((gia_chot_vnd >= 0));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -937,7 +944,7 @@ do $d$ begin
   alter table public.khach_gioi_thieu_nhat_ky add constraint khach_gioi_thieu_nhat_ky_pkey PRIMARY KEY (id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.khach_gioi_thieu_nhat_ky add constraint khach_gioi_thieu_nhat_ky_vai_check CHECK ((vai = ANY (ARRAY['moi_gioi'::text, 'admin'::text])));
+  alter table public.khach_gioi_thieu_nhat_ky add constraint khach_gioi_thieu_nhat_ky_vai_check CHECK ((vai = ANY (ARRAY['moi_gioi'::text, 'admin'::text, 'he_thong'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.kien_thuc_phap_ly add constraint kien_thuc_phap_ly_pkey PRIMARY KEY (khoa);
@@ -1303,9 +1310,11 @@ create index if not exists info_requests_listing_id_idx ON public.info_requests 
 CREATE UNIQUE INDEX info_requests_mot_cau_cho_idx ON public.info_requests USING btree (listing_id, question) WHERE (status = 'pending'::request_status);
 create index if not exists info_requests_sla_idx ON public.info_requests USING btree (sla_due_at) WHERE ((status = 'pending'::request_status) AND (sla_missed_at IS NULL));
 create index if not exists interests_listing_id_idx ON public.interests USING btree (listing_id);
+CREATE UNIQUE INDEX khach_gioi_thieu_ma_khach_key ON public.khach_gioi_thieu USING btree (ma_khach);
 create index if not exists khach_gioi_thieu_nhat_ky_idx ON public.khach_gioi_thieu_nhat_ky USING btree (khach_id, luc);
 create index if not exists khach_gioi_thieu_sdt_idx ON public.khach_gioi_thieu USING btree (so_dien_thoai);
 create index if not exists khach_gioi_thieu_seller_idx ON public.khach_gioi_thieu USING btree (seller_id, created_at DESC);
+create index if not exists khach_gioi_thieu_zalo_idx ON public.khach_gioi_thieu USING btree (zalo_user_id) WHERE (zalo_user_id IS NOT NULL);
 CREATE UNIQUE INDEX listing_media_mot_bia_idx ON public.listing_media USING btree (listing_id) WHERE is_cover;
 create index if not exists listing_media_tin_thu_tu_idx ON public.listing_media USING btree (listing_id, sort_order, created_at, id);
 create index if not exists listing_views_listing_id_idx ON public.listing_views USING btree (listing_id);
@@ -3823,7 +3832,10 @@ begin
   -- SRS-5.1zzzzzzz525: báo admin qua Zalo; không kèm số điện thoại khách.
   insert into reminders (kind, due_at, note)
   values ('escalation', now(), '🆕 Môi giới ' || v_ma || ' gửi khách cần ' || case v_nc when 'thue' then 'thuê' else 'mua' end
-          || coalesce(' ở ' || v_khu, '') || '. Xem ở /admin/khach-gioi-thieu');
+          || coalesce(' ở ' || v_khu, '')
+          || case when (select x.da_co_truoc from khach_gioi_thieu x where x.id = v_id) is not null
+                  then '. Số khách này đã có trong hệ thống từ trước' else '' end
+          || '. Xem ở /admin/khach-gioi-thieu');
   return jsonb_build_object('ok', true, 'id', v_id);
 end $function$
 ;
@@ -4064,6 +4076,21 @@ AS $function$
    order by cu.khach_cuoi
    limit p_limit
 $function$
+;
+
+CREATE OR REPLACE FUNCTION public.khach_gioi_thieu_danh_dau_da_co()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  new.da_co_truoc := case
+    when exists (select 1 from buyers b where regexp_replace(coalesce(b.phone, ''), '\D', '', 'g') = new.so_dien_thoai) then 'nguoi_mua'
+    when exists (select 1 from sellers s where s.id <> new.seller_id and regexp_replace(coalesce(s.phone, ''), '\D', '', 'g') = new.so_dien_thoai) then 'nguoi_ban'
+  end;
+  return new;
+end $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.khoa_nhung_nen()
@@ -5375,6 +5402,49 @@ begin
       timeout_milliseconds := 20000), v_md5);
     v_gui := v_gui + 1;
   end loop;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.noi_khach_gioi_thieu(p_zalo text, p_ma text DEFAULT NULL::text, p_sdt text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_zalo text := btrim(coalesce(p_zalo, ''));
+  v_ma text := nullif(upper(regexp_replace(coalesce(p_ma, ''), '[^0-9A-Za-z]', '', 'g')), '');
+  v_sdt text := regexp_replace(coalesce(p_sdt, ''), '\D', '', 'g');
+  k public.khach_gioi_thieu;
+  v_mg text;
+  v_ten_mg text;
+  v_zalo_mg text;
+  v_moi boolean := false;
+begin
+  if v_zalo = '' then return jsonb_build_object('ok', false, 'loi', 'thieu'); end if;
+  if v_sdt like '84%' and char_length(v_sdt) = 11 then v_sdt := '0' || substr(v_sdt, 3); end if;
+  if v_ma is not null then
+    select * into k from khach_gioi_thieu x where replace(x.ma_khach, '-', '') = v_ma;
+    if k.id is null then return jsonb_build_object('ok', false, 'loi', 'khong_khop'); end if;
+  elsif v_sdt ~ '^0[35789]\d{8}$' then
+    select * into k from khach_gioi_thieu x
+     where x.so_dien_thoai = v_sdt and x.trang_thai not in ('chot', 'khong_thanh') order by x.created_at desc limit 1;
+  end if;
+  if k.id is null then   -- không mã, không số khớp: Zalo này đã nối với hồ sơ nào đang mở chưa
+    select * into k from khach_gioi_thieu x
+     where x.zalo_user_id = v_zalo and x.trang_thai not in ('chot', 'khong_thanh') order by x.created_at desc limit 1;
+  end if;
+  if k.id is null then return jsonb_build_object('ok', false, 'loi', 'khong_co'); end if;
+  select s.ma_moi_gioi, s.name, s.zalo_user_id into v_mg, v_ten_mg, v_zalo_mg from sellers s where s.id = k.seller_id;
+  if v_zalo_mg = v_zalo then return jsonb_build_object('ok', false, 'loi', 'chinh_moi_gioi'); end if;   -- môi giới tự nhắn mã của khách mình
+  if k.zalo_user_id is not null and k.zalo_user_id <> v_zalo then return jsonb_build_object('ok', false, 'loi', 'da_noi'); end if;
+  if k.zalo_user_id is null then
+    update khach_gioi_thieu set zalo_user_id = v_zalo, noi_zalo_luc = now() where id = k.id;
+    insert into khach_gioi_thieu_nhat_ky (khach_id, vai, ai, viec) values (k.id, 'he_thong', 'Trợ lý', 'Khách đã nhắn trợ lý trên Zalo');
+    v_moi := true;
+  end if;
+  return jsonb_build_object('ok', true, 'moi', v_moi, 'id', k.id, 'ma_khach', k.ma_khach, 'ten_khach', k.ten_khach,
+                            'ma_moi_gioi', v_mg, 'ten_moi_gioi', v_ten_mg, 'trang_thai', k.trang_thai);
 end $function$
 ;
 
@@ -7518,6 +7588,8 @@ drop trigger if exists trg_route_info_request on public.info_requests;
 CREATE TRIGGER trg_route_info_request BEFORE INSERT ON public.info_requests FOR EACH ROW EXECUTE FUNCTION route_info_request();
 drop trigger if exists trg_pe_interests on public.interests;
 CREATE TRIGGER trg_pe_interests AFTER INSERT ON public.interests FOR EACH ROW EXECUTE FUNCTION trg_property_event();
+drop trigger if exists khach_gioi_thieu_da_co on public.khach_gioi_thieu;
+CREATE TRIGGER khach_gioi_thieu_da_co BEFORE INSERT ON public.khach_gioi_thieu FOR EACH ROW EXECUTE FUNCTION khach_gioi_thieu_danh_dau_da_co();
 drop trigger if exists trg_listing_media_bia on public.listing_media;
 CREATE TRIGGER trg_listing_media_bia AFTER INSERT OR DELETE OR UPDATE OF is_cover, bucket, sort_order, an_khoi_web ON public.listing_media FOR EACH ROW EXECUTE FUNCTION listing_media_giu_bia();
 drop trigger if exists trg_listing_media_don_file on public.listing_media;
@@ -8145,6 +8217,8 @@ grant execute on function public.jsonb_bo_rong(j jsonb) to authenticated;
 grant execute on function public.jsonb_bo_rong(j jsonb) to service_role;
 revoke all on function public.khach_can_giu_ket_noi(p_tu_ngay integer, p_den_ngay integer, p_limit integer) from public, anon, authenticated;
 grant execute on function public.khach_can_giu_ket_noi(p_tu_ngay integer, p_den_ngay integer, p_limit integer) to service_role;
+revoke all on function public.khach_gioi_thieu_danh_dau_da_co() from public, anon, authenticated;
+grant execute on function public.khach_gioi_thieu_danh_dau_da_co() to service_role;
 revoke all on function public.khoa_nhung_nen() from public, anon, authenticated;
 grant execute on function public.khoa_nhung_nen() to service_role;
 revoke all on function public.khoang_cach_m(p_lat1 double precision, p_lng1 double precision, p_lat2 double precision, p_lng2 double precision) from public, anon, authenticated;
@@ -8244,6 +8318,8 @@ revoke all on function public.nhung_luat_tick() from public, anon, authenticated
 grant execute on function public.nhung_luat_tick() to service_role;
 revoke all on function public.nhung_tick() from public, anon, authenticated;
 grant execute on function public.nhung_tick() to service_role;
+revoke all on function public.noi_khach_gioi_thieu(p_zalo text, p_ma text, p_sdt text) from public, anon, authenticated;
+grant execute on function public.noi_khach_gioi_thieu(p_zalo text, p_ma text, p_sdt text) to service_role;
 revoke all on function public.noi_moi_gioi(p_ma text, p_zalo text) from public, anon, authenticated;
 grant execute on function public.noi_moi_gioi(p_ma text, p_zalo text) to authenticated;
 grant execute on function public.noi_moi_gioi(p_ma text, p_zalo text) to service_role;

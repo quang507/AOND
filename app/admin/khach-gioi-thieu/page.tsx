@@ -214,6 +214,8 @@ export default function Page() {
                   <span className="text-base font-bold text-navy">{d.ten_khach}</span>
                   <Badge tone={TONE[d.trang_thai]}>{TRANG_THAI_KHACH[d.trang_thai]}</Badge>
                   <Badge>{d.nhu_cau === "thue" ? "Cần thuê" : "Cần mua"}</Badge>
+                  {d.noi_zalo_luc && <Badge tone="ok">Đã nhắn Zalo {luc(d.noi_zalo_luc)}</Badge>}
+                  {d.da_co_truoc && <Badge tone="warn">Số đã có từ trước ({d.da_co_truoc === "nguoi_mua" ? "người mua" : "người bán"})</Badge>}
                   <span className="ml-auto text-xs text-mute tabular-nums">Gửi lúc {luc(d.created_at)}</span>
                 </div>
                 <dl className="mt-2 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
@@ -222,6 +224,8 @@ export default function Page() {
                       <a href={`https://zalo.me/${d.so_dien_thoai}`} target="_blank" rel="noreferrer" className="font-semibold text-brand hover:underline">Mở Zalo</a></dd></div>
                   <div className="flex gap-2"><dt className="w-24 shrink-0 text-mute">Môi giới</dt>
                     <dd className="text-navy">{d.sellers?.ma_moi_gioi ?? "—"}{d.sellers?.name ? ` · ${d.sellers.name}` : ""}</dd></div>
+                  <div className="flex gap-2"><dt className="w-24 shrink-0 text-mute">Mã khách</dt>
+                    <dd className="text-navy tabular-nums">{d.ma_khach}</dd></div>
                   {d.khu_vuc && <div className="flex gap-2"><dt className="w-24 shrink-0 text-mute">Khu vực</dt><dd className="text-navy">{d.khu_vuc}</dd></div>}
                   {d.ngan_sach && <div className="flex gap-2"><dt className="w-24 shrink-0 text-mute">Ngân sách</dt><dd className="text-navy">{d.ngan_sach}</dd></div>}
                   {d.ma_tin && <div className="flex gap-2"><dt className="w-24 shrink-0 text-mute">Tin quan tâm</dt>

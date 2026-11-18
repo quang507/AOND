@@ -858,7 +858,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         self._post("reminders", {"kind": "escalation", "status": "pending", **row}, prefer="return=minimal")
         return True
 
-    def bao_can_nguoi(self, user_key: str, trich: str, ten: str | None = None, role: str = "seller") -> bool:
+    def bao_can_nguoi(self, user_key: str, trich: str, ten: str | None = None, role: str = "seller", them: str = "") -> bool:
         """Khách xin gặp người thật (SRS-5.1zzzzzzz82): bật `needs_human` (khung "khách cần người thật" trên /admin) và xếp một tin
         nội bộ "🙋" vào `reminders` — bridge kéo qua escalation-feed rồi nhắn Zalo cho admin (tin nội bộ không bao giờ tới
         chủ nhà, `laTinNoiBo`). ID thử (`la_id_thu`) chỉ bật cờ, không nhắn admin. Trả True khi đã xếp tin / bật cờ."""
@@ -875,7 +875,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         loi = che_so_ca_nhan(str(trich or ""), thay="[số]")[:160]   # không đẩy SĐT khách vào tin nội bộ
         self._xep_tin_admin({
             "due_at": now_iso, "seller_id": seller_id, "buyer_id": self.khach_mua(user_key, ten) if role == "buyer" else None,
-            "note": f"🙋 Khách cần người thật — {ten or 'khách Zalo'} ({vai}): “{loi}”. Mở /admin/tin-nhan để nhận khách.",
+            "note": f"🙋 Khách cần người thật — {ten or 'khách Zalo'} ({vai}): “{loi}”.{them} Mở /admin/tin-nhan để nhận khách.",
         }, user_key)
         return True
 
@@ -1246,6 +1246,19 @@ class SupabaseConversationStore(KhoNguoiMua):
             return None
         if isinstance(d, dict) and d.get("ok"):
             self.__dict__.setdefault("_hang_nho", {}).pop(user_key, None)   # hạng / loại người rao vừa đổi
+        return d if isinstance(d, dict) else None
+
+    def noi_khach_gioi_thieu(self, user_key: str, ma: str | None = None, sdt: str | None = None) -> dict | None:
+        """Khách do môi giới giới thiệu (rpc `noi_khach_gioi_thieu`, SRS-5.1zzzzzzz527): tìm hồ sơ theo mã khách (KH-…), số điện thoại, hoặc
+        Zalo đã nối từ trước; khớp thì hồ sơ ghi Zalo này + một dòng nhật ký. {"ok": True, "moi", "ma_khach", "ma_moi_gioi", "ten_moi_gioi"}
+        hoặc {"ok": False, "loi"}; kho không cấu hình / lỗi mạng → None."""
+        if not self.is_configured or not user_key:
+            return None
+        try:
+            d = self._request("POST", "rpc/noi_khach_gioi_thieu", data={"p_zalo": user_key, "p_ma": ma, "p_sdt": sdt})
+        except Exception as e:  # noqa: BLE001
+            log.warning("noi_khach_gioi_thieu lỗi: %s", type(e).__name__)
+            return None
         return d if isinstance(d, dict) else None
 
     def hang_nguoi_ban(self, user_key: str, moi: bool = False) -> str | None:
