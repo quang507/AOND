@@ -801,6 +801,16 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz527 · Nối khách môi giới giới thiệu với cuộc chat Zalo của chính khách đó (18/11/2026)
+Lỗ hổng sau SRS-524 → 526: hồ sơ khách môi giới gửi chỉ có tên và số điện thoại; phía mua đã tắt nên khi khách đó tự nhắn trợ lý, admin chỉ nhận "khách cần mua" mà không biết môi giới nào gửi. Chủ dự án 18/11: "làm việc 1 đi".
+- **Mã khách:** mỗi hồ sơ có `ma_khach` (KH-XXXXXXXX, migration `20261118a`), hiện ở trang quản lý của môi giới kèm lời nhờ khách nhắn mã cho trợ lý.
+- **Nối:** lời khách có mã khách, hoặc số điện thoại trùng một hồ sơ đang mở → `noi_khach_gioi_thieu` ghi Zalo của khách vào hồ sơ và thêm dòng nhật ký "Khách đã nhắn trợ lý trên Zalo" (môi giới đọc được). Một hồ sơ chỉ nối một Zalo; môi giới tự nhắn mã của khách mình thì không nối.
+- **Báo admin:** tin "khách cần người thật" thêm câu "Khách do môi giới MG… (tên) gửi, mã KH-…". Khách đã nối từ trước mà lượt này không nhắn mã thì tin báo vẫn có câu đó. Người đang ký gửi để lại số trùng một hồ sơ: lượt vẫn là việc bán, admin nhận một tin riêng.
+- **Lời bot:** lượt khớp → chuyển người phụ trách như mọi khách mua, thêm một câu đã nhận thông tin giới thiệu. Mã có gạch mà không khớp → nhờ khách xem lại mã với môi giới; mã không gạch không khớp thì coi là chữ thường.
+- **Số đã có từ trước:** môi giới gửi một số đã là người mua / người bán trong hệ thống thì hồ sơ ghi `da_co_truoc`, tin báo admin và trang `/admin/khach-gioi-thieu` hiện nhãn. Không tự từ chối, admin quyết ai được ghi nhận.
+- **Thử:** khối tự kiểm lúc áp migration 11 / 11 (dữ liệu thử tự huỷ). Bắn thử máy 146 ba ca: nhắn mã → hồ sơ nối, bot báo đã nhận giới thiệu; nhắn số điện thoại ở lượt hai → nối; mã sai → bot nhờ xem lại mã. Dữ liệu thử đã xoá.
+- **Chưa kiểm:** tin báo admin có tên môi giới chưa đi qua Zalo thật (ID thử không nhắn admin); hai trang web chưa xem bằng mắt lúc đăng nhập.
+
 ### SRS-5.1zzzzzzz526 · Theo thiết kế r2 của anh Luận: BOA 1 tin / ngày, FDA thôi tra cứu trong lượt, tắt phía người mua (18/11/2026)
 Chủ dự án 17/11: "7 làm giống sếp đi" — chọn ba điểm: nhịp nhắn 1 tin / ngày, FDA thôi tra cứu ngay, bỏ phía người mua. Giữ lại: môi giới gửi khách về (SRS-524, 525).
 - **Nhịp:** `TIN_CHU_DONG_MOT_NGAY` mặc định 1 (trước 3). Tin trả lời điều bot đã hẹn (`tra_hen`) không tính trần, không chờ chủ đáp câu cũ.
@@ -875,9 +885,3 @@ Chủ dự án: "triển khai code luôn đi" (bản r2 của anh Luận; nhận
 - **Cỡ (ký tự):** hỏi thông tin 58.326 → 58.357, M1 chào 113.545 → 113.796; GIONG, LEAN không đổi. `do-prompt.py` 3/3.
 - **Bắn thử 17/11 trên 146 (flash-lite, 3 cuộc `thu-518*`):** "nhà nát … bán giá đất" → ghi `ban_nhu_dat`, không hỏi số tầng / phòng, bản tin tả đất. "Đang xây tới tầng 2" → model không trả mã, bot đi như nhà thường; nói rõ "đang xây chưa xong, chưa bàn giao" → ghi `dang_xay`. Chưa thử lượt xin ảnh và chấm ảnh.
 - **Chưa làm:** lọc hỏi dạo / spam (chưa có chat thật để định nghĩa), đổi giá vàng (không có nguồn giá), điểm BOA vào điểm uy tín (phải sửa hàm DB), che thông tin trên ảnh sổ.
-
-### SRS-5.1zzzzzzz517 · Gemini chỉ dùng flash-lite; quá hạn thì thử khoá kế trước khi cho model nghỉ (16/11/2026)
-Chủ dự án: "sau chọn flash-lite thôi" (`gemini-3.5-flash` hết hạn mức ngày sau khoảng 45 lượt, SRS-516).
-- **Cấu hình 146:** `GEMINI_MODEL=gemini-3.1-flash-lite` trong `.env` lõi (sao lưu `C:/aond/backup/env_20261116_201836`). Mặc định trong code không đổi.
-- **`llm/du_phong.py`:** còn một model thì một lần quá hạn làm cả đường nghỉ 60 s (lượt kiểm sau khi đổi trả câu giữ chỗ). Khi công tắc chỉ-Gemini bật, quá hạn lần đầu thì thử khoá kế, lần hai mới cho model nghỉ.
-- **Còn lại:** flash-lite có lượt không gọi công cụ, tự nêu giá / nhận định (SRS-516); khoá Groq vẫn 403.

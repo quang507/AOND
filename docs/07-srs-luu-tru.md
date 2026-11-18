@@ -73,6 +73,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz517 · Gemini chỉ dùng flash-lite; quá hạn thì thử khoá kế trước khi cho model nghỉ (16/11/2026)
+Chủ dự án: "sau chọn flash-lite thôi" (`gemini-3.5-flash` hết hạn mức ngày sau khoảng 45 lượt, SRS-516).
+- **Cấu hình 146:** `GEMINI_MODEL=gemini-3.1-flash-lite` trong `.env` lõi (sao lưu `C:/aond/backup/env_20261116_201836`). Mặc định trong code không đổi.
+- **`llm/du_phong.py`:** còn một model thì một lần quá hạn làm cả đường nghỉ 60 s (lượt kiểm sau khi đổi trả câu giữ chỗ). Khi công tắc chỉ-Gemini bật, quá hạn lần đầu thì thử khoá kế, lần hai mới cho model nghỉ.
+- **Còn lại:** flash-lite có lượt không gọi công cụ, tự nêu giá / nhận định (SRS-516); khoá Groq vẫn 403.
+
 ### SRS-5.1zzzzzzz516 · Bốn chỗ sai lộ ra khi bắn thử trên Gemini (16/11/2026)
 Chủ dự án: "Sửa luôn". Bản ghi: `Ban-thu-FDA-BOA_16-11-2026.md` (ngoài repo).
 - **Thuê đã qua thành "đang cho thuê":** `_mot_cum_mot_o` bỏ `thu_nhap_thue` khi căn chưa có `co_hdt = co` (cùng lượt hoặc đã ghi); mô tả ô dặn ghi kèm `co_hdt`, nhà hết cho thuê thì không ghi.
