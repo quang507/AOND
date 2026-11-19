@@ -104,6 +104,9 @@ def cau_nhac(conv, listing, pronoun: str, ten: str | None = None, engine=None) -
     goi, toi = goi_toi(pronoun, ten)
     hoi = cau_hoi_cuoi_cua_bot(conv)
     if hoi:   # câu mẫu (sửa ở CRM, SRS-5.1zzzzzzz110) chỉ còn là dự phòng
+        # 19/11/2026: câu mẫu dự phòng dán câu cũ còn dính chữ nối đầu câu ("…hỏi lại chút nha: Mà trước hết, căn…") — bỏ đoạn nối đó.
+        hoi = re.sub(r"^(?:mà|còn|vậy|thế|à|ủa|với lại|trước hết|mà trước hết)[^,?]{0,20},\s*", "", hoi.strip(), flags=re.I)
+        hoi = hoi[:1].upper() + hoi[1:]
         return (_nhac_hoi_lai_model(engine, conv, goi, toi, ten) if engine is not None else "") \
             or cau_mau.cau("nhac_hoi_lai", goi, toi=toi, hoi=hoi)
     if not _image_count(listing.media):

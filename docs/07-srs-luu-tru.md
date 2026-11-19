@@ -73,6 +73,15 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz518 · Nhà nát bán như đất và nhà chưa xây xong đổi bộ câu hỏi, góc ảnh (17/11/2026)
+Chủ dự án: "triển khai code luôn đi" (bản r2 của anh Luận; nhận diện 4 và 6 ở `docs/agents/fda.md` còn một phần).
+- **Một mã, AI đọc theo nghĩa:** `tinh_trang_nha` (`prompts.SU_THAT_CAN`) thêm `ban_nhu_dat`, `dang_xay`; engine ghi `_tinh_trang_nha` khi cụm trích có trong lời khách (đường sẵn có, không dò từ khoá).
+- **`schema.Property`:** `ban_nhu_dat()` → hỏi kích thước, đường vào, giấy tờ, quy hoạch; bỏ kết cấu, diện tích nhà, bàn giao. `dang_xay()` → bỏ bàn giao / nội thất / hiện trạng, thêm tiến độ và ngày bàn giao. Cả hai bỏ cụm "chi tiết nhà" sau đăng.
+- **Ảnh và bản tin:** `goc_anh_goi_y` xin góc như đất / công trình đang thi công; `qc_anh` không tính thiếu ảnh nội thất, phối cảnh của căn chưa xong không bị coi là không khớp; dòng "Tình trạng nhà" của bản tin cấm tả phòng ốc.
+- **Cỡ (ký tự):** hỏi thông tin 58.326 → 58.357, M1 chào 113.545 → 113.796; GIONG, LEAN không đổi. `do-prompt.py` 3/3.
+- **Bắn thử 17/11 trên 146 (flash-lite, 3 cuộc `thu-518*`):** "nhà nát … bán giá đất" → ghi `ban_nhu_dat`, không hỏi số tầng / phòng, bản tin tả đất. "Đang xây tới tầng 2" → model không trả mã, bot đi như nhà thường; nói rõ "đang xây chưa xong, chưa bàn giao" → ghi `dang_xay`. Chưa thử lượt xin ảnh và chấm ảnh.
+- **Chưa làm:** lọc hỏi dạo / spam (chưa có chat thật để định nghĩa), đổi giá vàng (không có nguồn giá), điểm BOA vào điểm uy tín (phải sửa hàm DB), che thông tin trên ảnh sổ.
+
 ### SRS-5.1zzzzzzz517 · Gemini chỉ dùng flash-lite; quá hạn thì thử khoá kế trước khi cho model nghỉ (16/11/2026)
 Chủ dự án: "sau chọn flash-lite thôi" (`gemini-3.5-flash` hết hạn mức ngày sau khoảng 45 lượt, SRS-516).
 - **Cấu hình 146:** `GEMINI_MODEL=gemini-3.1-flash-lite` trong `.env` lõi (sao lưu `C:/aond/backup/env_20261116_201836`). Mặc định trong code không đổi.

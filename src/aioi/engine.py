@@ -808,14 +808,14 @@ class Conversation:
 
 # Luật giọng chung mọi cách xưng hô (SRS-5.1zzzzzzz86; quyết định chủ dự án: cấm mở đầu "Dạ"). Bắn thử 20/10: KB3 khách chưa tự
 # xưng → khối "chưa biết" không có luật "Dạ", bot mở "Dạ, phí quản lý…"; KB2 khách xưng em → chính sách chung cho phép gọi "bạn".
-_GIONG_CHUNG = ("KHÔNG mở đầu câu bằng \"Dạ\" / \"Dạ vâng\" — câu đầu vào thẳng nội dung. KHÔNG gọi khách là \"bạn\".\n")
+# 19/11/2026: hai dòng cấm cũ ("Dạ", "bạn" / "mình") gộp thành một câu nói điều nên làm; `_CAM_GOI_MINH` giữ tên để khỏi đổi chỗ gọi.
+_GIONG_CHUNG = ("Câu đầu vào thẳng nội dung (không mở bằng \"Dạ\"). Gọi khách đúng chữ nêu trên — không \"bạn\", không dùng \"mình\" để gọi "
+                "khách; \"nhà mình / căn mình\" khi nói về căn của khách, hay \"mình\" nghĩa là chúng ta, thì được.\n")
 
 
 # SRS-5.1zzzzzzz171 (chủ dự án 24/10/2026: "sao nó xưng mình z"): bot gọi khách là "mình" ("em xin lỗi mình nhé. Mình đang cần gửi…") dù khách
 # chưa xưng "em" — khối "chưa biết" bảo gọi "anh/chị" nhưng không cấm "mình". Chỉ khi khách xưng "em" bot mới xưng "mình" (xem `_khoi_xung_ho_rieng`).
-_CAM_GOI_MINH = ("KHÔNG gọi khách là \"mình\" (đại từ ngôi hai: \"em xin lỗi mình\", \"Mình đang cần…\") — gọi đúng cách khách xưng, chưa rõ thì "
-                 "\"anh/chị\". Chỉ được \"nhà mình / căn mình / đất mình\" khi nói về căn của khách, và \"mình\" nghĩa CHÚNG TA khi bên em "
-                 "với khách cùng làm.\n")   # SRS-291: bỏ ví dụ "hay mình đăng luôn" — khối này ở MỌI prompt, model chép thành câu hỏi duyệt tin
+_CAM_GOI_MINH = ""   # 19/11/2026: đã gộp vào `_GIONG_CHUNG` (SRS-291: không đưa ví dụ "hay mình đăng luôn" — model chép thành câu hỏi duyệt)
 
 
 def khoi_xung_ho(p: str, ten: str | None = None, doan: bool = False) -> str:
@@ -848,33 +848,31 @@ def _khoi_xung_ho_rieng(p: str, ten: str | None = None) -> str:
         toi = goi_toi_khach("em", ten)[1]
         return (
             "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC LƯỢT NÀY (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
-            f"Khách tự xưng 'em' ('nhà em...', 'em bán...'). Gọi khách 'em', bản thân xưng '{toi}' (không xưng 'mình' / 'em'); không dạ thưa "
-            "ở bất kỳ đâu. Cả lượt KHÔNG có chữ 'anh/chị' gọi khách — câu mẫu / gợi ý ở trên viết 'anh/chị' thì đổi thành 'em'.\n"
+            f"Khách tự xưng 'em' ('nhà em...', 'em bán...'). Gọi khách 'em', bản thân xưng '{toi}', không dạ thưa. "
+            "Câu mẫu / gợi ý ở trên viết 'anh/chị' thì đổi thành 'em'.\n"
         )
     elif p == "chau":
         toi = goi_toi_khach("chau", ten)[1]
         return (
             "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC LƯỢT NÀY (KHÁCH TỰ XƯNG LÀ 'CHÁU' / 'CON'): ===\n"
-            f"Khách tự xưng là 'cháu' / 'con' (vd: 'cháu muốn bán nhà', 'con có căn…'). Gọi khách là 'cháu', bản thân xưng '{toi}'. KHÔNG xưng "
-            "'em' / 'mình'. Cả lượt KHÔNG có chữ 'anh/chị' gọi khách — câu mẫu / gợi ý ở trên viết 'anh/chị' thì đổi thành 'cháu'.\n"
+            f"Khách tự xưng là 'cháu' / 'con' (vd: 'cháu muốn bán nhà', 'con có căn…'). Gọi khách là 'cháu', bản thân xưng '{toi}'. "
+            "Câu mẫu / gợi ý ở trên viết 'anh/chị' thì đổi thành 'cháu'.\n"
         )
     elif p == "chi":
         return (
             "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "Khách xưng 'chị'. Gọi khách là 'chị', bản thân xưng 'em'. Cả lượt KHÔNG có chữ 'anh/chị' — kể cả "
-            "khi câu mẫu ở trên viết 'anh/chị', đổi thành 'chị' (kể cả trong lời chào).\n"
+            "Khách xưng 'chị'. Gọi khách là 'chị', bản thân xưng 'em'; câu mẫu ở trên (cả lời chào) viết 'anh/chị' thì đổi thành 'chị'.\n"
         )
     elif p == "anh":
         return (
             "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "Khách xưng 'anh'. Gọi khách là 'anh', bản thân xưng 'em'. Cả lượt KHÔNG có chữ 'anh/chị' — kể cả "
-            "khi câu mẫu ở trên viết 'anh/chị', đổi thành 'anh' (kể cả trong lời chào).\n"
+            "Khách xưng 'anh'. Gọi khách là 'anh', bản thân xưng 'em'; câu mẫu ở trên (cả lời chào) viết 'anh/chị' thì đổi thành 'anh'.\n"
         )
     elif p.startswith("elder:"):
         lon = p.partition(":")[2]
         return (
             "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            f"Khách tự xưng '{lon}'. Gọi khách là '{lon}', bản thân lễ phép xưng 'cháu'. KHÔNG 'anh' / 'chị' / 'anh/chị' — câu mẫu ở trên viết "
+            f"Khách tự xưng '{lon}'. Gọi khách là '{lon}', bản thân lễ phép xưng 'cháu'; câu mẫu ở trên viết "
             f"'anh/chị' thì đổi thành '{lon}'.\n"
         )
     elif p == "elder":
@@ -887,8 +885,7 @@ def _khoi_xung_ho_rieng(p: str, ten: str | None = None) -> str:
         # mẫu, gọi khách "anh" suốt 10 lượt rồi đổi "chị" khi khách tự xưng.
         return (
             "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "CHƯA BIẾT khách là anh hay chị. Gọi khách 'anh/chị', bản thân xưng 'em'. KHÔNG tự đoán 'anh' hoặc "
-            "'chị' từ tên, giọng văn hay ví dụ mẫu.\n"
+            "Chưa biết khách là anh hay chị: gọi 'anh/chị', xưng 'em' — tới khi khách tự xưng (tên, giọng văn, ví dụ mẫu không tính).\n"
         )
 
 

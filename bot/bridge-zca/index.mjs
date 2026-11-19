@@ -948,8 +948,37 @@ try {
 api.listener.on("disconnected", (code, reason) => {
   console.log(`Kết nối nghe Zalo rớt (mã ${code}${reason ? `, ${reason}` : ""}) — ${new Date().toISOString()}`);
 });
+// 19/11/2026: NỐI LẠI NGAY TRONG TIẾN TRÌNH. Lệnh dò sống 510 (dưới) cắt socket ~mỗi giờ khi vắng tin (Zalo chỉ đáp 510 ~10 phút đầu mỗi
+// kết nối); mã 1006 không nằm trong danh sách zca-js tự thử lại nên trước đây lần nào cũng thoát → vòng .cmd chờ 10 s → đăng nhập lại:
+// hở ~12 s, tin khách rơi vào đó là mất. Nay: mở socket mới ngay (cookie / phiên còn nguyên trong bộ nhớ), hở ~1–2 s. Giới hạn
+// NOI_TRONG_TOI_DA lần liên tiếp (kết nối sống quá 5 phút thì đếm lại từ 0); không mở lại được trong 30 s, hay quá số lần → thoát như cũ
+// để vòng .cmd đăng nhập lại từ đầu (phiên chết thì vào luồng QR).
+const NOI_TRONG_TOI_DA = 3;
+let noiTrongLienTiep = 0;
+let lanMoCuoi = 0;
+api.listener.on("connected", () => { lanMoCuoi = Date.now(); });
 api.listener.on("closed", async (code, reason) => {
   if (dangThoat) return;
+  if (lanMoCuoi && Date.now() - lanMoCuoi > 5 * 60_000) noiTrongLienTiep = 0;
+  if (noiTrongLienTiep < NOI_TRONG_TOI_DA) {
+    noiTrongLienTiep++;
+    const moc = Date.now();
+    console.log(`Kết nối nghe Zalo đóng (mã ${code}${reason ? `, ${reason}` : ""}) — nối lại ngay trong tiến trình (lần ${noiTrongLienTiep}/${NOI_TRONG_TOI_DA}). ${new Date().toISOString()}`);
+    ghiLoi("listener zalo", `kết nối nghe đóng (mã ${code}) — nối lại trong tiến trình (lần ${noiTrongLienTiep})`).catch(() => {});
+    setTimeout(() => {
+      if (dangThoat) return;
+      try { api.listener.start({ retryOnClose: true }); }
+      catch (e) { console.log(`Nối lại trong tiến trình lỗi: ${errDetail(e)}`); }
+    }, 1000);
+    setTimeout(async () => {
+      if (dangThoat || lanMoCuoi >= moc) return;
+      dangThoat = true;
+      console.log(`Không nối lại được trong 30 giây — thoát để chạy lại bằng session đã lưu. ${new Date().toISOString()}`);
+      await Promise.race([ghiLoi("listener zalo", "nối lại trong tiến trình không được — bridge tự khởi động lại"), new Promise((r) => setTimeout(r, 5000))]);
+      process.exit(1);
+    }, 30_000);
+    return;
+  }
   dangThoat = true;
   console.log(`Kết nối nghe Zalo đóng hẳn (mã ${code}${reason ? `, ${reason}` : ""}) — thoát để chạy lại bằng session đã lưu. ${new Date().toISOString()}`);
   await Promise.race([ghiLoi("listener zalo", `kết nối nghe đóng (mã ${code}) — bridge tự khởi động lại`), new Promise((r) => setTimeout(r, 5000))]);

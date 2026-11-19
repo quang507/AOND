@@ -801,6 +801,13 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz528 · Gộp luật prompt bản tin / bối cảnh / xưng hô, đổi cấm thành nên; bỏ canh số tư vấn; bridge nối lại trong tiến trình (19/11/2026)
+Chủ dự án 19/11: lời bot "không tự nhiên", "cái nào ko merge dc mới phải cấm, càng ít càng tốt". Đo `scripts/do-prompt.py`: 108 mã SRS trong `prompts.py` là chú thích (model không đọc); chỗ nặng là prompt bản tin — chống bịa nhắc ba lần (cuối `AD_FORMAT`, "QUY TẮC BẮT BUỘC" bản nháp, khối SỰ THẬT), 66 chữ KHÔNG / CẤM / TUYỆT ĐỐI / BẮT BUỘC, gọi model là "bạn".
+- **Lớp lỗi:** mỗi ca sửa thêm một câu cấm vào prompt, không gộp câu cũ — prompt phình, model viết theo công thức cho khỏi phạm luật.
+- **Sửa:** `AD_FORMAT` viết lại (4 khối giữ nguyên bố cục mà `delivery.py` / engine cắt; một đoạn "CHỈ TỪ DỮ LIỆU"; khối 4 là đoạn riêng sau gạch đầu dòng); `BUSINESS_CONTEXT` thành dữ kiện, số phí giữ nguyên; prompt bản nháp bỏ "QUY TẮC BẮT BUỘC"; khối xưng hô gộp `_GIONG_CHUNG` + `_CAM_GOI_MINH` thành một câu; GIỌNG khen điểm hiếm "thỉnh thoảng"; câu mẫu dự phòng `nhac_hoi_lai` bỏ chữ nối đầu câu cũ ("Mà trước hết,"). Lượt bản tin: 66 → 12 chữ cấm, phần cố định 13.969 → 10.076 ký tự. Bước ghi (cổng dữ liệu) giữ nguyên.
+- **Kèm:** `bot_health_tick` bỏ canh số tư vấn đã tắt 18/11 (migration `20261119a`, báo động giả 13 lần); bridge đóng socket (lệnh dò 510 tự cắt ~mỗi giờ khi vắng tin) thì mở lại ngay trong tiến trình, tối đa 3 lần liên tiếp, 30 s không mở được thì thoát như cũ — hở ~12 s → ~1–2 s.
+- **Thử (146, Gemini flash-lite):** đoạn chat thật 14/11 "Em nghĩ là diện tích nào" nay được giải nghĩa rồi hỏi tiếp; bản tin ra đủ 4 khối, không bị gọi lại vì thiếu câu mời chốt. **Còn:** flash-lite vẫn thêm ý không có ("kiên cố", "an ninh") và khen chuyện thường — đo lại khi về Claude 29/11; bridge nối lại trong tiến trình chưa thấy chạy thật lần nào.
+
 ### SRS-5.1zzzzzzz527 · Nối khách môi giới giới thiệu với cuộc chat Zalo của chính khách đó (18/11/2026)
 Lỗ hổng sau SRS-524 → 526: hồ sơ khách môi giới gửi chỉ có tên và số điện thoại; phía mua đã tắt nên khi khách đó tự nhắn trợ lý, admin chỉ nhận "khách cần mua" mà không biết môi giới nào gửi. Chủ dự án 18/11: "làm việc 1 đi".
 - **Mã khách:** mỗi hồ sơ có `ma_khach` (KH-XXXXXXXX, migration `20261118a`), hiện ở trang quản lý của môi giới kèm lời nhờ khách nhắn mã cho trợ lý.
@@ -877,11 +884,3 @@ Chủ dự án (chat thử 17/11, khách "nhà cấp 4… ngang 4 dài 16, sổ 
 - **Cỡ:** hỏi thông tin 58.357 → 58.449 ký tự. `do-prompt.py` 3/3.
 - **Bắn lại đúng tin đó trên 146 (flash-lite):** hết câu hỏi thừa, soạn bản tin ngay lượt đầu, ghi `so_hong_rieng` · `ngang_can` · `hem`. Còn lại: lượt này model không ghi ô chiều dài 16 (bản tin vẫn viết 4x16m); bản tin có "sầm uất", "khách quan tâm nhiều lắm" không có trong lời khách.
 
-### SRS-5.1zzzzzzz518 · Nhà nát bán như đất và nhà chưa xây xong đổi bộ câu hỏi, góc ảnh (17/11/2026)
-Chủ dự án: "triển khai code luôn đi" (bản r2 của anh Luận; nhận diện 4 và 6 ở `docs/agents/fda.md` còn một phần).
-- **Một mã, AI đọc theo nghĩa:** `tinh_trang_nha` (`prompts.SU_THAT_CAN`) thêm `ban_nhu_dat`, `dang_xay`; engine ghi `_tinh_trang_nha` khi cụm trích có trong lời khách (đường sẵn có, không dò từ khoá).
-- **`schema.Property`:** `ban_nhu_dat()` → hỏi kích thước, đường vào, giấy tờ, quy hoạch; bỏ kết cấu, diện tích nhà, bàn giao. `dang_xay()` → bỏ bàn giao / nội thất / hiện trạng, thêm tiến độ và ngày bàn giao. Cả hai bỏ cụm "chi tiết nhà" sau đăng.
-- **Ảnh và bản tin:** `goc_anh_goi_y` xin góc như đất / công trình đang thi công; `qc_anh` không tính thiếu ảnh nội thất, phối cảnh của căn chưa xong không bị coi là không khớp; dòng "Tình trạng nhà" của bản tin cấm tả phòng ốc.
-- **Cỡ (ký tự):** hỏi thông tin 58.326 → 58.357, M1 chào 113.545 → 113.796; GIONG, LEAN không đổi. `do-prompt.py` 3/3.
-- **Bắn thử 17/11 trên 146 (flash-lite, 3 cuộc `thu-518*`):** "nhà nát … bán giá đất" → ghi `ban_nhu_dat`, không hỏi số tầng / phòng, bản tin tả đất. "Đang xây tới tầng 2" → model không trả mã, bot đi như nhà thường; nói rõ "đang xây chưa xong, chưa bàn giao" → ghi `dang_xay`. Chưa thử lượt xin ảnh và chấm ảnh.
-- **Chưa làm:** lọc hỏi dạo / spam (chưa có chat thật để định nghĩa), đổi giá vàng (không có nguồn giá), điểm BOA vào điểm uy tín (phải sửa hàm DB), che thông tin trên ảnh sổ.
