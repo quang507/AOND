@@ -252,9 +252,18 @@ def so_m2(fields: dict[str, str], thue: bool = False) -> float | None:
     đất (SRS-5.1zzzzzzz73). Tin CHO THUÊ: diện tích SỬ DỤNG (sàn) trước — người thuê tìm theo chỗ ở được, và tiêu đề tin thuê ghi số
     đó (chat tester 20/10: tiêu đề 35m², web 18m² đất 4 × 4,5; SRS-5.1zzzzzzz91, [giả định BA])."""
     for k in (("dien_tich_nha", "dien_tich", "dien_tich_dat") if thue else ("dien_tich_dat", "dien_tich")):
-        m = re.search(r"\d+(?:[.,]\d+)?", str(fields.get(k) or ""))
+        s = str(fields.get(k) or "")
+        # SRS-5.1zzzzzzz530 (audit luồng rao bán 20/11, kịch bản H): ô `dien_tich` = "4x16" lên cột thành 4 m² (lấy số đầu) — docstring
+        # nói tính tích mà code không làm. Ô dạng ngang x dài (không kèm số m² riêng) → tích; có số m² ghi rõ thì dùng số m² đó.
+        m2 = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:m2|m²|mét vuông|met vuong)", s, re.I)
+        nhan = re.search(r"(\d+(?:[.,]\d+)?)\s*m?\s*[x×*]\s*(\d+(?:[.,]\d+)?)", s, re.I)
+        if nhan and not m2:
+            v = float(nhan.group(1).replace(",", ".")) * float(nhan.group(2).replace(",", "."))
+            if 5 <= v <= 100000:
+                return round(v, 1)
+        m = m2 or re.search(r"\d+(?:[.,]\d+)?", s)
         if m:
-            v = float(m.group(0).replace(",", "."))
+            v = float(m.group(1 if m is m2 else 0).replace(",", "."))
             if v > 0:
                 return v
     uoc = dien_tich_tu_kich_thuoc(fields)   # SRS-5.1zzzzzzz409: từ số AI bóc (ngang / dài / hậu), không dò chuỗi
@@ -631,6 +640,25 @@ class SupabaseConversationStore(KhoNguoiMua):
     def _patch(self, endpoint: str, data: dict) -> None:
         self._request("PATCH", endpoint, data=data, prefer="return=minimal")
 
+    def _ghi_vai_nguoi_ban(self, seller_id: str, conv: Conversation) -> None:
+        """SRS-5.1zzzzzzz530 (audit luồng rao bán 20/11, kịch bản C): khách nói "anh bên môi giới", lượt chat báo đúng 0,5% nhưng `sellers.seller_type`
+        vẫn `ccrb` (mặc định lúc tạo, lõi không bao giờ cập nhật) — nạp lại hội thoại (mỗi lần lõi khởi động lại) đọc cột này thành chủ nhà:
+        báo phí 1%, bản tin được ghi "Chính chủ", ghi_deal tính 1%. Vai đã rõ (AI đọc kèm cụm trích, `conv.user_type`) → ghi cột, nguồn `tu_nhan`;
+        không ghi đè vai admin đặt tay. Nhớ trong bộ nhớ để không PATCH mỗi lượt."""
+        vai = getattr(getattr(conv, "user_type", None), "value", None)
+        ma = {"chu_nha": "ccrb", "moi_gioi": "nmg"}.get(str(vai or ""))
+        if not ma:
+            return
+        nho = self.__dict__.setdefault("_vai_da_ghi", {})
+        if nho.get(seller_id) == ma:
+            return
+        try:
+            self._patch(f"sellers?id=eq.{seller_id}&or=(seller_type_source.is.null,seller_type_source.neq.admin)",
+                        {"seller_type": ma, "seller_type_source": "tu_nhan"})
+            nho[seller_id] = ma
+        except Exception as e:  # noqa: BLE001
+            log.warning("Ghi vai người bán lỗi: %s", e)
+
     def _delete(self, endpoint: str) -> None:
         self._request("DELETE", endpoint, prefer="return=minimal")
 
@@ -660,7 +688,8 @@ class SupabaseConversationStore(KhoNguoiMua):
         try:
             res = self._post(
                 "sellers",
-                {"zalo_user_id": user_key, "name": display_name, "seller_type": "ccrb"}
+                # SRS-5.1zzzzzzz530: chưa biết vai thì `unknown` (trước: `ccrb` — mọi người rao mới bị coi là chủ nhà khi nạp lại hội thoại).
+                {"zalo_user_id": user_key, "name": display_name, "seller_type": "unknown", "seller_type_source": "suy_doan"}
             )
             if res:
                 seller_id = res[0]["id"]
@@ -1054,6 +1083,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             # 1. Update conversation timestamp
             if conv_id:
                 self._patch(f"conversations?id=eq.{conv_id}", {"last_message_at": now_iso})
+            self._ghi_vai_nguoi_ban(seller_id, conv)
 
             # 2. Persist listings into Supabase `listings` table
             lid_dang_noi = None

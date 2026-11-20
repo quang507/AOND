@@ -73,6 +73,15 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz520 · Điểm chất lượng bốn mảng BOA vào điểm uy tín; vòng nền xét tin điểm thấp trước; giá không quy ra tiền thì hỏi chủ (17/11/2026)
+Chủ dự án 17/11, sau khi đối chiếu việc chưa làm với bộ `docs/agents/` của anh Luận: "có docs thì làm đi".
+- **Điểm BOA** (`diem_boa.py`, tiền định, 0–1 mỗi mảng): pháp lý theo thang anh Luận (sổ riêng 0,6 … giấy tay 0; ảnh sổ đã đọc +0,3; hoàn công +0,1); vị thế = số điểm vị thế cụ thể / 3; giá = có giá 0,4 + chủ đã xem căn đang rao gần 0,3 + rõ thương lượng 0,3; ảnh = điểm Image LQC. Mảng chưa có gì để chấm thì không trừ.
+- **Vào điểm:** một cơ chế "chỉnh 0,75–1" như ảnh (SRS-424). Lượt chat: `engine.do_du_tin`, mỗi mảng tối đa −2,5 / 100 độ đủ. DB: bộ điểm ghi theo tin ở `boc_tach._diem_boa`; `diem_tin` nhân bốn mục pháp lý / giá / tiềm năng / ảnh (migration `20261117a`) → `diem_nguoi_ban` → hạng. **Sửa lời SRS-513:** điểm ảnh trước đây mới vào điểm tin bot nói ở lượt chat, chưa vào hạng trên DB.
+- **Soi tin điểm thấp:** vòng nền `hoi_sau_dang` xếp tin đang rao theo điểm BOA tăng dần. Trần 3 tin / ngày, 10 câu / căn giữ nguyên.
+- **Giá tính bằng vàng:** DB không quy ra tiền (`parse_vnd` trả null) nên tin kẹt và bot hỏi lại "giá bao nhiêu". Nay bot hỏi chủ mức đó quy ra khoảng bao nhiêu tiền, không tự quy đổi (`gia_chua_quy`; lượt đó lưới soát ô hỏi cho phép hỏi ô giá).
+- **Thử:** migration chạy trong giao dịch huỷ rồi áp — 1.207 tin cũ giữ nguyên tổng điểm; tin mẫu 73 → 69 khi cả bốn mảng thấp, chuỗi điểm hỏng giữ 73.
+- **Chưa làm:** che thông tin trên ảnh sổ (không có ảnh sổ để thử); lọc hỏi dạo / spam (tài liệu anh Luận mới một dòng, chưa nói nhận ra rồi làm gì).
+
 ### SRS-5.1zzzzzzz519 · Không hỏi lại số ngang khi đã có chiều dài; sự thật của căn là trường bắt buộc (17/11/2026)
 Chủ dự án (chat thử 17/11, khách "nhà cấp 4… ngang 4 dài 16, sổ hồng riêng"): "SHR rớt là lỗi", "hỏi thừa … là lỗi, sửa đi".
 - **Hỏi thừa:** `engine` chỉ coi là có hai chiều lô khi ô chữ có dạng "4x16" (`_hai_chieu_lo`), còn AI bóc "ngang 4 dài 16" thành `mat_tien` + `dai_m` → cứ model không trả `so_ngang` là bot hỏi "số 4 là ngang căn hay hẻm". Nay có `dai_m` thì không hỏi.

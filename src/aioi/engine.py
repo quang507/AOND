@@ -1297,11 +1297,45 @@ def _lo_thong_tin_rieng(reply: str, prop: Property) -> list[str]:
 # pháp lý-vai cũ (SRS-155 / 208 / 233), vốn lấy bằng chứng bằng từ khoá trên lời khách nên "không phải mặt tiền", "chưa có sổ hồng", "cho em hỏi"
 # (khớp "chợ"), "thị trường" (khớp "trường") đều lọt.
 
+# SRS-5.1zzzzzzz530 (audit luồng rao bán 20/11): cổng cụm trích chỉ kiểm cụm CÓ trong lời khách, không kiểm cụm đó NÓI điều được ghi —
+# flash-lite ghi "sổ hồng" → so_hong_rieng (kịch bản B, H: cột legal_status thành sổ riêng), "Bán nhà Nguyễn Trãi Q5" → mat_tien (H: bản tin
+# + cột access_type thành mặt tiền). Bốn mã đổi giá trị căn nhiều nhất cần DẤU HIỆU NGHĨA trong cụm trích — hoặc trong câu bot vừa hỏi khi
+# khách chỉ đáp ngắn ("được", "có"). Thiếu → hạ về mã trung tính (AI vẫn quyết nghĩa; code chỉ đỡ lưới, theo luật CLAUDE.md §4.8).
+_DAU_HIEU_NGHIA: dict[tuple[str, str], tuple[re.Pattern, str]] = {
+    ("phap_ly_trang_thai", "so_hong_rieng"): (re.compile(r"rieng|\bshr\b|1 nguoi dung ten|mot nguoi dung ten|chinh chu dung ten"), "so_hong"),
+    ("phap_ly_trang_thai", "so_hong_chung"): (re.compile(r"chung|\bshc\b|dong so huu|thua ke|nhieu nguoi|anh em dung ten|dong chu"), "so_hong"),
+    ("duong_vao", "mat_tien"): (re.compile(r"mat tien|\bmt\b|\bmtkd\b|mat duong|mat pho|\bmt\s*\d|mat tien duong"), "chua_ro"),
+    ("duong_vao", "hem_xe_hoi"): (re.compile(r"xe hoi|o ?to|\bhxh\b|xe tai|bon banh|4 banh|gara|garage|xe 7 cho|xe 4 cho"), "chua_ro"),
+}
+
+
+_DAU_HIEU_PHAP_LY = re.compile(r"\bso\b|so hong|so do|giay|hdmb|hop dong|vi bang|cong chung|hoan cong|tho cu|chu quyen|phap ly|"
+                               r"chua co|dang lam|uy quyen|sang ten|tach thua|the chap|\bshr\b|\bshc\b|\bsh\b|gcn|chung nhan|dat o")
+
+
+def _ha_ma_thieu_dau_hieu(conv: "Conversation", khoa: str, v: str, trich: str | None) -> str:
+    """Mã sau khi đỡ lưới nghĩa: giữ `v` khi cụm trích (hoặc câu bot vừa hỏi, khi khách đáp ngắn) có dấu hiệu; không thì mã trung tính."""
+    luat = _DAU_HIEU_NGHIA.get((khoa, v))
+    if luat is None:
+        return v
+    mau, ha = luat
+    t = bo_dau(str(trich or "")).lower()
+    if mau.search(t):
+        return v
+    hoi = next((x.content for x in reversed(conv.history[:-1]) if x.role == "assistant" and x.content), "")
+    if len(t.split()) <= 4 and mau.search(bo_dau(hoi).lower()):
+        return v
+    log.warning("Sự thật căn %s=%s hạ về %s: cụm trích không có dấu hiệu nghĩa", khoa, v, ha)
+    return ha
+
+
 def _ghi_su_that_can(conv: "Conversation", plan: dict, loi_khach: list[str]) -> None:
     """Ghi trạng thái AI trả vào ô nội bộ của căn đang nói khi cụm trích có trong lời khách gần đây. "chua_ro" / trống không xoá giá trị đã có
     (AI có thể chỉ không nhắc lại); giá trị mới có bằng chứng thì thay (khách đính chính)."""
     for khoa, gia_tri, _ in SU_THAT_CAN:
         v = plan.get(khoa)
+        if v in gia_tri and v != "chua_ro":
+            v = _ha_ma_thieu_dau_hieu(conv, khoa, v, plan.get(f"{khoa}_trich_dan"))
         if v in gia_tri and v != "chua_ro" and not _vai_co_bang_chung(plan.get(f"{khoa}_trich_dan"), loi_khach):
             log.warning("Sự thật căn %s=%s bị bỏ: cụm trích %s", khoa, v, "không có trong lời khách" if plan.get(f"{khoa}_trich_dan") else "trống")
         if v in gia_tri and v != "chua_ro" and _vai_co_bang_chung(plan.get(f"{khoa}_trich_dan"), loi_khach):
@@ -3282,6 +3316,13 @@ class Engine:
                 system += self._khoi_diem_tin(conv, now)
         else:
             web_tin = self._trang_thai_web(conv)
+            if (web_tin is not None and web_tin.get("len_web") and conv.duyet_luot is None and not conv.prop.fields.get("_da_bao_dang")
+                    and conv.prop.fields.get("_duyet_ban") and not cho_duyet_ban_nhap(conv)):
+                # SRS-5.1zzzzzzz530 (audit luồng rao bán 20/11): chủ đã duyệt ở lượt trước nhưng tin chưa lên (thiếu phường — khách vừa cho tên
+                # đường / admin vừa điền), lượt này tin mới lên. Trước đây cờ `_phi_da_hoi` / `_da_bao_dang` chỉ bật khi duyệt + lên web CÙNG lượt
+                # → không bao giờ báo đăng, không hỏi phí, cả luồng sau đăng (xin ảnh, hỏi sau đăng, xin sao) chết. Coi lượt này là lượt báo đăng.
+                conv.duyet_luot = "dong_y"
+                log.warning("Tin đã duyệt từ trước, nay mới lên web — báo đăng ở lượt này")
             if web_tin is not None and conv.prop.fields.get("_da_bao_dang"):
                 web_tin["da_bao_dang"] = True   # SRS-5.1zzzzzzz220: đã báo đăng tin ở lượt trước — không "xin phép đăng tin" lại mỗi lần "ok"
             # SRS-5.1zzzzzzz254: khách đã duyệt mà tin chưa hiển thị (hệ thống / admin đang hoàn tất — không phải thiếu ô khách bổ sung được)
@@ -4377,9 +4418,12 @@ class Engine:
             description = self._provider.describe_media(
                 [(m.data, m.media_type) for m in fetched], instruction
             ).strip()
+            # SRS-5.1zzzzzzz530: ảnh chụp lẻ dùng dấu DAU_TA_ANH_CHUP như đường nhiều ảnh (4790) — lời AI tả ảnh không phải lời khách, không làm
+            # bằng chứng ô tin (SRS-73). Bản trước mở bằng "[Khách gửi" nên mô tả của model được tính là khách nói.
+            dau = DAU_TA_ANH_CHUP if fetched[0].kind == "image" else "[Khách gửi"
             conv.history.append(Turn(
                 "user",
-                f"[Khách gửi {len(fetched)} tệp ({names}). Nội dung em đọc được từ tài liệu của khách:]\n{description}",
+                f"{dau} {len(fetched)} tệp ({names}). Nội dung em đọc được từ tài liệu của khách:]\n{description}",
                 now,
             ))
             # OPEN-53 (SRS-5.1zzzzzzz241): AI chấm ảnh không phải ảnh thật của căn → không lưu vào tin (không tính điểm, không lên web).
@@ -4398,6 +4442,13 @@ class Engine:
         if len(fetched) < len(sources):
             reply += _xung_ho_cau(f"\n\n(Có {len(sources) - len(fetched)} tệp em chưa mở được — anh/chị gửi lại giúp em nhé ạ.)",
                                   *self._goi_toi(conv))
+        cau = (caption or "").strip()
+        if cau and any(m.kind == "image" for m in fetched):
+            # SRS-5.1zzzzzzz530 (audit luồng rao bán 20/11): người rao nhắn MỘT CÂU KÈM ẢNH ("bán nhà 4x16 Q5 12 tỷ" + ảnh) — đường ảnh chụp căn
+            # chỉ đọc ảnh, câu khách gõ bị bỏ (chỉ bảng giá / giấy tờ / sticker dùng `caption`), bot hỏi lại loại nhà / vị trí / giá. Ảnh đã lưu vào
+            # căn và lời tả ảnh đã vào lịch sử (dấu ảnh chụp, không làm bằng chứng); câu khách đi đường chữ như khách gõ — bóc ô, soạn tin, hỏi tiếp.
+            log.warning("Ảnh kèm câu khách — câu đi đường chữ")
+            return self.handle(user_key, cau, now)
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
         return self._build_result(conv, reply, captured, now)
@@ -4929,8 +4980,18 @@ class Engine:
                 f["_da_hoi_so_nha"] = "1"
                 web["hoi_so_nha"] = True
                 return web
+            # SRS-5.1zzzzzzz530 (audit luồng rao bán 20/11, kịch bản E: đất "Thuận An" không tên đường, khách duyệt → bot "đang hoàn tất", tin kẹt
+            # chờ admin): chưa có tên đường (và không phải căn trong dự án) thì hỏi tên đường MỘT lần — DB tự gắn phường từ quận + đường
+            # (trigger trg_z_listings_phuong_tu_duong, chủ dự án 20/11 "có quận và đường thì gắn vào map ra phường"). Không hỏi chữ phường.
+            # Chỉ ở lượt khách ĐÃ duyệt (bắn thử E 20/11: cờ bị đốt ở lượt bổ sung "sổ riêng" — prompt lượt đó không có nhánh hỏi đường — tới lượt
+            # "đăng đi" thì rơi về "báo người phụ trách").
+            da_duyet = conv.duyet_luot == "dong_y" or (f.get("_duyet_ban") and not cho_duyet_ban_nhap(conv))
+            if da_duyet and not f.get("duong") and not f.get("du_an") and not f.get("_da_hoi_duong"):
+                f["_da_hoi_duong"] = "1"
+                web["hoi_duong"] = True
+                return web
             web["phuong_bao_admin"] = True
-            if not f.get("_phuong_bao_admin") and not conv.y_luot.get("can_nguoi_that"):
+            if da_duyet and not f.get("_phuong_bao_admin") and not conv.y_luot.get("can_nguoi_that"):   # SRS-5.1zzzzzzz530: chưa duyệt thì chưa báo admin
                 f["_phuong_bao_admin"] = "1"
                 conv.y_luot["bao_admin_he_thong"] = True
                 conv.y_luot["can_nguoi_that"] = ("Hệ thống chưa tự xác định được phường (bản đồ / kho đường) — nhờ admin tra và điền phường ở Sửa "
@@ -6175,6 +6236,13 @@ class Engine:
         if hinh_thuc:   # SRS-5.1zzzzzzz218: "Em cho dùm anh 2-3 cái hình tượng trong bản tin đi" từng thành ô hinh_anh
             log.warning("Bỏ ô %s: %s", k, hinh_thuc)
             conv.bo_luot.append((k, v, bang_chung.get(k) if isinstance(bang_chung.get(k), str) else None, hinh_thuc))
+            return None
+        if (k in KHOA_PHAP_LY and k not in (conv.y_luot.get("_bot_vua_hoi") or ())
+                and not _DAU_HIEU_PHAP_LY.search(bo_dau(f"{v} {bang_chung.get(k) if isinstance(bang_chung.get(k), str) else ''}").lower())):
+            # SRS-5.1zzzzzzz530 (kịch bản E 20/11): "chính chủ nha" vào ô phap_ly_so_do — ô pháp lý phải nói về giấy tờ, trừ khi khách đáp câu
+            # bot vừa hỏi đúng ô đó ("có rồi em").
+            log.warning("Bỏ ô %s: không nói về giấy tờ", k)
+            conv.bo_luot.append((k, v, bang_chung.get(k) if isinstance(bang_chung.get(k), str) else None, "ô pháp lý mà cụm không nói về giấy tờ"))
             return None
         if k == "gia" and _GIA_CHUA_RO_RE.search(str(v)):   # SRS-5.1zzzzzzz516: "6.x tỷ" từng vào tiêu đề bản tin (bắn thử 16/11)
             log.warning("Bỏ ô gia: số lẻ chưa rõ")

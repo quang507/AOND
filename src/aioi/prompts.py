@@ -1690,6 +1690,9 @@ def _khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str
     elif thieu_phuong and web.get("hoi_so_nha"):   # SRS-5.1zzzzzzz411
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): cần số nhà để định vị căn trên bản đồ. {cam}"
         viec = "hỏi số nhà của căn để định vị đúng trên bản đồ."
+    elif thieu_phuong and web.get("hoi_duong"):   # SRS-5.1zzzzzzz530: chưa có tên đường → hỏi đường, DB tự gắn phường
+        ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): cần tên đường để định vị căn trên bản đồ. {cam}"
+        viec = "hỏi căn nằm trên đường nào (hoặc gần đường nào) để em định vị đúng trên bản đồ."
     elif thieu_phuong:
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): bên em đang hoàn tất thông tin vị trí, người phụ trách đã được báo. {cam}"
         viec = "báo ngắn bên em đang hoàn tất để đưa tin lên; khách có hỏi gì thì đáp điều đó."
