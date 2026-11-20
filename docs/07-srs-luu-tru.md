@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz521 · Cụm trích của sự thật căn là trường bắt buộc; lọc khách hỏi dạo / tin rác (17/11/2026)
+Chủ dự án 17/11: "sửa luôn lỗi flash-lite không ghi sổ hồng riêng đi"; lọc hỏi dạo: "làm mấy cái này đi".
+- **Mã giấy tờ rớt:** SRS-519 bắt buộc mã mà cụm trích tuỳ chọn → flash-lite trả mã, bỏ cụm trích, engine loại vì thiếu bằng chứng. Nay `<mã>_trich_dan` bắt buộc cùng mã (`agent_gop._cong_cu_ghi`); mã bị loại thì ghi log lý do. Thử 3 / 3 lần ghi `so_hong_rieng` (cả khi khách gõ "SHR").
+- **Lọc khách** (bản anh Luận, FDA nhận diện 10): ý mới `loc_khach` = spam / hoi_dao, AI đọc theo nghĩa kèm cụm trích, chỉ nhận khi khách chưa tỏ ý bán / mua và chưa khai căn nào. Lượt đó không mở tin, bot đáp một câu ngắn không hỏi dồn (`prompts.khoi_loc_khach`); dấu `_loc_khach` chặn mọi tin chủ động của vòng nền (`lqc.chu_dang_hen`), khách tỏ ý bán / mua thì gỡ. Bot vẫn đáp mỗi tin, chưa có chế độ im hẳn.
+- **Cỡ:** hỏi thông tin 58.449 → 59.037 ký tự. `do-prompt.py` 3/3.
+- **Thử trên 146 (flash-lite):** tin quảng cáo mỹ phẩm 2 lượt và khách "hỏi cho biết thôi" đều được đáp ngắn, không hỏi thông tin căn.
+
 ### SRS-5.1zzzzzzz520 · Điểm chất lượng bốn mảng BOA vào điểm uy tín; vòng nền xét tin điểm thấp trước; giá không quy ra tiền thì hỏi chủ (17/11/2026)
 Chủ dự án 17/11, sau khi đối chiếu việc chưa làm với bộ `docs/agents/` của anh Luận: "có docs thì làm đi".
 - **Điểm BOA** (`diem_boa.py`, tiền định, 0–1 mỗi mảng): pháp lý theo thang anh Luận (sổ riêng 0,6 … giấy tay 0; ảnh sổ đã đọc +0,3; hoàn công +0,1); vị thế = số điểm vị thế cụ thể / 3; giá = có giá 0,4 + chủ đã xem căn đang rao gần 0,3 + rõ thương lượng 0,3; ảnh = điểm Image LQC. Mảng chưa có gì để chấm thì không trừ.

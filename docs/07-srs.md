@@ -801,6 +801,13 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz531 · Nhân vật + giọng MỘT bản dùng chung, gỡ phiếu lượt cũ; xoá sạch số Zalo tư vấn (20/11/2026)
+Chủ dự án 20/11: "gọn thì dùng 1 bản thôi chứ ko phải là có cả Khối GIỌNG lẫn Prompt gọn (LEAN)"; "zalo bán xóa rồi mà xóa sạch đi ko cần tạo qr nữa".
+- **Soát:** GIONG nằm TRONG LEAN (không chép đôi lúc chạy), nhưng có ba bản tính cách song song: đoạn NHÂN VẬT tự viết của LEAN, đoạn "Tính cách" của `khoi_nhan_vat` (DAP_TRUOC / NOI_NHE lặp ý đoạn "Nghe khách trước" của GIONG), và phiếu lượt cũ (`phieu_co_dinh` / `build_phieu_luot` + công tắc `AIOI_PROMPT_GON`) — lượt sau ảnh sổ vẫn chạy phiếu cũ.
+- **Sửa:** `khoi_nhan_vat` là nguồn DUY NHẤT (vai + hiểu khách + GIONG; prompt không mang trọn GIONG thì lấy hai đoạn đầu của chính GIONG); LEAN dựng từ nó + phần việc lượt hỏi thông tin; gỡ phiếu lượt cũ và công tắc (lượt sau ảnh sổ dùng prompt gọn); `do-prompt.py` báo một con số nhân vật + giọng (3.853 / trần 4.500) và phần riêng lượt hỏi (2.500 / 3.500). Bắn thử 146: bản tin vẫn 5 gạch đầu dòng, lượt hỏi / duyệt / phí như cũ.
+- **Số tư vấn:** gỡ thẻ "Zalo tư vấn" và vòng đọc QR id 2 ở `/admin`; xoá dòng `bridge_dang_nhap` id 2 (migration `20261120e`); trên 146 xoá task "AOND Zalo Bridge Tu Van", `svc_nhadat_bridge_tu_van.cmd`, file service và log. **Còn:** lõi vẫn gửi tin chủ động của hội thoại cũ `so_nhan=tu_van` tới cổng 5006 (không ai nghe) — chưa đổi vì gửi từ số ký gửi là người lạ với khách đó.
+- **Thấy kèm:** Groq dự phòng trả HTTP 403 (khoá bị từ chối) — Gemini hụt một nhịp là lượt ra câu giữ chỗ, không còn đường cuối.
+
 ### SRS-5.1zzzzzzz530 · Luồng rao bán Đợt 1: tin duyệt rồi phải lên web, dữ liệu tin đúng (20/11/2026)
 Audit luồng rao bán 20/11 (8 kịch bản chạy thật + bản đồ luồng từ code): 5 tin chủ duyệt chỉ 2 lên web; "4x16" thành 4 m²; "sổ hồng" thành sổ riêng, "Nguyễn Trãi Q5" thành mặt tiền; vai môi giới không lưu; câu gõ kèm ảnh bị bỏ. Chủ dự án: "có quận và đường thì gắn vào map ra phường"; giữ $$$$$ (chưa có khách thật); bản tin gửi lại cả bản.
 - **Lớp lỗi:** (1) "đủ để soạn nháp" (loại, vị trí, giá) khác "đủ để đăng" (giá số, diện tích số, phường) mà không bước nào thu phần chênh; (2) cổng cụm trích kiểm NGUỒN (cụm có trong lời khách) không kiểm NGHĨA (cụm nói điều được ghi).
@@ -875,11 +882,4 @@ Chủ dự án 17/11: "làm mấy cái này đi". Bản anh Luận (`boa-phaply.
 - **Lỗi lộ ra khi thử, sửa ở `xoa_logo.chuan_vung`:** Gemini trả toạ độ theo thang 0–1000 dù hướng dẫn ghi 0–1; bản cũ cắt về 1 nên khung nào cũng rỗng — từ khi chạy chỉ-Gemini (16/11) vòng xoá logo không xoá được vùng nào. Nay có số vượt 1 thì chia 1000.
 - **Thử:** tờ sổ GIẢ tự vẽ, flash-lite, 4 lần. Hai lần đầu (nới 0,6 % rồi 4,5 %) còn lộ ba số cuối căn cước, một năm sinh; hai lần sau (nới 12 %) che kín mọi thông tin người, phần thửa đất nguyên vẹn.
 - **Chưa làm / chưa đo:** chưa thử trên sổ thật (thư mục mẫu sổ không được đọc). Lời bot về ảnh sổ giữ nguyên "chỉ để em kiểm, không đăng", chưa hứa "em xoá thông tin".
-
-### SRS-5.1zzzzzzz521 · Cụm trích của sự thật căn là trường bắt buộc; lọc khách hỏi dạo / tin rác (17/11/2026)
-Chủ dự án 17/11: "sửa luôn lỗi flash-lite không ghi sổ hồng riêng đi"; lọc hỏi dạo: "làm mấy cái này đi".
-- **Mã giấy tờ rớt:** SRS-519 bắt buộc mã mà cụm trích tuỳ chọn → flash-lite trả mã, bỏ cụm trích, engine loại vì thiếu bằng chứng. Nay `<mã>_trich_dan` bắt buộc cùng mã (`agent_gop._cong_cu_ghi`); mã bị loại thì ghi log lý do. Thử 3 / 3 lần ghi `so_hong_rieng` (cả khi khách gõ "SHR").
-- **Lọc khách** (bản anh Luận, FDA nhận diện 10): ý mới `loc_khach` = spam / hoi_dao, AI đọc theo nghĩa kèm cụm trích, chỉ nhận khi khách chưa tỏ ý bán / mua và chưa khai căn nào. Lượt đó không mở tin, bot đáp một câu ngắn không hỏi dồn (`prompts.khoi_loc_khach`); dấu `_loc_khach` chặn mọi tin chủ động của vòng nền (`lqc.chu_dang_hen`), khách tỏ ý bán / mua thì gỡ. Bot vẫn đáp mỗi tin, chưa có chế độ im hẳn.
-- **Cỡ:** hỏi thông tin 58.449 → 59.037 ký tự. `do-prompt.py` 3/3.
-- **Thử trên 146 (flash-lite):** tin quảng cáo mỹ phẩm 2 lượt và khách "hỏi cho biết thôi" đều được đáp ngắn, không hỏi thông tin căn.
 

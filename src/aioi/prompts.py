@@ -484,9 +484,7 @@ def build_project_docs_block(project_name: str, docs: list[dict[str, str]]) -> s
 # SRS-5.1zzzzzzz468 (chủ dự án 13/11/2026: bot "kiểu tưởng người ta sợ nó rao không đúng giá"): khối cũ liệt kê sẵn nỗi lo (bán hớ, thủ tục,
 # áp lực tài chính) nên model gán nỗi lo cho khách dù khách không nói. Nay HAI tính cách theo vai, chữ của chủ dự án: bot NHẬN THÔNG TIN TIN RAO
 # (người bán / cho thuê) và bot TƯ VẤN BÁN HÀNG (người mua / thuê); lời không rõ vai (đọc tài liệu dự án) chỉ dùng hai ý chung.
-DAP_TRUOC = ("- Khách hỏi hay lộ cảm xúc thì đáp điều đó trước; khách chỉ đưa thông tin thì đi thẳng sang việc cần hỏi. Điều khách "
-             "đã kể ở các tin trước thì dùng lại tự nhiên khi hợp.\n")
-NOI_NHE = "- Khách bận, do dự hay không vui thì nói nhẹ, để khách tự quyết nhịp.\n"
+# 20/11/2026 (chủ dự án: "gọn thì dùng 1 bản thôi"): bỏ DAP_TRUOC / NOI_NHE — hai gạch "Tính cách" lặp đúng ý đoạn "Nghe khách trước" của GIONG.
 HIEU_CHU_NHA = ("HIỂU CHỦ NHÀ: nhà là tài sản lớn, chủ muốn làm việc với người hiểu nghề. Khách hỏi hay lo điều gì thì em đáp đúng điều đó "
                 "bằng việc bên em làm thật: đưa tin tới khách đang tìm, có khách hỏi là báo chủ ngay, phí chỉ thu khi giao dịch thành công.")
 HIEU_KHACH_MUA = ("HIỂU KHÁCH MUA: khách muốn tìm được căn hợp ý từ người hiểu nghề. Khách hỏi hay lo điều gì thì em đáp đúng điều đó bằng "
@@ -516,15 +514,18 @@ def _ten_sau(ham):
 
 
 def khoi_nhan_vat(assistant_name: str, voi_ai: str, kem_giong: bool = True) -> str:
-    """Đầu prompt: tính cách theo vai (`voi_ai` nói tới mua hay bán / cho thuê); `kem_giong` = nối khối GIONG ngay sau."""
+    """MỘT khối nhân vật cho mọi prompt nói với khách (20/11/2026, chủ dự án: "gọn thì dùng 1 bản thôi"): vai + hiểu khách theo vai + GIONG.
+    `kem_giong=False` (prompt đã có việc riêng dài: bản tin, đọc tài liệu…) chỉ lấy hai đoạn đầu của CHÍNH GIONG (cách nhắn + nghe khách trước) —
+    không viết câu giọng riêng ở chỗ khác. Đổi giọng thì sửa GIONG."""
     dau = f'NHÂN VẬT: em là "{assistant_name}" của AI Ơi Nhà Đất ({SITE_HOST}), '
     if "mua" in voi_ai:
-        nv = f"{dau}bot TƯ VẤN BÁN HÀNG, đang nhắn Zalo với {voi_ai}. Tính cách:\n{DAP_TRUOC}{NOI_NHE}{HIEU_KHACH_MUA}\n"
+        nv = f"{dau}bot TƯ VẤN BÁN HÀNG, nhắn Zalo với {voi_ai}.\n{HIEU_KHACH_MUA}\n"
     elif "bán" in voi_ai or "cho thuê" in voi_ai:
-        nv = f"{dau}bot NHẬN THÔNG TIN TIN RAO, đang nhắn Zalo với {voi_ai}. Tính cách:\n{DAP_TRUOC}{NOI_NHE}{HIEU_CHU_NHA}\n"
+        nv = f"{dau}bot NHẬN THÔNG TIN TIN RAO, nhắn Zalo với {voi_ai}.\n{HIEU_CHU_NHA}\n"
     else:
-        nv = f"{dau}đang nhắn Zalo với {voi_ai}. Tính cách:\n{DAP_TRUOC}{NOI_NHE}"
-    return nv + (f"Cách nói chuyện: theo khối GIỌNG ngay dưới.\n\n{GIONG}\n" if kem_giong else "")
+        nv = f"{dau}nhắn Zalo với {voi_ai}.\n"
+    giong = GIONG if kem_giong else "\n\n".join(GIONG.split("\n\n")[:2])
+    return f"{nv}\n{giong}\n"
 
 
 # SRS-5.1zzzzzzz480 (chủ dự án 13/11/2026, sau khi so với bot MOSO: "không cần giọng vui nữa… sửa luôn cho bot zalo bán, bot zalo mua… nới
@@ -784,45 +785,6 @@ def viec_phieu(prop: Property, next_field: str | None, hoi_lai: bool = False, o_
             viec += f' Ý "{nhan_o(o_bo_qua, prop)}" khách đã lờ đi — để đó, vào thẳng câu hỏi mới.'
         return viec
     return "tin đã đủ để rao — chốt ngắn, ấm áp: tin đã lưu, có khách hỏi hay hẹn xem bên em báo ngay; lượt này không còn gì để hỏi."
-
-
-def phieu_co_dinh(assistant_name: str) -> str:
-    """Phần CỐ ĐỊNH của phiếu lượt (trước `RANH_GIOI_CACHE`): định danh + giọng + luật cố định + tiếng lóng — nguyên vẹn, một nguồn cho
-    `build_phieu_luot` và bước ghi của vòng agent gộp (`agent_gop`, SRS-5.1zzzzzzz371). Hai bước KHÔNG chung cache (bộ công cụ khác nhau và công
-    cụ đứng trước system trong tiền tố cache, SRS-5.1zzzzzzz504) — chung chữ để luật một nguồn, không phải để tiết kiệm."""
-    return f"""{khoi_nhan_vat(assistant_name, "người gửi bán / cho thuê nhà")}
-
-LUẬT CỐ ĐỊNH:
-- Khách vừa hỏi hay lộ cảm xúc thì đáp điều đó trước (khối GIỌNG); khách chỉ đưa thông tin thì làm thẳng {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
-- {LUAT_DAP_CHUA_CHON}
-- {LUAT_MOT_CAU_HOI}. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ câu xác nhận mà {NHAN_VIEC_LUOT} giao.
-- Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết (giá thị trường, hứa bán: theo khối GIỌNG).
-- Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
-{TIN_HE_THONG}
-
-{SLANG_NOTES}
-"""
-
-
-@_ten_sau
-def build_phieu_luot(
-    assistant_name: str,
-    prop: Property,
-    next_field: str | None,
-    project_block: str = "",
-    hoi_lai: bool = False,
-    o_bo_qua: str | None = None,
-    viec: str | None = None,
-) -> str:
-    """Phiếu lượt ngắn cho lượt THU THẬP của người bán (kế hoạch bước 2, SRS-5.1zzzzzzz309): giọng + vài luật cố định (cache) + dữ liệu căn + MỘT
-    việc lượt này do code quyết. Đường DUY NHẤT của lượt thu thập từ Đợt 8 (SRS-5.1zzzzzzz319, prompt cũ `build_chat_system` đã xoá); luật nghiệp vụ còn lại nằm ở code / các
-    khối ưu tiên hệ thống thêm khi cần. `viec`: việc riêng do engine đặt (lượt ảnh sổ SRS-5.1zzzzzzz318; dấu chỗ của việc hỏi ô, Đợt 4) thay việc hỏi ô."""
-    viec = viec or viec_phieu(prop, next_field, hoi_lai, o_bo_qua)
-    return phieu_co_dinh(assistant_name) + f"""{RANH_GIOI_CACHE}{project_block}
-DỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):
-{describe_captured(prop)}
-
-{NHAN_VIEC_LUOT}: {viec}"""
 
 
 # SRS-5.1zzzzzzz335: tên ngắn của các ý nhu cầu cho câu hỏi MỞ phía mua — model gợi 2–3 ý làm ví dụ; engine đối chiếu tên này với lời bot
@@ -1337,14 +1299,8 @@ TIENG_NGHE = """HIỂU TIẾNG NGHỀ (hiểu luôn, không hỏi lại nghĩa):
   riêng; thổ cư / ONT / ODT = đất ở; SKC / TMD = đất sản xuất / thương mại; CLN / HNK = đất trồng cây lâu năm / hoa màu.
 """
 
-LEAN_SYSTEM_PROMPT = f"""NHÂN VẬT: em là "{{TEN_TRO_LY}}" của AI Ơi Nhà Đất ({SITE_HOST}), bot NHẬN THÔNG TIN TIN RAO, môi giới bản địa am hiểu nhà đất TP.HCM, nhắn Zalo
-với người gửi bán / cho thuê nhà: nghe khách kể về căn và hỏi dần cho đủ để rao, như trò chuyện với người hiểu nghề.
-
-{HIEU_CHU_NHA}
-
-{GIONG}
-
-LƯỢT HỎI THÔNG TIN:
+LEAN_SYSTEM_PROMPT = khoi_nhan_vat("{TEN_TRO_LY}", "người gửi bán / cho thuê nhà") + f"""
+LƯỢT HỎI THÔNG TIN (nghe khách kể về căn, hỏi dần cho đủ để rao):
 - Khách chỉ đưa thông tin thì làm thẳng {NHAN_VIEC_LUOT}; khách đang hỏi thì lượt đó trả lời cho trọn, ý cần hỏi để lượt sau.
 - Câu hỏi đặt cuối tin, nối từ điều khách vừa kể, hỏi mở để khách kể nhiều ý một lúc (hỏi kết cấu thì khách tả luôn tầng, phòng). Điều suy
   ra được thì không hỏi lại, không hỏi xác nhận nghĩa — trừ khi {NHAN_VIEC_LUOT} giao. Còn thiếu gì để soạn tin là việc em tự nắm, khách
@@ -1371,12 +1327,6 @@ KHÁCH ĐÁP CHƯA CHỌN: câu em vừa hỏi là câu chọn (giữ cứng hay
 {TIENG_NGHE}"""
 
 
-def prompt_gon_bat() -> bool:
-    """Công tắc `AIOI_PROMPT_GON` — một chỗ đọc cho engine (bước viết) và `agent_gop` (bước ghi)."""
-    import os
-    return os.getenv("AIOI_PROMPT_GON", "").strip().lower() == "bat"
-
-
 def _lean_co_dinh(assistant_name: str) -> str:
     """Phần cố định của prompt gọn bước viết: `LEAN_SYSTEM_PROMPT` + khối KIẾN THỨC NGHỀ (SRS-5.1zzzzzzz504). Kiến thức nghề là khối riêng
     đi kèm, không tính vào trần 8.000 chữ của `LEAN_SYSTEM_PROMPT`."""
@@ -1386,8 +1336,6 @@ def _lean_co_dinh(assistant_name: str) -> str:
 def co_dinh_ban(assistant_name: str) -> str:
     """Phần cố định bước ghi phía bán (trước `RANH_GIOI_CACHE`) theo công tắc: `LEAN_GHI` + kiến thức nghề (SRS-5.1zzzzzzz506) hoặc phiếu cũ
     (SRS-5.1zzzzzzz414). Bước ghi và bước viết không chung cache được (khác bộ công cụ, công cụ đứng trước system), nên tách không tốn thêm."""
-    if not prompt_gon_bat():
-        return phieu_co_dinh(assistant_name)
     return LEAN_GHI.replace("{TEN_TRO_LY}", assistant_name, 1) + "\n" + KIEN_THUC_NGHE + "\n"
 
 
@@ -1612,8 +1560,8 @@ Cả lượt nằm trong một tin nhắn:
 Dòng đầu: {opener}
 (một dòng trống, rồi bản tin theo bố cục dưới, một dòng trống)
 Dòng cuối: {closer}
-Khách vừa hỏi hay lộ cảm xúc thì một câu ngắn đáp điều đó trước dòng đầu. Văn nói thân thiện, miền Nam, câu viết trọn (không bỏ lửng
-bằng "…"). Phí môi giới để sau khi khách duyệt, lượt này chưa nhắc.
+Khách vừa hỏi hay lộ cảm xúc thì một câu ngắn đáp điều đó trước dòng đầu. Câu viết trọn (không bỏ lửng bằng "…"). Phí môi giới để sau khi
+khách duyệt, lượt này chưa nhắc.
 
 {AD_FORMAT}
 {RANH_GIOI_CACHE}{project_block}{yeu_cau}

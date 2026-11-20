@@ -30,7 +30,7 @@ from uuid import uuid4
 from . import gamification as g
 from . import phap_ly
 from .prompts import _dien_tich_mo_ho, khoi_nhan_vat, nhan_o_ngan, viec_phieu, viec_theo_khoi
-from .prompts import NHAN_VIEC_LUOT, khoi_doi_so, khoi_so_dang_nhan, prompt_gon_bat
+from .prompts import NHAN_VIEC_LUOT, khoi_doi_so, khoi_so_dang_nhan
 from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, LOC_KHACH, NHAN_DUONG_VAO, SU_THAT_CAN, khoi_hen_tra_cuu, khoi_kich_hoat_mg, khoi_loc_khach, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
@@ -79,7 +79,6 @@ from .prompts import (
     UNIT_TYPE_EXTRACTION_SYSTEM,
     build_buyer_chat_system,
     khoi_tin_tra_loi,
-    build_phieu_luot,
     lean_system_prompt_cho_luot,
     SOAT_O_HOI_SYSTEM,
     soat_o_hoi_schema,
@@ -3337,10 +3336,8 @@ class Engine:
                     if mo_ho:
                         f_tin.pop("_dt_mo_ho_da_hoi", None)
                 viec_o = _hoi("hoi_o", viec_txt, "", _hoan_hoi_o)   # khi bị gỡ: việc của khối thắng (`viec_theo_khoi`, điền sau khi chọn)
-            if prompt_gon_bat():   # SRS-5.1zzzzzzz408 / 414: prompt gọn (chủ dự án 11/11)
-                system = lean_system_prompt_cho_luot(conv.assistant.name, conv.prop, next_field, project_block, viec=viec_o)
-            else:
-                system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua, viec=viec_o)
+            # 20/11/2026: prompt gọn là đường DUY NHẤT (gỡ phiếu cũ + công tắc AIOI_PROMPT_GON — "gọn thì dùng 1 bản thôi").
+            system = lean_system_prompt_cho_luot(conv.assistant.name, conv.prop, next_field, project_block, viec=viec_o)
             system += khoi_xin_dang(toi_thieu, conv.prop)   # lượt hỏi ô: KHÔNG có khối ĐIỂM TIN (chủ dự án 02/11, SRS-5.1zzzzzzz336)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
@@ -4434,7 +4431,7 @@ class Engine:
                 viec_anh = ("khách vừa gửi ảnh sổ / giấy tờ. Hệ thống đã đọc ảnh và GỬI KHÁCH các dòng sau, ngay trước lời em:\n"
                             f"{detail_lines or '(chưa đọc được dòng nào)'}\nViết 1–2 câu tiếp theo với MỘT câu hỏi cả lượt: {hoi_y}. Lượt này KHÔNG khen "
                             "sổ / pháp lý (kể cả theo khối GIỌNG), KHÔNG nói sổ \"chuẩn\", \"đầy đủ\" — em mới đọc ảnh, chưa kiểm sổ. Không lặp lại các dòng trên.")
-                he = (build_phieu_luot(conv.assistant.name, conv.active.prop, next_field, viec=viec_anh)
+                he = (lean_system_prompt_cho_luot(conv.assistant.name, conv.active.prop, next_field, viec=viec_anh)
                       + khoi_xung_ho(_detect_customer_pronoun(conv, caption or ""), conv.assistant.name, _xung_ho_doan(conv)))
                 ask_tail = self._provider.reply(he, conv.messages() + [Message("user", seller_turn)],
                                                 max_tokens=REPLY_MAX_TOKENS).strip()

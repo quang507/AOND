@@ -252,8 +252,6 @@ function BanLamViec() {
   const [tienModel, setTienModel] = useState<TienModel[]>([]);
   const [quota, setQuota] = useState<Quota | null>(null);
   const [zaloDn, setZaloDn] = useState<DangNhapZalo | null>(null);
-  // SRS-5.1zzzzzzz210: số Zalo thứ hai — tư vấn người mua (dòng bridge_dang_nhap id = 2).
-  const [zaloDnTv, setZaloDnTv] = useState<DangNhapZalo | null>(null);
   const [viec, setViec] = useState<Viec[]>([]);
   const [nguoiBan, setNguoiBan] = useState<NguoiBan[]>([]);
   const [cauHoi, setCauHoi] = useState<CauHoi[]>([]);
@@ -348,17 +346,16 @@ function BanLamViec() {
   // Tách khỏi `load()` để lúc chờ quét chỉ đọc lại đúng một dòng này.
   const taiDangNhap = async () => {
     const { data } = await supabase.from("bridge_dang_nhap")
-      .select("id, trang_thai, qr_png, yeu_cau_quet_lai, ghi_chu, cap_nhat").in("id", [1, 2]);
+      .select("id, trang_thai, qr_png, yeu_cau_quet_lai, ghi_chu, cap_nhat").eq("id", 1);
+    // SRS-5.1zzzzzzz531 (chủ dự án 20/11: "xóa sạch đi ko cần tạo qr nữa"): số tư vấn (id 2) đã bỏ hẳn từ 18/11 — chỉ còn số ký gửi.
     const dong = (data ?? []) as (DangNhapZalo & { id: number })[];
     setZaloDn(dong.find((d) => d.id === 1) ?? null);
-    setZaloDnTv(dong.find((d) => d.id === 2) ?? null);
   };
   // Đang chờ quét thì đọc lại mỗi 4 giây: mã QR đổi mỗi ~100 giây, và quét
   // xong phải thấy "đã đăng nhập" ngay chứ không phải tự bấm tải lại trang.
   // Số tư vấn chỉ theo dõi khi bridge của nó đang ở luồng QR — "chưa có tín hiệu" (bridge chưa cài) thì khỏi đọc lại mỗi 4 giây.
   const theoDoiDn = role === "admin" && (
-    (!!zaloDn && (zaloDn.trang_thai !== "dang_nhap" || zaloDn.yeu_cau_quet_lai)) ||
-    (!!zaloDnTv && (["cho_quet", "da_quet", "het_han", "tu_choi"].includes(zaloDnTv.trang_thai) || zaloDnTv.yeu_cau_quet_lai)));
+    !!zaloDn && (zaloDn.trang_thai !== "dang_nhap" || zaloDn.yeu_cau_quet_lai));
   useEffect(() => {
     if (!theoDoiDn) return;
     const t = setInterval(() => void taiDangNhap(), 4000);
@@ -828,8 +825,6 @@ function BanLamViec() {
   // lúc Zalo clone chết (11/09 — chủ dự án chụp màn hình hỏi lại).
   const zaloChet = !!zaloDn && (zaloDn.trang_thai !== "dang_nhap" || zaloDn.yeu_cau_quet_lai);
   // SRS-5.1zzzzzzz210: số tư vấn đang ở luồng QR → thẻ lên đầu trang (mọi tab), như số ký gửi khi hỏng. "Chưa có tín hiệu" (bridge chưa cài) thì không.
-  const zaloTvCanQuet = !!zaloDnTv &&
-    (["cho_quet", "da_quet", "het_han", "tu_choi"].includes(zaloDnTv.trang_thai) || zaloDnTv.yeu_cau_quet_lai);
   const botLoi = !health
     ? null
     : !bridgeSong
@@ -890,11 +885,6 @@ function BanLamViec() {
       {zaloChet && (
         <div className="mt-4 rounded-lg border-2 border-brand bg-white p-6">
           <TheZaloClone dn={zaloDn} onDangNhapLai={() => dangNhapLaiZalo(1)} />
-        </div>
-      )}
-      {zaloTvCanQuet && (
-        <div className="mt-4 rounded-lg border-2 border-brand bg-white p-6">
-          <TheZaloClone dn={zaloDnTv} onDangNhapLai={() => dangNhapLaiZalo(2)} tuVan />
         </div>
       )}
 
@@ -1804,13 +1794,6 @@ function BanLamViec() {
           {!zaloChet && (
             <div className="rounded-lg border border-line bg-white p-6">
               <TheZaloClone dn={zaloDn} onDangNhapLai={() => dangNhapLaiZalo(1)} />
-            </div>
-          )}
-
-          {/* SRS-5.1zzzzzzz210: số Zalo tư vấn người mua — quét QR bằng acc của số đó. Đang chờ quét thì ô đã nằm ở đầu trang. */}
-          {!zaloTvCanQuet && (
-            <div className="rounded-lg border border-line bg-white p-6">
-              <TheZaloClone dn={zaloDnTv} onDangNhapLai={() => dangNhapLaiZalo(2)} tuVan />
             </div>
           )}
 

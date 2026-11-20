@@ -150,7 +150,9 @@ def main() -> int:
             io.open(os.path.join(luu, ten + ".txt"), "w", encoding="utf-8").write(
                 g["on_dinh"] + "\n\n######## SAU RANH GIỚI CACHE ########\n" + g["dong"] + "\n\n######## CÔNG CỤ / SCHEMA ########\n" + g["cong_cu"])
     print("\nTổng ký tự mỗi lượt:", "  ·  ".join(f"{k}: {v:,}".replace(",", ".") for k, v in tong.items()))
-    print(f"GIONG {len(P.GIONG):,} / 4.000 · LEAN_SYSTEM_PROMPT {len(P.LEAN_SYSTEM_PROMPT):,} / 8.000".replace(",", "."))
+    nv = len(P.khoi_nhan_vat("{TEN_TRO_LY}", "người gửi bán / cho thuê nhà"))
+    print(f"NHÂN VẬT + GIỌNG (một bản dùng chung mọi prompt) {nv:,} / 4.500 · phần riêng lượt hỏi thông tin "
+          f"{len(P.LEAN_SYSTEM_PROMPT) - nv:,} / 3.500".replace(",", "."))
 
     loi: list[str] = []
     # 1. bảng luật
