@@ -1299,34 +1299,61 @@ def _lo_thong_tin_rieng(reply: str, prop: Property) -> list[str]:
 
 # SRS-5.1zzzzzzz530 (audit luồng rao bán 20/11): cổng cụm trích chỉ kiểm cụm CÓ trong lời khách, không kiểm cụm đó NÓI điều được ghi —
 # flash-lite ghi "sổ hồng" → so_hong_rieng (kịch bản B, H: cột legal_status thành sổ riêng), "Bán nhà Nguyễn Trãi Q5" → mat_tien (H: bản tin
-# + cột access_type thành mặt tiền). Bốn mã đổi giá trị căn nhiều nhất cần DẤU HIỆU NGHĨA trong cụm trích — hoặc trong câu bot vừa hỏi khi
-# khách chỉ đáp ngắn ("được", "có"). Thiếu → hạ về mã trung tính (AI vẫn quyết nghĩa; code chỉ đỡ lưới, theo luật CLAUDE.md §4.8).
-_DAU_HIEU_NGHIA: dict[tuple[str, str], tuple[re.Pattern, str]] = {
-    ("phap_ly_trang_thai", "so_hong_rieng"): (re.compile(r"rieng|\bshr\b|1 nguoi dung ten|mot nguoi dung ten|chinh chu dung ten"), "so_hong"),
-    ("phap_ly_trang_thai", "so_hong_chung"): (re.compile(r"chung|\bshc\b|dong so huu|thua ke|nhieu nguoi|anh em dung ten|dong chu"), "so_hong"),
-    ("duong_vao", "mat_tien"): (re.compile(r"mat tien|\bmt\b|\bmtkd\b|mat duong|mat pho|\bmt\s*\d|mat tien duong"), "chua_ro"),
-    ("duong_vao", "hem_xe_hoi"): (re.compile(r"xe hoi|o ?to|\bhxh\b|xe tai|bon banh|4 banh|gara|garage|xe 7 cho|xe 4 cho"), "chua_ro"),
+# + cột access_type thành mặt tiền), "chính chủ nha" vào ô sổ đỏ (E). Bản đầu của sửa này dùng TỪ KHOÁ để bác AI — sai luật chủ dự án
+# (CLAUDE.md §4.8: "đưa quyết định cho AI … từ khoá chỉ là lưới đỡ"; chủ dự án 20/11: "đừng bảo là đúng từ khóa mới tính"): "sổ một mình tôi
+# đứng tên", "nhà nằm ngay đường lớn, không phải hẻm" bị hạ. Nay: từ khoá CHỈ XÁC NHẬN NHANH (có dấu hiệu rõ → nhận, khỏi gọi thêm model);
+# không có → HỎI LẠI AI theo nghĩa lời khách (một lần gọi nhỏ, chỉ khi mã rủi ro vừa được ghi mà thiếu dấu hiệu). AI nói không → mã trung
+# tính; lượt hỏi AI hỏng → giữ quyết định ban đầu của AI (code không tự bác).
+_DAU_HIEU_NGHIA: dict[tuple[str, str], tuple[re.Pattern, str, str]] = {
+    ("phap_ly_trang_thai", "so_hong_rieng"): (
+        re.compile(r"rieng|shr"), "so_hong",
+        "Khách có nói rõ sổ của căn là sổ RIÊNG (một người, hoặc hai vợ chồng, đứng tên; không chung với ai) không? Chỉ nói \"có sổ hồng\" / "
+        "\"sổ đỏ\" mà không nói riêng hay chung thì là KHÔNG."),
+    ("phap_ly_trang_thai", "so_hong_chung"): (
+        re.compile(r"so chung|shc|dong so huu|thua ke"), "so_hong",
+        "Khách có nói rõ sổ là sổ CHUNG — nhiều người cùng đứng tên, đồng sở hữu, thừa kế chưa chia, chưa tách thửa — không?"),
+    ("duong_vao", "mat_tien"): (
+        re.compile(r"mat tien|mt|mtkd"), "chua_ro",
+        "Khách có nói rõ căn nằm MẶT TIỀN đường (ngay mặt đường / mặt phố, không phải trong hẻm) không? Chỉ nêu tên đường thì là KHÔNG."),
+    ("duong_vao", "hem_xe_hoi"): (
+        re.compile(r"xe hoi|o to|hxh"), "chua_ro",
+        "Khách có nói rõ ô tô / xe hơi vào TỚI nhà được không? Chỉ nói độ rộng hẻm thì là KHÔNG."),
 }
+_HOI_O_PHAP_LY = ("Cụm khách nói có phải là thông tin về GIẤY TỜ pháp lý của căn (sổ hồng, sổ đỏ, hợp đồng mua bán, giấy tay, vi bằng, hoàn "
+                  "công, thổ cư…) không? Nói mình là chủ nhà / chính chủ thì là KHÔNG.")
+_DAU_HIEU_PHAP_LY = re.compile(r"so|so hong|so do|giay|hdmb|hop dong|vi bang|hoan cong|tho cu|phap ly|shr|shc")
+
+# Hàm AI xác nhận nghĩa của lượt đang chạy (Engine._ai_xac_nhan_nghia) — đặt ở đầu `_handle`, mỗi lượt một luồng.
+_XAC_NHAN_NGHIA: contextvars.ContextVar = contextvars.ContextVar("xac_nhan_nghia", default=None)
 
 
-_DAU_HIEU_PHAP_LY = re.compile(r"\bso\b|so hong|so do|giay|hdmb|hop dong|vi bang|cong chung|hoan cong|tho cu|chu quyen|phap ly|"
-                               r"chua co|dang lam|uy quyen|sang ten|tach thua|the chap|\bshr\b|\bshc\b|\bsh\b|gcn|chung nhan|dat o")
+def _ai_dong_y(cau_hoi: str, trich: str | None, conv: "Conversation") -> bool | None:
+    """Hỏi AI theo nghĩa: True / False, hoặc None khi không hỏi được (không có hàm, lỗi) — người gọi giữ quyết định ban đầu của AI."""
+    hoi = _XAC_NHAN_NGHIA.get()
+    if hoi is None:
+        return None
+    bot = next((x.content for x in reversed(conv.history[:-1]) if x.role == "assistant" and x.content), "")
+    khach = [x.content for x in conv.history[-6:] if x.role == "user" and x.content and not x.content.startswith(DAU_TA_ANH_CHUP)]
+    try:
+        return hoi(cau_hoi, str(trich or ""), str(bot)[-400:], [k[:300] for k in khach[-3:]])
+    except Exception as e:  # noqa: BLE001
+        log.warning("AI xác nhận nghĩa lỗi (%s) — giữ quyết định ban đầu", type(e).__name__)
+        return None
 
 
 def _ha_ma_thieu_dau_hieu(conv: "Conversation", khoa: str, v: str, trich: str | None) -> str:
-    """Mã sau khi đỡ lưới nghĩa: giữ `v` khi cụm trích (hoặc câu bot vừa hỏi, khi khách đáp ngắn) có dấu hiệu; không thì mã trung tính."""
+    """Mã sau khi đỡ lưới nghĩa (xem _DAU_HIEU_NGHIA): từ khoá xác nhận → giữ; không → AI quyết; AI hỏng → giữ `v`."""
     luat = _DAU_HIEU_NGHIA.get((khoa, v))
-    if luat is None:
+    if luat is None or conv.prop.fields.get(f"_{khoa}") == v:   # mã đã ghi từ lượt trước thì khỏi hỏi lại
         return v
-    mau, ha = luat
-    t = bo_dau(str(trich or "")).lower()
-    if mau.search(t):
+    mau, ha, cau_hoi = luat
+    if mau.search(bo_dau(str(trich or "")).lower()):
         return v
-    hoi = next((x.content for x in reversed(conv.history[:-1]) if x.role == "assistant" and x.content), "")
-    if len(t.split()) <= 4 and mau.search(bo_dau(hoi).lower()):
-        return v
-    log.warning("Sự thật căn %s=%s hạ về %s: cụm trích không có dấu hiệu nghĩa", khoa, v, ha)
-    return ha
+    dong_y = _ai_dong_y(cau_hoi, trich, conv)
+    if dong_y is False:
+        log.warning("Sự thật căn %s=%s hạ về %s: AI xác nhận lại thấy khách chưa nói rõ", khoa, v, ha)
+        return ha
+    return v
 
 
 def _ghi_su_that_can(conv: "Conversation", plan: dict, loi_khach: list[str]) -> None:
@@ -2951,8 +2978,23 @@ class Engine:
             if dau_nguon is not None:
                 NGUON_LUOT.reset(dau_nguon)
 
+    def _ai_xac_nhan_nghia(self, cau_hoi: str, trich: str, bot: str, khach: list[str]) -> bool | None:
+        """SRS-5.1zzzzzzz530: AI trả lời MỘT câu có / không theo NGHĨA lời khách — dùng khi mã rủi ro (sổ riêng / chung, mặt tiền, hẻm xe hơi,
+        ô pháp lý) vừa được ghi mà cụm trích không có dấu hiệu rõ. Thay lưới từ khoá bác AI (chủ dự án 20/11). None = không đọc được."""
+        he = ("Em đọc tin khách nhắn cho môi giới nhà đất và trả lời ĐÚNG một câu hỏi có / không theo NGHĨA lời khách — không bắt chữ, "
+              "khách nói bằng cách khác vẫn tính. Chỉ tính điều KHÁCH nói (hoặc khách đồng ý với câu môi giới vừa hỏi), không tính điều môi "
+              "giới tự hỏi hay đoán.")
+        nd = (f"Câu môi giới vừa hỏi: {bot or '(không có)'}\nCác tin khách gần đây:\n" + "\n".join(f"- {k}" for k in khach)
+              + f"\nCụm được trích làm bằng chứng: {trich or '(trống)'}\n\nCâu hỏi: {cau_hoi}")
+        r = self._provider.extract(he, [Message("user", nd)],
+                                   {"type": "object", "properties": {"dung": {"type": "boolean"}}, "required": ["dung"]})
+        v = r.get("dung") if isinstance(r, dict) else None
+        log.warning("AI xác nhận nghĩa: %s → %s", cau_hoi[:60], v)
+        return v if isinstance(v, bool) else None
+
     def _handle(self, user_key: str, text: str, now: float | None = None) -> TurnResult:
         now = now if now is not None else time.time()
+        _XAC_NHAN_NGHIA.set(self._ai_xac_nhan_nghia)   # SRS-5.1zzzzzzz530: AI xác nhận nghĩa cho cổng mã rủi ro của lượt này
         conv = self.conversation(user_key)
         conv.do_luot = {}
         conv.vong_gop = conv.vong_mua = None
@@ -6237,11 +6279,13 @@ class Engine:
             log.warning("Bỏ ô %s: %s", k, hinh_thuc)
             conv.bo_luot.append((k, v, bang_chung.get(k) if isinstance(bang_chung.get(k), str) else None, hinh_thuc))
             return None
-        if (k in KHOA_PHAP_LY and k not in (conv.y_luot.get("_bot_vua_hoi") or ())
-                and not _DAU_HIEU_PHAP_LY.search(bo_dau(f"{v} {bang_chung.get(k) if isinstance(bang_chung.get(k), str) else ''}").lower())):
-            # SRS-5.1zzzzzzz530 (kịch bản E 20/11): "chính chủ nha" vào ô phap_ly_so_do — ô pháp lý phải nói về giấy tờ, trừ khi khách đáp câu
-            # bot vừa hỏi đúng ô đó ("có rồi em").
-            log.warning("Bỏ ô %s: không nói về giấy tờ", k)
+        cum_pl = f"{v} {bang_chung.get(k) if isinstance(bang_chung.get(k), str) else ''}"
+        if (k in KHOA_PHAP_LY and k not in (conv.y_luot.get("_bot_vua_hoi") or ()) and conv.prop.fields.get(k) != v
+                and not _DAU_HIEU_PHAP_LY.search(bo_dau(cum_pl).lower())
+                and _ai_dong_y(_HOI_O_PHAP_LY, cum_pl, conv) is False):
+            # SRS-5.1zzzzzzz530 (kịch bản E 20/11): "chính chủ nha" vào ô phap_ly_so_do. Từ khoá giấy tờ chỉ xác nhận nhanh; không có thì AI đọc
+            # nghĩa quyết (luật CLAUDE.md §4.8) — AI nói không phải giấy tờ mới bỏ ô; khách đáp câu bot vừa hỏi đúng ô đó thì không hỏi.
+            log.warning("Bỏ ô %s: AI xác nhận cụm không nói về giấy tờ", k)
             conv.bo_luot.append((k, v, bang_chung.get(k) if isinstance(bang_chung.get(k), str) else None, "ô pháp lý mà cụm không nói về giấy tờ"))
             return None
         if k == "gia" and _GIA_CHUA_RO_RE.search(str(v)):   # SRS-5.1zzzzzzz516: "6.x tỷ" từng vào tiêu đề bản tin (bắn thử 16/11)
