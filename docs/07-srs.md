@@ -805,9 +805,9 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
 
 Chủ dự án 20/11/2026: "cái nào dài thì ko dài, cái ko cần dài thì dài", rồi "vị trí vẫn bị chắp vá, xóa cái nút json đi". Bảng để trình
 duyệt tự chia cột: mã cũ dạng #BDS-NP-TPVUNGTAU-0005 (~22 ký tự) làm cột Mã tin phình, Vị trí bị bóp còn một chữ một dòng, tên người
-bán và đuôi Vị trí bị cột Thao tác dính phải đè. Nay `table-fixed` + `colgroup`: Mã tin 216 (dài hơn thì xuống dòng, căn trái), Loại 112,
-Trạng thái 160, Bán/thuê 88, Giá 112, Diện tích 96, Vị trí 320, Người bán 176, SĐT 136, Ảnh 64, Ngày 112, Thao tác 136; Mô tả nhận phần
-còn lại (tối thiểu 360). Các cột tới hết Vị trí ≈ 1.100px, vừa màn 1.536px trừ sidebar và cột Thao tác. Loại, Người bán xuống dòng; cột
+bán và đuôi Vị trí bị cột Thao tác dính phải đè. Nay `table-fixed` + `colgroup`: Mã tin 200 (dài hơn thì xuống dòng, căn trái), Loại 96,
+Trạng thái 144, Bán/thuê 80, Giá 104, Diện tích 88, Vị trí 376, Người bán 176, SĐT 136, Ảnh 64, Ngày 112, Thao tác 128; Mô tả nhận phần
+còn lại (tối thiểu 360). Lề ô 8px (trước 12px). Các cột tới hết Vị trí ≈ 1.090px, địa chỉ một dòng không rớt chữ cuối (thêm text-wrap: pretty), vừa màn 1.536px trừ sidebar và cột Thao tác. Loại, Người bán xuống dòng; cột
 ngắn khác cắt "…" kèm title. Tiêu đề cột bỏ chữ hoa, không xuống dòng. Bỏ nút JSON (bóc tách chia nhóm) ở từng dòng — Thao tác còn Sửa,
 Xem; JSON cả rổ vẫn ở nút "{ } JSON" đầu trang. Theo thang chữ / khoảng cách skill landing-page-design (elayadesign); giữ Nunito, màu King.
 

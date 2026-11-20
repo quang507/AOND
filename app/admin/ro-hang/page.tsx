@@ -100,9 +100,9 @@ const COT_HIEN = THU_TU_HIEN.map((k) => COT.find((c) => c.key === k)!).filter(Bo
 // bóp còn một chữ một dòng, tên người bán bị cột Thao tác đè (chủ dự án 20/11: "cái nào dài thì ko dài, cái ko cần dài thì dài").
 // Mã tin 216: mã cũ dạng #BDS-NP-TPVUNGTAU-0005 (~22 ký tự) vừa một dòng, dài hơn thì xuống dòng. Các cột trước Vị trí + Vị trí ≈ 1.100px: vừa màn 1.536px trừ sidebar và cột Thao tác dính phải. Cột ngắn rộng vừa nội dung; Vị trí đủ cho 2–3 dòng; Mô tả không đặt độ rộng → nhận phần còn lại. Số trên thang khoảng cách 4/8px.
 const RONG: Record<string, number> = {
-  ma: 216, loai: 112, trang_thai: 160, deal: 88, gia: 112, dien_tich: 96, vi_tri: 320, nguoi_ban: 176, sdt: 136, anh: 64, ngay: 112,
+  ma: 200, loai: 96, trang_thai: 144, deal: 80, gia: 104, dien_tich: 88, vi_tri: 376, nguoi_ban: 176, sdt: 136, anh: 64, ngay: 112,
 };
-const RONG_THAO_TAC = 136; // Sửa + Xem (nút JSON từng dòng đã bỏ 20/11; JSON cả rổ vẫn ở nút {} JSON đầu trang)
+const RONG_THAO_TAC = 128; // Sửa + Xem (nút JSON từng dòng đã bỏ 20/11; JSON cả rổ vẫn ở nút {} JSON đầu trang)
 const RONG_MO_TA_TOI_THIEU = 360;
 const RONG_BANG = COT_HIEN.reduce((t, c) => t + (RONG[c.key] ?? RONG_MO_TA_TOI_THIEU), RONG_THAO_TAC);
 const XUONG_DONG = new Set(["loai", "nguoi_ban"]); // chữ dài thì xuống dòng thay vì tràn sang cột bên
@@ -330,7 +330,7 @@ export default function Page() {
           <thead className="sticky top-0 bg-slate-50 border-b border-line">
             <tr className="text-xs text-mute">
               {COT_HIEN.map((c) => (
-                <th key={c.key} scope="col" aria-sort={sap.key === c.key ? (sap.tang ? "ascending" : "descending") : undefined} className="whitespace-nowrap px-3 py-3 font-semibold">
+                <th key={c.key} scope="col" aria-sort={sap.key === c.key ? (sap.tang ? "ascending" : "descending") : undefined} className="whitespace-nowrap px-2 py-3 font-semibold">
                   {c.sap ? (
                     <button type="button" onClick={() => bamCot(c.key)} className="hover:text-brand flex items-center gap-1">
                       <span>{c.ten}</span>
@@ -341,7 +341,7 @@ export default function Page() {
                   )}
                 </th>
               ))}
-              <th scope="col" className="whitespace-nowrap px-3 py-3 font-semibold text-center sticky right-0 z-10 bg-slate-50 shadow-[-6px_0_8px_-6px_rgba(0,0,0,0.15)]">
+              <th scope="col" className="whitespace-nowrap px-2 py-3 font-semibold text-center sticky right-0 z-10 bg-slate-50 shadow-[-6px_0_8px_-6px_rgba(0,0,0,0.15)]">
                 Thao tác
               </th>
             </tr>
@@ -358,7 +358,7 @@ export default function Page() {
                     // Cột mô tả
                     if (c.key === "mo_ta") {
                       return (
-                        <td key={c.key} className="px-3 py-3">
+                        <td key={c.key} className="px-2 py-3">
                           <button
                             type="button"
                             onClick={() => setMo((s) => { const n = new Set(s); if (n.has(d.id)) n.delete(d.id); else n.add(d.id); return n; })}
@@ -374,7 +374,7 @@ export default function Page() {
                     // Cột mã tin → mở màn sửa. Trang công khai chỉ có khi tin đang rao (nút "Xem").
                     if (c.key === "ma" && d.code) {
                       return (
-                        <td key={c.key} className="px-3 py-3 tabular-nums font-bold [overflow-wrap:anywhere]">
+                        <td key={c.key} className="px-2 py-3 tabular-nums font-bold [overflow-wrap:anywhere]">
                           <button type="button" onClick={() => moSua(d)} className="text-left text-[#b3461a] hover:underline" title="Mở màn sửa tin này">
                             #{d.code}
                           </button>
@@ -388,7 +388,7 @@ export default function Page() {
                     // Cột trạng thái: Dropdown đổi trạng thái nhanh tại chỗ
                     if (c.key === "trang_thai") {
                       return (
-                        <td key={c.key} className="whitespace-nowrap px-3 py-3">
+                        <td key={c.key} className="whitespace-nowrap px-2 py-3">
                           <select
                             value={d.status}
                             onChange={(e) => doiTrangThaiNhanh(d, e.target.value)}
@@ -421,7 +421,7 @@ export default function Page() {
                     // Cột giá
                     if (c.key === "gia") {
                       return (
-                        <td key={c.key} className="whitespace-nowrap px-3 py-3 tabular-nums font-bold text-navy">
+                        <td key={c.key} className="whitespace-nowrap px-2 py-3 tabular-nums font-bold text-navy">
                           {c.lay(d)}
                         </td>
                       );
@@ -430,7 +430,7 @@ export default function Page() {
                     // Cột vị trí
                     if (c.key === "vi_tri") {
                       return (
-                        <td key={c.key} className="break-words px-3 py-3 text-navy font-medium">
+                        <td key={c.key} className="break-words px-2 py-3 text-navy font-medium [text-wrap:pretty]">
                           {c.lay(d)}
                         </td>
                       );
@@ -438,18 +438,18 @@ export default function Page() {
 
                     const giaTri = c.lay(d);
                     return XUONG_DONG.has(c.key) ? (
-                      <td key={c.key} className="break-words px-3 py-3 text-navy/80">
+                      <td key={c.key} className="break-words px-2 py-3 text-navy/80">
                         {giaTri}
                       </td>
                     ) : (
-                      <td key={c.key} className="truncate px-3 py-3 tabular-nums text-navy/80" title={giaTri || undefined}>
+                      <td key={c.key} className="truncate px-2 py-3 tabular-nums text-navy/80" title={giaTri || undefined}>
                         {giaTri}
                       </td>
                     );
                   })}
 
                   {/* Cột nút thao tác */}
-                  <td className="whitespace-nowrap px-3 py-3 text-center sticky right-0 z-10 bg-white shadow-[-6px_0_8px_-6px_rgba(0,0,0,0.15)]">
+                  <td className="whitespace-nowrap px-2 py-3 text-center sticky right-0 z-10 bg-white shadow-[-6px_0_8px_-6px_rgba(0,0,0,0.15)]">
                     <div className="flex items-center justify-center gap-1.5">
                       <button
                         type="button"
