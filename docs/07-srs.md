@@ -804,7 +804,7 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
 ### SRS-5.1zzzzzzz532 · Bảng Rổ hàng: độ rộng cột cố định theo nội dung (20/11/2026)
 
 Chủ dự án 20/11/2026: "cái nào dài thì ko dài, cái ko cần dài thì dài". Bảng để trình duyệt tự chia cột nên cột Mã tin rộng gần
-400px, cột Vị trí bị bóp còn một chữ một dòng, tên người bán bị cột Thao tác đè. Nay `table-fixed` + `colgroup`: Mã tin 120, Loại 128,
+400px, cột Vị trí bị bóp còn một chữ một dòng, tên người bán bị cột Thao tác đè. Nay `table-fixed` + `colgroup`: Mã tin 216 (mã cũ dạng #BDS-NP-TPVUNGTAU-0005 dài ~22 ký tự — chính nó làm cột phình trước đây; dài hơn thì xuống dòng), Loại 128,
 Trạng thái 184, Bán/thuê 96, Giá 136, Diện tích 104, Vị trí 288, Người bán 176, SĐT 136, Ảnh 64, Ngày 112, Thao tác 184; Mô tả nhận
 phần còn lại (tối thiểu 360). Loại và Người bán xuống dòng; cột ngắn còn lại cắt bằng "…" kèm title. Tiêu đề cột bỏ chữ hoa (trước chỉ
 "THAO TÁC" hoa vì nút sắp xếp không nhận uppercase), không xuống dòng. Áp thang chữ / khoảng cách của skill landing-page-design

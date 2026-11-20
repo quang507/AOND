@@ -111,9 +111,9 @@ const THU_TU_HIEN = ["ma", "loai", "trang_thai", "deal", "gia", "dien_tich", "vi
 const COT_HIEN = THU_TU_HIEN.map((k) => COT.find((c) => c.key === k)!).filter(Boolean);
 // SRS-5.1zzzzzzz532: độ rộng cột cố định (table-fixed) — để trình duyệt tự chia thì cột Mã tin ăn hết chỗ thừa còn Vị trí bị
 // bóp còn một chữ một dòng, tên người bán bị cột Thao tác đè (chủ dự án 20/11: "cái nào dài thì ko dài, cái ko cần dài thì dài").
-// Cột ngắn rộng vừa nội dung; Vị trí đủ cho 2–3 dòng; Mô tả không đặt độ rộng → nhận phần còn lại. Số trên thang khoảng cách 4/8px.
+// Mã tin 216: mã cũ dạng #BDS-NP-TPVUNGTAU-0005 (~22 ký tự) vừa một dòng, dài hơn thì xuống dòng. Cột ngắn rộng vừa nội dung; Vị trí đủ cho 2–3 dòng; Mô tả không đặt độ rộng → nhận phần còn lại. Số trên thang khoảng cách 4/8px.
 const RONG: Record<string, number> = {
-  ma: 120, loai: 128, trang_thai: 184, deal: 96, gia: 136, dien_tich: 104, vi_tri: 288, nguoi_ban: 176, sdt: 136, anh: 64, ngay: 112,
+  ma: 216, loai: 128, trang_thai: 184, deal: 96, gia: 136, dien_tich: 104, vi_tri: 288, nguoi_ban: 176, sdt: 136, anh: 64, ngay: 112,
 };
 const RONG_THAO_TAC = 184;
 const RONG_MO_TA_TOI_THIEU = 360;
@@ -389,7 +389,7 @@ export default function Page() {
                     // Cột mã tin → mở màn sửa. Trang công khai chỉ có khi tin đang rao (nút "Xem").
                     if (c.key === "ma" && d.code) {
                       return (
-                        <td key={c.key} className="whitespace-nowrap px-3 py-3 tabular-nums font-bold">
+                        <td key={c.key} className="px-3 py-3 tabular-nums font-bold [overflow-wrap:anywhere]">
                           <button type="button" onClick={() => moSua(d)} className="text-[#b3461a] hover:underline" title="Mở màn sửa tin này">
                             #{d.code}
                           </button>
