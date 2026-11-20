@@ -113,7 +113,8 @@ export default function Page() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-6">
+      {/* SRS-5.1zzzzzzz533: khung câu mẫu 340 → tối đa 448px — câu dài nằm trong ô hẹp, cột trái thường trống */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:gap-6">
       <div className="min-w-0">
       <h1 className="text-xl font-bold text-navy">Câu chuẩn</h1>
       <p className="mt-1 max-w-[70ch] text-sm text-mute">

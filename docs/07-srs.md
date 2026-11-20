@@ -801,6 +801,16 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz533 · CRM: chỗ cần dài thì dài, chỗ không cần thì gọn — Báo cáo, Đăng tin, Câu chuẩn, Khách hàng (20/11/2026)
+
+Chủ dự án 20/11/2026 "rồi sửa hết các chỗ khác của CRM đi" (sau SRS-532 Rổ hàng). Đo 10 trang CRM trên web thật ở 1536px rồi sửa:
+- Báo cáo: bảng thống kê 30 ngày 8 cột số một chữ số kéo dãn hết bề ngang → bảng rộng vừa nội dung, số canh phải dưới tiêu đề.
+- Đăng tin: ô Địa chỉ / tên đường (ô dài nhất) chỉ nửa hàng → trải hết hàng. Ô nhập bo 8px (trước 14px, trái SRS-452).
+- Câu chuẩn: khung câu mẫu cố định bên phải 340px, câu dài bị bóp → tối đa 448px.
+- Khách hàng: thẻ chưa có căn rao lẫn nhu cầu từng có hai khung trống chiếm nửa màn → một dòng "Chưa có BĐS rao bán · chưa ghi nhận
+  nhu cầu tìm mua / thuê" (kèm ghi chú nếu có). Khung trống còn lại canh trái, gọn hơn.
+- Bỏ hết chữ nghiêng trong CRM (7 chỗ: dòng trống, trích tin khách, câu trả lời) — theo skill landing-page-design.
+
 ### SRS-5.1zzzzzzz532 · Bảng Rổ hàng: độ rộng cột cố định theo nội dung, bỏ nút JSON từng dòng (20/11/2026)
 
 Chủ dự án 20/11/2026: "cái nào dài thì ko dài, cái ko cần dài thì dài", rồi "vị trí vẫn bị chắp vá, xóa cái nút json đi". Bảng để trình

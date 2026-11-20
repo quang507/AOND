@@ -200,7 +200,8 @@ export default function Page() {
               chon={[["", "- chưa rõ -"], ...PHUONG]} />
             <O nhan="Quận / huyện, tỉnh" giaTri={quan} doi={setQuan}
               goiY="VD: Quận 5 · Quận Tân Bình · Bến Lức, Long An" />
-            <O nhan="Địa chỉ / tên đường" giaTri={diaChi} doi={setDiaChi}
+            {/* SRS-5.1zzzzzzz533: địa chỉ là ô dài nhất — trải hết hàng thay vì nửa hàng như "Quận 5" */}
+            <O nhan="Địa chỉ / tên đường" giaTri={diaChi} doi={setDiaChi} rong
               goiY="VD: 123/45 Trần Bình Trọng" />
           </div>
         </Khoi>
@@ -229,7 +230,7 @@ export default function Page() {
             <textarea
               value={moTa} onChange={(e) => setMoTa(e.target.value)} rows={5}
               placeholder="Dán nguyên câu rao vào đây. Đừng viết lại cho hay - văn phong người rao là thứ khách tin."
-              className="mt-1.5 w-full rounded-shot border border-line bg-white px-3.5 py-2.5 outline-none focus:border-brand"
+              className="mt-1.5 w-full rounded-md border border-line bg-white px-3.5 py-2.5 outline-none focus:border-brand"
             />
             <p className="mt-1 text-xs text-mute">
               Web tự lọc số điện thoại khỏi mô tả trước khi hiện (FR-104).
@@ -325,16 +326,16 @@ function Khoi({ tieuDe, children }: { tieuDe: string; children: React.ReactNode 
 }
 
 function O({
-  nhan, giaTri, doi, goiY, kieu = "text",
+  nhan, giaTri, doi, goiY, kieu = "text", rong = false,
 }: {
-  nhan: string; giaTri: string; doi: (v: string) => void; goiY?: string; kieu?: string;
+  nhan: string; giaTri: string; doi: (v: string) => void; goiY?: string; kieu?: string; rong?: boolean;
 }) {
   return (
-    <label className="block">
+    <label className={rong ? "block sm:col-span-2" : "block"}>
       <span className="eyebrow text-mute">{nhan}</span>
       <input
         type={kieu} value={giaTri} onChange={(e) => doi(e.target.value)} placeholder={goiY}
-        className="mt-1.5 w-full rounded-shot border border-line bg-white px-3.5 py-2.5 outline-none focus:border-brand"
+        className="mt-1.5 w-full rounded-md border border-line bg-white px-3.5 py-2.5 outline-none focus:border-brand"
       />
     </label>
   );
@@ -351,7 +352,7 @@ function Chon({
       <span className="eyebrow text-mute">{nhan}</span>
       <select
         value={giaTri} onChange={(e) => doi(e.target.value)}
-        className="mt-1.5 w-full rounded-shot border border-line bg-white px-3.5 py-2.5 outline-none focus:border-brand"
+        className="mt-1.5 w-full rounded-md border border-line bg-white px-3.5 py-2.5 outline-none focus:border-brand"
       >
         {chon.map(([v, t]) => (
           <option key={v} value={v}>{t}</option>
@@ -378,7 +379,7 @@ function TichVaO({
       {tich ? (
         <input
           value={giaTri} onChange={(e) => doi(e.target.value)} placeholder={goiY}
-          className="mt-2 w-full rounded-shot border border-line bg-white px-3.5 py-2.5 outline-none focus:border-brand"
+          className="mt-2 w-full rounded-md border border-line bg-white px-3.5 py-2.5 outline-none focus:border-brand"
         />
       ) : (
         <p className="mt-1 text-xs text-mute">{ghiChu}</p>

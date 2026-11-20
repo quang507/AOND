@@ -1083,7 +1083,13 @@ function BanLamViec() {
                       </div>
                     </div>
 
-                    {/* Card Content Grid */}
+                    {/* SRS-5.1zzzzzzz533: chưa có căn rao lẫn nhu cầu thì một dòng, không phải hai khung trống chiếm nửa màn */}
+                    {!k.seller?.active_listing && !(k.nhu_cau ?? []).length && !k.preferences ? (
+                      <p className="mt-2 text-xs text-mute">
+                        Chưa có BĐS rao bán · chưa ghi nhận nhu cầu tìm mua / thuê
+                        {k.notes ? <span className="font-medium text-navy"> · {String(k.notes)}</span> : null}
+                      </p>
+                    ) : (
                     <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
                       {/* Box 1: Căn đang rao bán */}
                       {k.seller?.active_listing ? (() => {
@@ -1120,7 +1126,7 @@ function BanLamViec() {
                           </Link>
                         );
                       })() : (
-                        <div className="rounded-xl border border-dashed border-line p-3 text-xs text-mute flex items-center justify-center italic">
+                        <div className="rounded-xl border border-dashed border-line px-3 py-2 text-xs text-mute">
                           Chưa có BĐS rao bán
                         </div>
                       )}
@@ -1139,7 +1145,7 @@ function BanLamViec() {
                             : k.preferences ? [{ nhan: null, nc: docNhuCau(p), khoang: "", dt: "", dangNoi: false, thoi: false }] : [];
                         if (!bo.length)
                           return (
-                            <div className="rounded-xl border border-dashed border-line p-3 text-xs text-mute flex items-center justify-center italic">
+                            <div className="rounded-xl border border-dashed border-line px-3 py-2 text-xs text-mute">
                               Chưa ghi nhận nhu cầu tìm mua / thuê
                             </div>
                           );
@@ -1177,6 +1183,7 @@ function BanLamViec() {
                         );
                       })()}
                     </div>
+                    )}
 
                     {/* Inline Form Edit Preferences */}
                     {isEditing && (
@@ -1322,7 +1329,7 @@ function BanLamViec() {
                           </span>
                         ))
                       ) : (
-                        <span className="text-xs text-mute italic">Chưa gắn BĐS nào</span>
+                        <span className="text-xs text-mute">Chưa gắn BĐS nào</span>
                       )}
 
                       {/* Attach Property Input */}
@@ -1417,7 +1424,7 @@ function BanLamViec() {
                             <span className="ml-2 text-xs font-normal text-mute tabular-nums">{new Date(l.created_at).toLocaleString("vi-VN")}</span>
                           </p>
                           <p className="mt-0.5 truncate text-sm text-mute">
-                            {sanitizeDescription(l.description) || l.location_raw || <span className="italic">Tin chưa có nội dung mô tả</span>}
+                            {sanitizeDescription(l.description) || l.location_raw || <span className="text-mute">Tin chưa có nội dung mô tả</span>}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
@@ -1498,7 +1505,7 @@ function BanLamViec() {
                         </span>
                       </div>
                       {k.tin_khach_cuoi && (
-                        <p className="mt-1 line-clamp-2 max-w-[70ch] text-sm text-navy/80 italic">
+                        <p className="mt-1 line-clamp-2 max-w-[70ch] text-sm text-navy/80">
                           “{k.tin_khach_cuoi}”
                         </p>
                       )}
@@ -1542,7 +1549,7 @@ function BanLamViec() {
                         </span>
                       </div>
                       <p className="text-navy font-medium">{c.question}</p>
-                      {c.answer && <p className="text-mute italic">↳ {c.answer}</p>}
+                      {c.answer && <p className="text-mute">↳ {c.answer}</p>}
                     </li>
                   ))}
                 </ul>
@@ -1645,32 +1652,33 @@ function BanLamViec() {
 
             {thongKe.length > 0 && (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm tabular-nums">
-                  <thead className="text-left text-xs text-mute border-b border-line">
+                {/* SRS-5.1zzzzzzz533: 8 cột số một chữ số từng bị kéo dãn hết bề ngang (w-full) — nay bảng rộng vừa nội dung, số canh phải */}
+                <table className="text-sm tabular-nums">
+                  <thead className="text-right text-xs text-mute border-b border-line">
                     <tr>
-                      <th className="py-2 pr-3 font-semibold">Ngày</th>
-                      <th className="py-2 pr-3 font-semibold">HT khách</th>
-                      <th className="py-2 pr-3 font-semibold">HT bán</th>
-                      <th className="py-2 pr-3 font-semibold">Tin khách</th>
-                      <th className="py-2 pr-3 font-semibold">Tin bot</th>
-                      <th className="py-2 pr-3 font-semibold">Người thật</th>
-                      <th className="py-2 pr-3 font-semibold">Khách mới</th>
-                      <th className="py-2 font-semibold">Cờ</th>
+                      <th className="whitespace-nowrap py-2 pr-6 text-left font-semibold">Ngày</th>
+                      <th className="whitespace-nowrap py-2 pl-6 font-semibold">HT khách</th>
+                      <th className="whitespace-nowrap py-2 pl-6 font-semibold">HT bán</th>
+                      <th className="whitespace-nowrap py-2 pl-6 font-semibold">Tin khách</th>
+                      <th className="whitespace-nowrap py-2 pl-6 font-semibold">Tin bot</th>
+                      <th className="whitespace-nowrap py-2 pl-6 font-semibold">Người thật</th>
+                      <th className="whitespace-nowrap py-2 pl-6 font-semibold">Khách mới</th>
+                      <th className="whitespace-nowrap py-2 pl-6 font-semibold">Cờ</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
                     {ptThongKe.mot.map((r) => (
-                      <tr key={r.ngay} className="hover:bg-slate-50/50">
-                        <td className="py-2 pr-3 text-mute font-medium">
+                      <tr key={r.ngay} className="text-right hover:bg-slate-50/50">
+                        <td className="whitespace-nowrap py-2 pr-6 text-left text-mute font-medium">
                           {new Date(r.ngay).toLocaleDateString("vi-VN")}
                         </td>
-                        <td className="py-2 pr-3">{r.hoi_thoai_khach_moi}</td>
-                        <td className="py-2 pr-3">{r.hoi_thoai_ban_moi}</td>
-                        <td className="py-2 pr-3">{r.tin_khach}</td>
-                        <td className="py-2 pr-3">{r.tin_bot}</td>
-                        <td className="py-2 pr-3">{r.tin_nguoi_that}</td>
-                        <td className="py-2 pr-3">{r.khach_moi}</td>
-                        <td className="py-2">{r.co_nguoi_that}</td>
+                        <td className="py-2 pl-6">{r.hoi_thoai_khach_moi}</td>
+                        <td className="py-2 pl-6">{r.hoi_thoai_ban_moi}</td>
+                        <td className="py-2 pl-6">{r.tin_khach}</td>
+                        <td className="py-2 pl-6">{r.tin_bot}</td>
+                        <td className="py-2 pl-6">{r.tin_nguoi_that}</td>
+                        <td className="py-2 pl-6">{r.khach_moi}</td>
+                        <td className="py-2 pl-6">{r.co_nguoi_that}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1997,7 +2005,7 @@ function TraCuu({ ten, phu, dem, children }: {
 }
 
 function Rong({ children }: { children: ReactNode }) {
-  return <p className="mt-2 text-sm text-mute italic">{children}</p>;
+  return <p className="mt-2 text-sm text-mute">{children}</p>;
 }
 
 function PhanTrang({ trang, soTrang, tong, setTrang }: {
