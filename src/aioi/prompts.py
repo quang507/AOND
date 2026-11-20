@@ -1297,8 +1297,9 @@ AD_FORMAT = """BỐ CỤC TIN RAO — bốn khối theo thứ tự, mỗi khối
    mua về có sẵn người thuê). Con số đã có ở tiêu đề / gạch đầu dòng thì mô tả kể bằng lời. Gọi "anh chị" khoảng ba lần: câu mời mở
    đầu, chỗ khoe quyền lợi lớn nhất, và câu mời chốt. Viết đủ chữ kèm đơn vị ("mặt tiền", "phòng ngủ", "12.5 tỷ", "5.3m", "35m²").
 
-3) 4–5 gạch đầu dòng, mỗi dòng một ý đắt giá, không trùng nhau, không có dòng trống giữa các gạch. Số tự rõ nghĩa thì ghi trơn
-   ("132m²", "19 tỷ", "sổ hồng riêng"); chỉ thêm chữ khi cần phân biệt ("132m² đất · 120m² xây dựng", "mặt tiền 12m").
+3) 4–5 gạch đầu dòng, mỗi dòng một ý đắt giá, không trùng nhau, không có dòng trống giữa các gạch. Viết thẳng giá trị, không
+   nhãn có dấu hai chấm: "- 19 tỷ" chứ không "- Giá bán: 19 tỷ"; "- 1 trệt 2 lầu" chứ không "- Kết cấu: 1 trệt 2 lầu". Chỉ thêm chữ khi
+   cần phân biệt ("132m² đất · 120m² xây dựng", "mặt tiền 12m").
 
 4) Câu mời chốt — đoạn riêng cuối cùng, sau gạch đầu dòng (đoạn mô tả không mời nhắn tin, để dành cho đây): một–hai câu giục người
    đọc nhắn Zalo cho em ngay (có thể kèm gửi thêm hình / hẹn đi coi), viết như mở lời để họ bấm vào là chat tiếp được. Thúc bằng cái
@@ -1603,16 +1604,16 @@ def build_listing_proposal_system(
               else cau_mau.cau("hoi_ban_nhap", goi))   # sửa ở CRM (SRS-5.1zzzzzzz110)
 
     # SRS-5.1zzzzzzz213: khối dự án + dữ liệu căn (đổi theo khách) xuống SAU dấu cache; phần trên (khuôn tin rao, luật) đứng yên.
-    return f"""{khoi_nhan_vat(assistant_name, "người gửi bán / cho thuê nhà")}
-{BUSINESS_CONTEXT}
-
+    # 20/11/2026 (chủ dự án: "rút gọn dc ko … tự chạy đi cài hết đi"): lượt trình bản tin không hỏi ô, không nói phí — bỏ khối GIỌNG
+    # (cách hỏi thông tin + 5 ví dụ cảm xúc) và BUSINESS_CONTEXT (bảng phí); giữ phần tính cách ngắn và một câu giọng ngay dưới.
+    return f"""{khoi_nhan_vat(assistant_name, "người gửi bán / cho thuê nhà", kem_giong=False)}
 VIỆC LƯỢT NÀY — CHO KHÁCH XEM TRƯỚC BẢN TIN: căn đã đủ để rao (loại hình, vị trí, giá; ô còn thiếu hệ thống hỏi sau khi khách duyệt).
 Cả lượt nằm trong một tin nhắn:
 Dòng đầu: {opener}
 (một dòng trống, rồi bản tin theo bố cục dưới, một dòng trống)
 Dòng cuối: {closer}
-Giọng thân thiện, miền Nam, câu viết trọn (không bỏ lửng bằng "…"). Phí môi giới để sau khi khách duyệt, lượt này chưa nhắc. (Câu mời chốt trong bản tin và câu hỏi
-cuối luôn có ở lượt trình / rao lại bản tin, không tính vào lời mời chốt của khối GIỌNG.)
+Khách vừa hỏi hay lộ cảm xúc thì một câu ngắn đáp điều đó trước dòng đầu. Văn nói thân thiện, miền Nam, câu viết trọn (không bỏ lửng
+bằng "…"). Phí môi giới để sau khi khách duyệt, lượt này chưa nhắc.
 
 {AD_FORMAT}
 {RANH_GIOI_CACHE}{project_block}{yeu_cau}
