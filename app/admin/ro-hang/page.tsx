@@ -8,21 +8,8 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { formatArea, formatPrice, sanitizeDescription, TYPE_LABEL } from "@/lib/format";
-import BocTachNhom, { useBocTach } from "@/components/admin/BocTachNhom";
 import SuaTinModal, { TRANG_THAI_TIN } from "@/components/admin/SuaTinModal";
 import { choKhachDuyet } from "@/lib/trang-thai-tin";
-
-// FR-187: dòng JSON chia nhóm mở dưới một tin (đọc `boc_tach_v` khi bấm, không tải cả rổ).
-function DongJson({ id, ma, cot }: { id: string; ma: string | null; cot: number }) {
-  const { nhom, loi } = useBocTach(id);
-  return (
-    <tr className="bg-slate-50/70">
-      <td colSpan={cot} className="px-4 py-3">
-        <BocTachNhom ma={ma} nhom={nhom} loi={loi} />
-      </td>
-    </tr>
-  );
-}
 
 type Dong = {
   id: string;
@@ -111,11 +98,11 @@ const THU_TU_HIEN = ["ma", "loai", "trang_thai", "deal", "gia", "dien_tich", "vi
 const COT_HIEN = THU_TU_HIEN.map((k) => COT.find((c) => c.key === k)!).filter(Boolean);
 // SRS-5.1zzzzzzz532: độ rộng cột cố định (table-fixed) — để trình duyệt tự chia thì cột Mã tin ăn hết chỗ thừa còn Vị trí bị
 // bóp còn một chữ một dòng, tên người bán bị cột Thao tác đè (chủ dự án 20/11: "cái nào dài thì ko dài, cái ko cần dài thì dài").
-// Mã tin 216: mã cũ dạng #BDS-NP-TPVUNGTAU-0005 (~22 ký tự) vừa một dòng, dài hơn thì xuống dòng. Cột ngắn rộng vừa nội dung; Vị trí đủ cho 2–3 dòng; Mô tả không đặt độ rộng → nhận phần còn lại. Số trên thang khoảng cách 4/8px.
+// Mã tin 216: mã cũ dạng #BDS-NP-TPVUNGTAU-0005 (~22 ký tự) vừa một dòng, dài hơn thì xuống dòng. Các cột trước Vị trí + Vị trí ≈ 1.100px: vừa màn 1.536px trừ sidebar và cột Thao tác dính phải. Cột ngắn rộng vừa nội dung; Vị trí đủ cho 2–3 dòng; Mô tả không đặt độ rộng → nhận phần còn lại. Số trên thang khoảng cách 4/8px.
 const RONG: Record<string, number> = {
-  ma: 216, loai: 128, trang_thai: 184, deal: 96, gia: 136, dien_tich: 104, vi_tri: 288, nguoi_ban: 176, sdt: 136, anh: 64, ngay: 112,
+  ma: 216, loai: 112, trang_thai: 160, deal: 88, gia: 112, dien_tich: 96, vi_tri: 320, nguoi_ban: 176, sdt: 136, anh: 64, ngay: 112,
 };
-const RONG_THAO_TAC = 184;
+const RONG_THAO_TAC = 136; // Sửa + Xem (nút JSON từng dòng đã bỏ 20/11; JSON cả rổ vẫn ở nút {} JSON đầu trang)
 const RONG_MO_TA_TOI_THIEU = 360;
 const RONG_BANG = COT_HIEN.reduce((t, c) => t + (RONG[c.key] ?? RONG_MO_TA_TOI_THIEU), RONG_THAO_TAC);
 const XUONG_DONG = new Set(["loai", "nguoi_ban"]); // chữ dài thì xuống dòng thay vì tràn sang cột bên
@@ -134,7 +121,6 @@ export default function Page() {
   const [trang, setTrang] = useState(1);
   const [mo, setMo] = useState<Set<string>>(new Set());
   // FR-187: tin đang mở JSON chia nhóm.
-  const [moJson, setMoJson] = useState<Set<string>>(new Set());
 
   // Màn sửa (components/admin/SuaTinModal.tsx) + thông báo sau mỗi thao tác (WCAG 4.1.3).
   const [dangSua, setDangSua] = useState<Dong | null>(null);
@@ -364,7 +350,6 @@ export default function Page() {
             {mot.map((d) => {
               const moTaFull = COT.find((c) => c.key === "mo_ta")!.lay(d);
               const daMo = mo.has(d.id);
-              const daMoJson = moJson.has(d.id);
 
               return (
                 <Fragment key={d.id}>
@@ -390,7 +375,7 @@ export default function Page() {
                     if (c.key === "ma" && d.code) {
                       return (
                         <td key={c.key} className="px-3 py-3 tabular-nums font-bold [overflow-wrap:anywhere]">
-                          <button type="button" onClick={() => moSua(d)} className="text-[#b3461a] hover:underline" title="Mở màn sửa tin này">
+                          <button type="button" onClick={() => moSua(d)} className="text-left text-[#b3461a] hover:underline" title="Mở màn sửa tin này">
                             #{d.code}
                           </button>
                           {d.legacy_code && d.legacy_code !== d.code && (
@@ -474,15 +459,6 @@ export default function Page() {
                       >
                         Sửa
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setMoJson((s) => { const n = new Set(s); if (n.has(d.id)) n.delete(d.id); else n.add(d.id); return n; })}
-                        aria-expanded={daMoJson}
-                        className={`rounded-md border px-2.5 py-1 text-xs font-semibold transition ${daMoJson ? "border-navy bg-navy text-white" : "border-line text-mute hover:text-navy hover:border-slate-400"}`}
-                        title="JSON bóc tách chia nhóm của tin này (FR-187)"
-                      >
-                        JSON
-                      </button>
                       {d.code && d.status === "dang_ban" && (
                         <Link
                           href={`/nha-dat/${encodeURIComponent(d.code)}`}
@@ -496,7 +472,6 @@ export default function Page() {
                     </div>
                   </td>
                 </tr>
-                {daMoJson && <DongJson id={d.id} ma={d.code} cot={COT_HIEN.length + 1} />}
                 </Fragment>
               );
             })}

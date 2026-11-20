@@ -801,14 +801,15 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
-### SRS-5.1zzzzzzz532 · Bảng Rổ hàng: độ rộng cột cố định theo nội dung (20/11/2026)
+### SRS-5.1zzzzzzz532 · Bảng Rổ hàng: độ rộng cột cố định theo nội dung, bỏ nút JSON từng dòng (20/11/2026)
 
-Chủ dự án 20/11/2026: "cái nào dài thì ko dài, cái ko cần dài thì dài". Bảng để trình duyệt tự chia cột nên cột Mã tin rộng gần
-400px, cột Vị trí bị bóp còn một chữ một dòng, tên người bán bị cột Thao tác đè. Nay `table-fixed` + `colgroup`: Mã tin 216 (mã cũ dạng #BDS-NP-TPVUNGTAU-0005 dài ~22 ký tự — chính nó làm cột phình trước đây; dài hơn thì xuống dòng), Loại 128,
-Trạng thái 184, Bán/thuê 96, Giá 136, Diện tích 104, Vị trí 288, Người bán 176, SĐT 136, Ảnh 64, Ngày 112, Thao tác 184; Mô tả nhận
-phần còn lại (tối thiểu 360). Loại và Người bán xuống dòng; cột ngắn còn lại cắt bằng "…" kèm title. Tiêu đề cột bỏ chữ hoa (trước chỉ
-"THAO TÁC" hoa vì nút sắp xếp không nhận uppercase), không xuống dòng. Áp thang chữ / khoảng cách của skill landing-page-design
-(elayadesign) phần dùng được cho bảng; giữ Nunito và màu King đã chốt.
+Chủ dự án 20/11/2026: "cái nào dài thì ko dài, cái ko cần dài thì dài", rồi "vị trí vẫn bị chắp vá, xóa cái nút json đi". Bảng để trình
+duyệt tự chia cột: mã cũ dạng #BDS-NP-TPVUNGTAU-0005 (~22 ký tự) làm cột Mã tin phình, Vị trí bị bóp còn một chữ một dòng, tên người
+bán và đuôi Vị trí bị cột Thao tác dính phải đè. Nay `table-fixed` + `colgroup`: Mã tin 216 (dài hơn thì xuống dòng, căn trái), Loại 112,
+Trạng thái 160, Bán/thuê 88, Giá 112, Diện tích 96, Vị trí 320, Người bán 176, SĐT 136, Ảnh 64, Ngày 112, Thao tác 136; Mô tả nhận phần
+còn lại (tối thiểu 360). Các cột tới hết Vị trí ≈ 1.100px, vừa màn 1.536px trừ sidebar và cột Thao tác. Loại, Người bán xuống dòng; cột
+ngắn khác cắt "…" kèm title. Tiêu đề cột bỏ chữ hoa, không xuống dòng. Bỏ nút JSON (bóc tách chia nhóm) ở từng dòng — Thao tác còn Sửa,
+Xem; JSON cả rổ vẫn ở nút "{ } JSON" đầu trang. Theo thang chữ / khoảng cách skill landing-page-design (elayadesign); giữ Nunito, màu King.
 
 ### SRS-5.1zzzzzzz531 · Nhân vật + giọng MỘT bản dùng chung, gỡ phiếu lượt cũ; xoá sạch số Zalo tư vấn (20/11/2026)
 Chủ dự án 20/11: "gọn thì dùng 1 bản thôi chứ ko phải là có cả Khối GIỌNG lẫn Prompt gọn (LEAN)"; "zalo bán xóa rồi mà xóa sạch đi ko cần tạo qr nữa".
