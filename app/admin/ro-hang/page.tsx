@@ -109,6 +109,16 @@ const COT: Cot[] = [
 // làm đứng đầu; ngày / SĐT / ảnh xuống cuối. CSV vẫn theo thứ tự COT.
 const THU_TU_HIEN = ["ma", "loai", "trang_thai", "deal", "gia", "dien_tich", "vi_tri", "nguoi_ban", "mo_ta", "sdt", "anh", "ngay"];
 const COT_HIEN = THU_TU_HIEN.map((k) => COT.find((c) => c.key === k)!).filter(Boolean);
+// SRS-5.1zzzzzzz532: độ rộng cột cố định (table-fixed) — để trình duyệt tự chia thì cột Mã tin ăn hết chỗ thừa còn Vị trí bị
+// bóp còn một chữ một dòng, tên người bán bị cột Thao tác đè (chủ dự án 20/11: "cái nào dài thì ko dài, cái ko cần dài thì dài").
+// Cột ngắn rộng vừa nội dung; Vị trí đủ cho 2–3 dòng; Mô tả không đặt độ rộng → nhận phần còn lại. Số trên thang khoảng cách 4/8px.
+const RONG: Record<string, number> = {
+  ma: 120, loai: 128, trang_thai: 184, deal: 96, gia: 136, dien_tich: 104, vi_tri: 288, nguoi_ban: 176, sdt: 136, anh: 64, ngay: 112,
+};
+const RONG_THAO_TAC = 184;
+const RONG_MO_TA_TOI_THIEU = 360;
+const RONG_BANG = COT_HIEN.reduce((t, c) => t + (RONG[c.key] ?? RONG_MO_TA_TOI_THIEU), RONG_THAO_TAC);
+const XUONG_DONG = new Set(["loai", "nguoi_ban"]); // chữ dài thì xuống dòng thay vì tràn sang cột bên
 
 const khongDau = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
@@ -323,12 +333,18 @@ export default function Page() {
 
       {/* Bảng dữ liệu Rổ Hàng có Sửa trực tiếp */}
       <div className="mt-4 overflow-x-auto rounded-2xl border border-line bg-white">
-        <table className="w-full min-w-[1360px] text-left text-sm">
+        <table className="w-full table-fixed text-left text-sm" style={{ minWidth: RONG_BANG }}>
           <caption className="sr-only">Rổ hàng — mỗi dòng một tin, cột Mã tin mở màn sửa</caption>
+          <colgroup>
+            {COT_HIEN.map((c) => (
+              <col key={c.key} style={RONG[c.key] ? { width: RONG[c.key] } : undefined} />
+            ))}
+            <col style={{ width: RONG_THAO_TAC }} />
+          </colgroup>
           <thead className="sticky top-0 bg-slate-50 border-b border-line">
-            <tr className="text-xs uppercase tracking-wide text-mute">
+            <tr className="text-xs text-mute">
               {COT_HIEN.map((c) => (
-                <th key={c.key} scope="col" aria-sort={sap.key === c.key ? (sap.tang ? "ascending" : "descending") : undefined} className="px-3 py-3 font-semibold">
+                <th key={c.key} scope="col" aria-sort={sap.key === c.key ? (sap.tang ? "ascending" : "descending") : undefined} className="whitespace-nowrap px-3 py-3 font-semibold">
                   {c.sap ? (
                     <button type="button" onClick={() => bamCot(c.key)} className="hover:text-brand flex items-center gap-1">
                       <span>{c.ten}</span>
@@ -339,7 +355,7 @@ export default function Page() {
                   )}
                 </th>
               ))}
-              <th scope="col" className="px-3 py-3 font-semibold text-center sticky right-0 z-10 bg-slate-50 shadow-[-6px_0_8px_-6px_rgba(0,0,0,0.15)]">
+              <th scope="col" className="whitespace-nowrap px-3 py-3 font-semibold text-center sticky right-0 z-10 bg-slate-50 shadow-[-6px_0_8px_-6px_rgba(0,0,0,0.15)]">
                 Thao tác
               </th>
             </tr>
@@ -357,7 +373,7 @@ export default function Page() {
                     // Cột mô tả
                     if (c.key === "mo_ta") {
                       return (
-                        <td key={c.key} className="max-w-[26rem] px-3 py-3">
+                        <td key={c.key} className="px-3 py-3">
                           <button
                             type="button"
                             onClick={() => setMo((s) => { const n = new Set(s); if (n.has(d.id)) n.delete(d.id); else n.add(d.id); return n; })}
@@ -378,7 +394,7 @@ export default function Page() {
                             #{d.code}
                           </button>
                           {d.legacy_code && d.legacy_code !== d.code && (
-                            <span className="block text-[11px] font-normal text-slate-600">({d.legacy_code})</span>
+                            <span className="block text-xs font-normal text-slate-600">({d.legacy_code})</span>
                           )}
                         </td>
                       );
@@ -429,15 +445,20 @@ export default function Page() {
                     // Cột vị trí
                     if (c.key === "vi_tri") {
                       return (
-                        <td key={c.key} className="max-w-[18rem] px-3 py-3 text-navy font-medium">
+                        <td key={c.key} className="break-words px-3 py-3 text-navy font-medium">
                           {c.lay(d)}
                         </td>
                       );
                     }
 
-                    return (
-                      <td key={c.key} className="whitespace-nowrap px-3 py-3 tabular-nums text-navy/80">
-                        {c.lay(d)}
+                    const giaTri = c.lay(d);
+                    return XUONG_DONG.has(c.key) ? (
+                      <td key={c.key} className="break-words px-3 py-3 text-navy/80">
+                        {giaTri}
+                      </td>
+                    ) : (
+                      <td key={c.key} className="truncate px-3 py-3 tabular-nums text-navy/80" title={giaTri || undefined}>
+                        {giaTri}
                       </td>
                     );
                   })}

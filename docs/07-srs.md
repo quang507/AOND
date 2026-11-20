@@ -801,6 +801,15 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz532 · Bảng Rổ hàng: độ rộng cột cố định theo nội dung (20/11/2026)
+
+Chủ dự án 20/11/2026: "cái nào dài thì ko dài, cái ko cần dài thì dài". Bảng để trình duyệt tự chia cột nên cột Mã tin rộng gần
+400px, cột Vị trí bị bóp còn một chữ một dòng, tên người bán bị cột Thao tác đè. Nay `table-fixed` + `colgroup`: Mã tin 120, Loại 128,
+Trạng thái 184, Bán/thuê 96, Giá 136, Diện tích 104, Vị trí 288, Người bán 176, SĐT 136, Ảnh 64, Ngày 112, Thao tác 184; Mô tả nhận
+phần còn lại (tối thiểu 360). Loại và Người bán xuống dòng; cột ngắn còn lại cắt bằng "…" kèm title. Tiêu đề cột bỏ chữ hoa (trước chỉ
+"THAO TÁC" hoa vì nút sắp xếp không nhận uppercase), không xuống dòng. Áp thang chữ / khoảng cách của skill landing-page-design
+(elayadesign) phần dùng được cho bảng; giữ Nunito và màu King đã chốt.
+
 ### SRS-5.1zzzzzzz531 · Nhân vật + giọng MỘT bản dùng chung, gỡ phiếu lượt cũ; xoá sạch số Zalo tư vấn (20/11/2026)
 Chủ dự án 20/11: "gọn thì dùng 1 bản thôi chứ ko phải là có cả Khối GIỌNG lẫn Prompt gọn (LEAN)"; "zalo bán xóa rồi mà xóa sạch đi ko cần tạo qr nữa".
 - **Soát:** GIONG nằm TRONG LEAN (không chép đôi lúc chạy), nhưng có ba bản tính cách song song: đoạn NHÂN VẬT tự viết của LEAN, đoạn "Tính cách" của `khoi_nhan_vat` (DAP_TRUOC / NOI_NHE lặp ý đoạn "Nghe khách trước" của GIONG), và phiếu lượt cũ (`phieu_co_dinh` / `build_phieu_luot` + công tắc `AIOI_PROMPT_GON`) — lượt sau ảnh sổ vẫn chạy phiếu cũ.
