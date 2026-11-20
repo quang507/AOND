@@ -43,7 +43,7 @@ const SO_TIN_FEED = 30;
 
 async function tinFeed(): Promise<{ tin: CardRow[]; anh: Record<string, string> }> {
   const { data } = await supabase
-    .from("listings")
+    .from("tin_cong_khai")
     .select(CARD_COLS)
     .in("status", TRANG_THAI_HIEN)
     .order("created_at", { ascending: false })

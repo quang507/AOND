@@ -191,6 +191,10 @@ class ZaloBridgeResponse(BaseModel):
     tha_tim: bool = False
     # ms từng khâu của lượt (lap_thao_tac / tra_loi / ghi_kho / con_lai / tong) — chỉ con số, để đo chỗ chậm (SRS-5.1zzzzzzz86).
     thoi_gian_ms: dict[str, int] = {}
+    # FR-162 / SRS-5.1zzzzzzz529: cùng msg_id giao lần hai (bridge gửi lại khi quá 90 s) — xem `_SO_MSG`.
+    in_flight: bool = False
+    replayed: bool = False
+    already_sent: bool = False
 
 
 def _dat_goi_y_xung_ho(user_key: str, gioi_tinh: str | None) -> None:
@@ -366,6 +370,26 @@ BAO_CAN_MOI_CHU_KY_GIAY = int(os.environ.get("BAO_CAN_MOI_CHU_KY_GIAY", "600"))
 
 # --- Người thật nói chuyện với khách (SRS-5.1zzzzzzz216) ---------------------------------------------------------------------------
 NHUONG_SAN_GIAY = int(os.environ.get("NHUONG_SAN_GIAY", "1800"))   # FR-141: bot nhường sân 30 phút sau khi người thật nhắn
+
+
+def _duoc_dung_lenh(user_key: str, lenh: str | None) -> bool:
+    """SRS-5.1zzzzzzz529 (audit 20/11 P0-4): /quit xoá sạch phiên + MỌI tin của người gõ (kể cả tin đã đăng), /import, /project ghi dữ liệu,
+    /state, /listings… lộ trạng thái nội bộ — trước đây mở cho MỌI khách. Nay chỉ: ID thử, admin có Zalo ID trong bảng `admins`, hoặc Zalo ID
+    trong env AIOI_LENH_ZALO_CHO (phẩy ngăn cách). /link vô hại (chỉ bỏ chữ lệnh) nên ai cũng dùng được. Người khác gõ lệnh → tin đi đường
+    chat thường."""
+    if lenh == "/link":
+        return True
+    from .engine import _la_id_thu
+    if _la_id_thu(user_key):
+        return True
+    cho = {x.strip() for x in (os.environ.get("AIOI_LENH_ZALO_CHO") or "").split(",") if x.strip()}
+    if user_key in cho:
+        return True
+    la_nv = getattr(_engine._convstore, "la_nhan_vien", None)
+    try:
+        return bool(la_nv is not None and la_nv(user_key))
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def _dap_rong() -> "ZaloBridgeResponse":
@@ -745,8 +769,55 @@ def _bo_loi_cu_neu_co_tin_moi(uk: str, moc: int, van_luot: str) -> bool:
     return True
 
 
+# SRS-5.1zzzzzzz529 (audit 20/11 P0-2): bridge gửi lại /chat-reply một lần khi lượt quá 90 s và chờ lõi trả `in_flight` / `replayed` /
+# `already_sent` (FR-162) — lõi Python chưa từng trả các cờ đó, nên lượt gửi lại chạy thành lượt THỨ HAI trên cùng tin ("khách nhắn thêm"),
+# lượt đầu bị bỏ lời, khách có thể không nhận gì và tốn gấp đôi model. Sổ msg_id trong bộ nhớ: đang chạy → in_flight; xong trong 15 phút →
+# phát lại câu đã lưu (replayed), kèm already_sent khi bridge đã báo mark_sent. Khởi động lại lõi thì sổ mất — chấp nhận (bridge chỉ gửi lại
+# trong vòng ~2 phút).
+_SO_MSG: dict[str, dict] = {}
+_SO_MSG_KHOA = threading.Lock()
+_SO_MSG_HAN_GIAY = 15 * 60
+
+
+def _so_msg_don(bay_gio: float) -> None:
+    for k in [k for k, v in _SO_MSG.items() if not v.get("dang_chay") and bay_gio - v["luc"] > _SO_MSG_HAN_GIAY]:
+        _SO_MSG.pop(k, None)
+
+
 @app.post("/chat-reply", response_model=ZaloBridgeResponse)
 def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
+    if payload.mark_sent:
+        with _SO_MSG_KHOA:
+            v = _SO_MSG.get(f"{payload.external_user_id}|{payload.mark_sent}")
+            if v is not None and payload.done is not False:
+                v["da_gui"] = True
+        return _chat_reply_that(payload)
+    if not payload.msg_id:
+        return _chat_reply_that(payload)
+    khoa = f"{payload.external_user_id}|{payload.msg_id}"
+    with _SO_MSG_KHOA:
+        bay_gio = time.time()
+        _so_msg_don(bay_gio)
+        v = _SO_MSG.get(khoa)
+        if v is not None and v.get("dang_chay"):
+            log.warning("chat-reply: msg_id %s đang xử lý — trả in_flight (bridge gửi lại)", payload.msg_id)
+            return _dap_rong().model_copy(update={"in_flight": True})
+        if v is not None and v.get("ket_qua") is not None:
+            log.warning("chat-reply: msg_id %s đã trả lời — phát lại (đã gửi=%s)", payload.msg_id, v.get("da_gui"))
+            return v["ket_qua"].model_copy(update={"replayed": True, "already_sent": bool(v.get("da_gui"))})
+        _SO_MSG[khoa] = {"luc": bay_gio, "dang_chay": True}
+    try:
+        kq = _chat_reply_that(payload)
+    except BaseException:
+        with _SO_MSG_KHOA:
+            _SO_MSG.pop(khoa, None)
+        raise
+    with _SO_MSG_KHOA:
+        _SO_MSG[khoa] = {"luc": time.time(), "dang_chay": False, "ket_qua": kq, "da_gui": False}
+    return kq
+
+
+def _chat_reply_that(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     t_vao = time.perf_counter()   # SRS-5.1zzzzzzz96: tổng thời gian máy chủ (gồm chờ khoá lượt, đọc ảnh / tin thoại, sau lượt)
     if payload.mark_sent:
         return ZaloBridgeResponse(
@@ -855,7 +926,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
 
     # 3c. Lệnh gõ tay trên Zalo (SRS-5.1zzzzzzz211): /quit xoá sạch phiên của người gõ; /state, /listings, /whoami… trả tin debug "$$$$$ " — không qua
     # model, không vào lịch sử, không ghi CRM. /link chỉ bỏ chữ lệnh rồi đi tiếp đường thường.
-    if not media_urls and lenh_zalo.ten_lenh(incoming_text):
+    if not media_urls and lenh_zalo.ten_lenh(incoming_text) and _duoc_dung_lenh(payload.external_user_id, lenh_zalo.ten_lenh(incoming_text)):
         with _engine.khoa_luot(payload.external_user_id):
             _dat_so_nhan(payload.external_user_id, payload.so_nhan)
             kq_lenh = lenh_zalo.chay(_engine, payload.external_user_id, incoming_text, huy_nhac=followup_manager.cancel_followup)

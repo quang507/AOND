@@ -10,7 +10,7 @@ async function _layTinTag(slug: string, trang = 1) {
   const t = tagBySlug(slug);
   if (!t) return { rows: [] as CardRow[], total: 0 };
   let q = supabase
-    .from("listings")
+    .from("tin_cong_khai")
     .select(CARD_COLS, { count: "exact" })
     .eq("deal", t.filter.deal)
     .in("status", TRANG_THAI_HIEN) // FR-139: chỉ tin đang lên kệ

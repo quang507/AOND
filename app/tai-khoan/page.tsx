@@ -41,10 +41,10 @@ export default function Page() {
       }
       const [byCode, byId] = await Promise.all([
         codes.length
-          ? supabase.from("listings").select(CARD_COLS).in("code", codes)
+          ? supabase.from("tin_cong_khai").select(CARD_COLS).in("code", codes)
           : Promise.resolve({ data: [] as CardRow[] }),
         ids.length
-          ? supabase.from("listings").select(CARD_COLS).in("id", ids)
+          ? supabase.from("tin_cong_khai").select(CARD_COLS).in("id", ids)
           : Promise.resolve({ data: [] as CardRow[] }),
       ]);
       const seen = new Map<string, CardRow>();
@@ -60,7 +60,7 @@ export default function Page() {
       // Khuyến nghị: cùng phường + giá ±35% quanh tin xem gần nhất, loại đã xem
       const anchor = ordered[0];
       if (anchor?.ward) {
-        let q = supabase.from("listings").select(CARD_COLS)
+        let q = supabase.from("tin_cong_khai").select(CARD_COLS)
           .eq("deal", anchor.deal).eq("ward", anchor.ward)
           .in("status", TRANG_THAI_HIEN) // FR-139: chỉ tin đang lên kệ
           .not("price_raw", "is", null).neq("price_raw", "")

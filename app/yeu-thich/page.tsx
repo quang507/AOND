@@ -15,7 +15,7 @@ export default function Page() {
     const codes = readFavs();
     if (codes.length === 0) return setListings([]);
     supabase
-      .from("listings")
+      .from("tin_cong_khai")
       .select(CARD_COLS) // FR-171 j
       .in("code", codes.slice(0, 48))
       .then(({ data }) => setListings((data ?? []) as CardRow[]));

@@ -156,7 +156,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   if (!p) notFound();
 
   const { data } = await supabase
-    .from("listings")
+    .from("tin_cong_khai")
     .select(`${CARD_COLS}, unit_code`)
     .eq("project_id", p.id)
     .in("status", TRANG_THAI_HIEN) // FR-139: chỉ tin đang lên kệ

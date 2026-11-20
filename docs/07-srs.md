@@ -801,6 +801,14 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz529 · Sáu lỗi P0 từ audit sâu 20/11: lộ cột tin, gửi lặp lượt, tự gán mã môi giới, /quit mở cho khách, phiên Zalo chưa gitignore, Claude hết tiền (20/11/2026)
+Chủ dự án 20/11: "audit sâu toàn bộ dự án" rồi "sửa P0". Lớp lỗi chung: kiểm ở tầng hiển thị / quy ước thay vì ở tầng dữ liệu / giao thức.
+- **Lộ cột:** anon đọc mọi cột `listings` (description nguyên bản, location_raw có số nhà, lat/lng chính xác, seller_id, boc_tach) — che chỉ lúc dựng trang. Sửa: view `tin_cong_khai` (tin đang hiện, `che_sdt(description)`, `an_so_nha(location_raw)`, toạ độ 3 số lẻ, boc_tach theo danh sách trắng O_XAC_MINH, không seller_id); `ban_do_khung` / `doc_danh_sach` che như view; 12 file web công khai đọc view; `revoke select on listings from anon` (migration `20261120a`). Còn: authenticated không phải admin vẫn đọc listings đủ cột qua policy anon_read.
+- **Gửi lặp:** bridge gửi lại /chat-reply khi quá 90 s và chờ `in_flight` / `replayed` / `already_sent` mà lõi Python chưa từng trả → lượt hai chạy trên tin nhân đôi, lượt đầu bị bỏ lời. Sửa: sổ msg_id ở `server.py` (đang chạy → in_flight; xong trong 15 phút → phát lại, `mark_sent` → already_sent); bridge chờ in_flight 12 × 5 s (trước 3 × 5 s). Thử trên 146: lần gửi lại nhận in_flight ngay, không gọi model lần hai; sau mark_sent → replayed + already_sent.
+- **Mã môi giới:** `sellers_self_insert` chỉ kiểm auth_user_id → tự chèn ma_moi_gioi tuỳ ý rồi gửi khách giới thiệu đòi hoa hồng. Sửa: policy bắt ma_moi_gioi / zalo_user_id trống, điểm 0 (migration `20261120b`); thử trong giao dịch huỷ: có mã → 42501, không mã → qua RLS.
+- **Lệnh Zalo:** /quit (xoá mọi tin kể cả đã đăng), /import, /project, /state… mở cho mọi khách. Nay chỉ ID thử, admin có Zalo ID, hoặc env `AIOI_LENH_ZALO_CHO`; /link giữ cho mọi người. **Phiên Zalo:** `zalo-session*.json`, `qr*.png` vào `.gitignore` (repo public).
+- **Claude hết tiền:** `du_phong.claude_het_tien()` — Claude nghỉ vì hết số dư thì Gemini dùng hạn / ngân sách / nghỉ của đường chính như công tắc AIOI_CHI_GEMINI_DEN, để 29/11 không lặp sự cố 16/11.
+
 ### SRS-5.1zzzzzzz528 · Gộp luật prompt bản tin / bối cảnh / xưng hô, đổi cấm thành nên; bỏ canh số tư vấn; bridge nối lại trong tiến trình (19/11/2026)
 Chủ dự án 19/11: lời bot "không tự nhiên", "cái nào ko merge dc mới phải cấm, càng ít càng tốt". Đo `scripts/do-prompt.py`: 108 mã SRS trong `prompts.py` là chú thích (model không đọc); chỗ nặng là prompt bản tin — chống bịa nhắc ba lần (cuối `AD_FORMAT`, "QUY TẮC BẮT BUỘC" bản nháp, khối SỰ THẬT), 66 chữ KHÔNG / CẤM / TUYỆT ĐỐI / BẮT BUỘC, gọi model là "bạn".
 - **Lớp lỗi:** mỗi ca sửa thêm một câu cấm vào prompt, không gộp câu cũ — prompt phình, model viết theo công thức cho khỏi phạm luật.
@@ -877,11 +885,4 @@ Chủ dự án 17/11, sau khi đối chiếu việc chưa làm với bộ `docs/
 - **Giá tính bằng vàng:** DB không quy ra tiền (`parse_vnd` trả null) nên tin kẹt và bot hỏi lại "giá bao nhiêu". Nay bot hỏi chủ mức đó quy ra khoảng bao nhiêu tiền, không tự quy đổi (`gia_chua_quy`; lượt đó lưới soát ô hỏi cho phép hỏi ô giá).
 - **Thử:** migration chạy trong giao dịch huỷ rồi áp — 1.207 tin cũ giữ nguyên tổng điểm; tin mẫu 73 → 69 khi cả bốn mảng thấp, chuỗi điểm hỏng giữ 73.
 - **Chưa làm:** che thông tin trên ảnh sổ (không có ảnh sổ để thử); lọc hỏi dạo / spam (tài liệu anh Luận mới một dòng, chưa nói nhận ra rồi làm gì).
-
-### SRS-5.1zzzzzzz519 · Không hỏi lại số ngang khi đã có chiều dài; sự thật của căn là trường bắt buộc (17/11/2026)
-Chủ dự án (chat thử 17/11, khách "nhà cấp 4… ngang 4 dài 16, sổ hồng riêng"): "SHR rớt là lỗi", "hỏi thừa … là lỗi, sửa đi".
-- **Hỏi thừa:** `engine` chỉ coi là có hai chiều lô khi ô chữ có dạng "4x16" (`_hai_chieu_lo`), còn AI bóc "ngang 4 dài 16" thành `mat_tien` + `dai_m` → cứ model không trả `so_ngang` là bot hỏi "số 4 là ngang căn hay hẻm". Nay có `dai_m` thì không hỏi.
-- **Rớt sổ hồng riêng:** các mã `prompts.SU_THAT_CAN` (giấy tờ, hoàn công, lối vào, số ngang, tình trạng nhà) là trường tuỳ chọn của `ghi_y_khach`, flash-lite bỏ qua cả cụm. Nay là trường bắt buộc (chưa nói thì `chua_ro`); cổng cụm trích giữ nguyên.
-- **Cỡ:** hỏi thông tin 58.357 → 58.449 ký tự. `do-prompt.py` 3/3.
-- **Bắn lại đúng tin đó trên 146 (flash-lite):** hết câu hỏi thừa, soạn bản tin ngay lượt đầu, ghi `so_hong_rieng` · `ngang_can` · `hem`. Còn lại: lượt này model không ghi ô chiều dài 16 (bản tin vẫn viết 4x16m); bản tin có "sầm uất", "khách quan tâm nhiều lắm" không có trong lời khách.
 

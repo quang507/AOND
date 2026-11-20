@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   }
   if (!/^[A-Za-z0-9_-]{3,40}$/.test(code)) return NextResponse.json({ loi: "code" }, { status: 400 });
 
-  const { data } = await supabase.from("listings").select("id").ilike("code", code).in("status", TRANG_THAI_HIEN).limit(1);
+  const { data } = await supabase.from("tin_cong_khai").select("id").ilike("code", code).in("status", TRANG_THAI_HIEN).limit(1);
   if (data?.length) return NextResponse.json({ conHien: true });
 
   const bayGio = Date.now();

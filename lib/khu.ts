@@ -91,7 +91,7 @@ type Dong = {
 const docTin = unstable_cache(
   async (deal: "ban" | "cho_thue", districts: string[]): Promise<Dong[]> => {
     const { data } = await supabase
-      .from("listings")
+      .from("tin_cong_khai")
       .select("district, ward, property_type, access_type, price_vnd, area_m2")
       .eq("deal", deal)
       .in("status", TRANG_THAI_HIEN)
@@ -141,7 +141,7 @@ export async function soLieuKhu(k: KhuInfo, deal: "ban" | "cho_thue"): Promise<S
 export const demTinTheoKhu = unstable_cache(
   async (): Promise<Record<string, number>> => {
     const { data } = await supabase
-      .from("listings")
+      .from("tin_cong_khai")
       .select("district")
       .eq("deal", "ban")
       .in("status", TRANG_THAI_HIEN)

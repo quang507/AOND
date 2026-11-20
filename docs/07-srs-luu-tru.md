@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz519 · Không hỏi lại số ngang khi đã có chiều dài; sự thật của căn là trường bắt buộc (17/11/2026)
+Chủ dự án (chat thử 17/11, khách "nhà cấp 4… ngang 4 dài 16, sổ hồng riêng"): "SHR rớt là lỗi", "hỏi thừa … là lỗi, sửa đi".
+- **Hỏi thừa:** `engine` chỉ coi là có hai chiều lô khi ô chữ có dạng "4x16" (`_hai_chieu_lo`), còn AI bóc "ngang 4 dài 16" thành `mat_tien` + `dai_m` → cứ model không trả `so_ngang` là bot hỏi "số 4 là ngang căn hay hẻm". Nay có `dai_m` thì không hỏi.
+- **Rớt sổ hồng riêng:** các mã `prompts.SU_THAT_CAN` (giấy tờ, hoàn công, lối vào, số ngang, tình trạng nhà) là trường tuỳ chọn của `ghi_y_khach`, flash-lite bỏ qua cả cụm. Nay là trường bắt buộc (chưa nói thì `chua_ro`); cổng cụm trích giữ nguyên.
+- **Cỡ:** hỏi thông tin 58.357 → 58.449 ký tự. `do-prompt.py` 3/3.
+- **Bắn lại đúng tin đó trên 146 (flash-lite):** hết câu hỏi thừa, soạn bản tin ngay lượt đầu, ghi `so_hong_rieng` · `ngang_can` · `hem`. Còn lại: lượt này model không ghi ô chiều dài 16 (bản tin vẫn viết 4x16m); bản tin có "sầm uất", "khách quan tâm nhiều lắm" không có trong lời khách.
+
 ### SRS-5.1zzzzzzz518 · Nhà nát bán như đất và nhà chưa xây xong đổi bộ câu hỏi, góc ảnh (17/11/2026)
 Chủ dự án: "triển khai code luôn đi" (bản r2 của anh Luận; nhận diện 4 và 6 ở `docs/agents/fda.md` còn một phần).
 - **Một mã, AI đọc theo nghĩa:** `tinh_trang_nha` (`prompts.SU_THAT_CAN`) thêm `ban_nhu_dat`, `dang_xay`; engine ghi `_tinh_trang_nha` khi cụm trích có trong lời khách (đường sẵn có, không dò từ khoá).

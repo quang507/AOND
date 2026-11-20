@@ -18,7 +18,7 @@ type Row = { ward: string; count: number; avgPerM2: number; min: number; max: nu
 
 export default async function Page() {
   const { data } = await supabase
-    .from("listings")
+    .from("tin_cong_khai")
     .select("ward, price_vnd, area_m2")
     .eq("deal", "ban")
     .in("status", TRANG_THAI_HIEN) // FR-139: thống kê trên tin đang bán

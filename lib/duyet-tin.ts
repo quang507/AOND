@@ -74,7 +74,7 @@ export type Truy = {
 export const layTin = unstable_cache(
   async (t: Truy) => {
     let q = supabase
-      .from("listings")
+      .from("tin_cong_khai")
       // MAP_COLS (thẻ + lat, lng): nút "Xem bản đồ" cần toạ độ — với CARD_COLS ghim rơi về wardPoint, chỉ biết phường Q5 cũ, nên
       // bản đồ trang này trống mọi ghim (thấy khi chụp 26/10, SRS-5.1zzzzzzz206).
       .select(MAP_COLS, { count: "exact" })

@@ -125,6 +125,12 @@ class DuPhongProvider(LLMProvider):
 
     # --- chọn đường -----------------------------------------------------------------------------
 
+    def claude_het_tien(self) -> bool:
+        """SRS-5.1zzzzzzz529 (audit 20/11 P0-6): Claude đang nghỉ vì HẾT SỐ DƯ → Gemini thực chất là đường chính, dùng hạn / ngân sách / nghỉ
+        của đường chính (như công tắc AIOI_CHI_GEMINI_DEN). Trước đây hết công tắc (29/11) mà Claude chưa nạp tiền thì Gemini chạy hạn ngắn
+        15 s, quá hạn nghỉ 10 phút — đúng cấu hình làm sập cả đường hôm 16/11."""
+        return time.time() < self._nghi_den and _het_so_du(self._loi_nghi)
+
     def dang_chi_gemini(self, bay_gio: datetime | None = None) -> bool:
         """Công tắc `AIOI_CHI_GEMINI_DEN` còn hiệu lực: hôm nay (giờ VN) trước mốc. Mốc viết sai → coi như tắt (Claude chính)."""
         if not self._chi_gemini_den:
@@ -152,6 +158,7 @@ class DuPhongProvider(LLMProvider):
                     self._nghi_den, self._loi_nghi = time.time() + NGHI_CLAUDE_GIAY, e
         loi = loi_chinh
         bat_dau = time.time()
+        gemini_chinh = bo_claude or self.claude_het_tien()   # SRS-5.1zzzzzzz529: Claude hết tiền → Gemini dùng hạn của đường chính
         for n in self._nguon:
             if (can_anh and not n.nhin_anh) or (chi_gemini and n.ten != "Gemini"):
                 continue
@@ -160,7 +167,7 @@ class DuPhongProvider(LLMProvider):
                     continue   # model này vừa quá hạn — nghỉ, khỏi tốn thêm một lần chờ
                 lan_qua_han = 0
                 for khoa in n.khoa:
-                    if time.time() - bat_dau > (NGAN_SACH_CHINH_GIAY if bo_claude else NGAN_SACH_GIAY):
+                    if time.time() - bat_dau > (NGAN_SACH_CHINH_GIAY if gemini_chinh else NGAN_SACH_GIAY):
                         log.warning("Dự phòng (%s): quá ngân sách thời gian — dừng, không thử tiếp", viec)
                         raise loi or RuntimeError("dự phòng quá ngân sách thời gian")
                     try:
@@ -174,9 +181,9 @@ class DuPhongProvider(LLMProvider):
                             raise
                         if _qua_han(e):
                             lan_qua_han += 1
-                            if bo_claude and lan_qua_han < 2:
+                            if gemini_chinh and lan_qua_han < 2:
                                 continue   # Gemini là đường chính (SRS-5.1zzzzzzz517): quá hạn một lần thì thử khoá kế, chưa cho model nghỉ
-                            self._nghi_model[(n.ten, model)] = time.time() + (NGHI_MODEL_CHINH_GIAY if bo_claude else NGHI_MODEL_GIAY)
+                            self._nghi_model[(n.ten, model)] = time.time() + (NGHI_MODEL_CHINH_GIAY if gemini_chinh else NGHI_MODEL_GIAY)
                             break   # model này chậm → khoá khác cũng chậm như vậy; sang model / nguồn kế
         raise loi_chinh or loi or RuntimeError("không còn đường gọi model")
 
@@ -228,7 +235,7 @@ class DuPhongProvider(LLMProvider):
         return chu
 
     def _han(self, than: dict[str, Any]) -> float:
-        tran = HAN_CHINH_GIAY if (NGUON_LUOT.get() == CHI_GEMINI or self.dang_chi_gemini()) else HAN_MOT_LAN_GIAY
+        tran = HAN_CHINH_GIAY if (NGUON_LUOT.get() == CHI_GEMINI or self.dang_chi_gemini() or self.claude_het_tien()) else HAN_MOT_LAN_GIAY
         return min(tran, max(10.0, 8.0 + than["max_completion_tokens"] * 0.008))
 
     def _ghi_so(self, n: Nguon, model: str, j: dict[str, Any]) -> None:

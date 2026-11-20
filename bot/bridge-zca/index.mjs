@@ -442,9 +442,11 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cl
     out = await postJson(CHAT_REPLY_URL, brainHeaders, payload, HAN_CHO_BO_NAO);
     // FR-162: in_flight = một bản sao của CÙNG tin này đang được xử lý — thường
     // là chính lượt đầu của postJson bị timeout 20s nên lượt thử lại chạm mặt nó.
-    // Đừng bỏ đi tay không: chờ rồi hỏi lại (tối đa 3 lần), lượt kia xong là
+    // Đừng bỏ đi tay không: chờ rồi hỏi lại, lượt kia xong là
     // server PHÁT LẠI câu trả lời đã lưu trong sổ — không gọi model lần hai.
-    for (let i = 0; i < 3 && out?.in_flight; i++) {
+    // SRS-5.1zzzzzzz529 (20/11): lõi Python nay trả in_flight thật (sổ msg_id ở server.py); 3 × 5 s quá ngắn cho lượt đã
+    // quá 90 s (bridge bỏ đi tay không, câu trả lời của lượt đầu không ai nhận) → chờ tới 12 × 5 s.
+    for (let i = 0; i < 12 && out?.in_flight; i++) {
       await new Promise((r) => setTimeout(r, 5000));
       out = await postJson(CHAT_REPLY_URL, brainHeaders, payload, HAN_CHO_NGAN);
     }

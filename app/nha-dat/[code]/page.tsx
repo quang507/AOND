@@ -54,7 +54,7 @@ const getListing = cache(async (code: string): Promise<Listing | null> => {
   // là ghép thêm điều kiện. Mã tin chỉ có [A-Za-z0-9-]; thứ khác trả 404 ngay.
   if (!/^[A-Za-z0-9-]{1,40}$/.test(code)) return null;
   const { data } = await supabase
-    .from("listings")
+    .from("tin_cong_khai")
     .select(DETAIL_COLS)
     .or(`code.ilike.${code},legacy_code.ilike.${code}`)
     .limit(1)
@@ -69,7 +69,7 @@ const getListing = cache(async (code: string): Promise<Listing | null> => {
 const giaPhuong = unstable_cache(
   async (ward: string, deal: string) => {
     const { data } = await supabase
-      .from("listings")
+      .from("tin_cong_khai")
       .select("id, price_per_m2_vnd")
       .eq("ward", ward)
       .eq("deal", deal)
@@ -172,9 +172,9 @@ export default async function Page({
 
   const [factsRes, relatedRes, photos, mauGia, duAnRes, capRes] = await Promise.all([
     // 19/10/2026 (SRS-5.1zzzzzzz65): "Đã xác minh với chủ nhà" đọc ô lõi Python bóc (`boc_tach`), không còn `listing_facts`.
-    supabase.from("listings").select("boc_tach").eq("id", listing.id).maybeSingle(),
+    supabase.from("tin_cong_khai").select("boc_tach").eq("id", listing.id).maybeSingle(),
     supabase
-      .from("listings")
+      .from("tin_cong_khai")
       .select(CARD_COLS)
       .eq("deal", listing.deal)
       .neq("id", listing.id)
@@ -191,7 +191,7 @@ export default async function Page({
       : Promise.resolve({ data: null }),
     // OPEN-59: tin cùng căn ở loại giao dịch kia (bán ↔ cho thuê), chỉ khi tin đó đang hiện trên web
     listing.cung_can_id
-      ? supabase.from("listings").select("code, deal, price_vnd, price_raw").eq("id", listing.cung_can_id).in("status", TRANG_THAI_HIEN).maybeSingle()
+      ? supabase.from("tin_cong_khai").select("code, deal, price_vnd, price_raw").eq("id", listing.cung_can_id).in("status", TRANG_THAI_HIEN).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
   const cungCan = (capRes.data ?? null) as { code: string; deal: string; price_vnd: number | null; price_raw: string | null } | null;

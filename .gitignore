@@ -31,3 +31,8 @@ next-env.d.ts
 
 # Đầu ra scripts/xuat-prompts.py / do-prompt.py --luu (prompt đầy đủ) — giữ chặn để không lỡ đẩy lên repo công khai
 ket-qua/
+
+# SRS-5.1zzzzzzz529 (audit 20/11 P0-5): phiên đăng nhập Zalo = cookie đầy đủ của acc — repo PUBLIC, không bao giờ commit
+bot/bridge-zca/zalo-session*.json
+bot/bridge-zca/qr*.png
+**/zalo-session*.json

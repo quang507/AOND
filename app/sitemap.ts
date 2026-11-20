@@ -39,7 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
   const [{ data }, { data: duAn }] = await Promise.all([
     supabase
-      .from("listings")
+      .from("tin_cong_khai")
       .select("code, updated_at")
       .in("status", TRANG_THAI_HIEN)
       .not("code", "is", null)

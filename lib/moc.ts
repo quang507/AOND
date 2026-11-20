@@ -102,7 +102,7 @@ export const tinGanMoc = unstable_cache(
     const d = BAN_KINH_KM / 111; // độ vĩ ~ 111 km
     const dLng = d / Math.cos((m.lat * Math.PI) / 180);
     const { data } = await supabase
-      .from("listings")
+      .from("tin_cong_khai")
       .select(MAP_COLS)
       .eq("deal", "ban")
       .in("status", TRANG_THAI_HIEN)
