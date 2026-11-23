@@ -114,7 +114,7 @@ Ba điều hay hiểu nhầm:
 | Lớp | Công nghệ |
 |---|---|
 | Lõi hội thoại | Python, FastAPI (`src/aioi/server.py`), chạy trên máy 146 "NguyetTu" (Windows) bằng Task Scheduler `AOND Core` (SYSTEM), mã ở `C:\aond\aond_core` (không phải git, chép file), venv `C:\aond\venv`, cổng 8000 (chỉ 127.0.0.1; vào máy qua Tailscale). Đưa mã lên và khởi động lại bằng `scripts/trien-khai-146.sh` (SRS-5.1zzzzzzz397); VPS và ô `cai-vps` gỡ 06–08/11/2026 (SRS-5.1zzzzzzz401) |
-| Module lõi chính | `engine.py` (phiên chat, định tuyến bán / mua) · `prompts.py` (mọi prompt, `GIONG_VUI`, `AD_FORMAT`, `muc_phi`, `VUNG_NHAN_TIN`) · `schema.py` (`CORE_FIELDS`, `CORE_THEO_LOAI`, `FACETS`, `O_NOI_BO`) · `mua.py` (phía người mua) · `supabase_store.py` (kho Supabase) · `dia_danh.py` · `phap_ly.py` · `cau_mau.py` · `xung_ho.py` · `bao_can_moi.py` · `gui_nhac.py` · `lenh_zalo.py` · `anh_can.py` · `kho_anh.py` · `web.py` · `llm/` |
+| Module lõi chính | `engine.py` (phiên chat, định tuyến bán / mua) · `prompts.py` (mọi prompt, `GIONG` qua `khoi_nhan_vat`, `AD_FORMAT`, `muc_phi`, `VUNG_NHAN_TIN`) · `schema.py` (`CORE_FIELDS`, `CORE_THEO_LOAI`, `FACETS`, `O_NOI_BO`) · `mua.py` (phía người mua) · `supabase_store.py` (kho Supabase) · `dia_danh.py` · `phap_ly.py` · `cau_mau.py` · `xung_ho.py` · `bao_can_moi.py` · `gui_nhac.py` · `lenh_zalo.py` · `anh_can.py` · `kho_anh.py` · `web.py` · `llm/` |
 | Kho trạng thái | Supabase là nguồn chính (`SupabaseConversationStore`); SQLite `aioi.db` trên máy 146 là kho dự phòng khi thiếu khoá Supabase (`SqliteConversationStore`) |
 | Kênh chat | Zalo cá nhân qua bridge `zca-js` 2.2.0 (ghim, SRS-5.1zzzzzzz177), tài khoản clone (quyết định chủ dự án 20/10/2026). Hai số: ký gửi và tư vấn (SRS-5.1zzzzzzz210). Bridge thả tim (`addReaction`), gửi ảnh qua `guiAnhQuaUrl` |
 | AI chat | Claude **Sonnet 5.5** cho lượt trả lời khách thật (`AIOI_CHAT_MODEL`: một nguồn ở `bot/cau-hinh-loi.env`, chạy thật đặt trong `.env` lõi trên máy 146 — SRS-5.1zzzzzzz235 / 401); ID thử theo `AIOI_CHAT_MODEL_THU` (SRS-5.1zzzzzzz234) |
@@ -741,19 +741,21 @@ Không có bảng token/TTL, không nối fingerprint (OPEN-14); lõi chưa đ�
 `[nguồn: src/aioi/server.py, src/aioi/engine.py]` Edge function `chat-reply` v48 (TypeScript) đã gỡ, lõi Python là bộ não duy nhất từ 18/10/2026 — mô tả cũ ở `docs/07-srs-luu-tru.md`.
 
 ```text
-1. Bridge zca-js → POST /chat-reply (server.chat_reply): sổ msg_id, sự kiện cảm xúc không trả lời (SRS-364), khoá lượt theo người.
-2. Engine.handle: AI đọc ý → ô tin qua cổng bằng chứng `_loc_o_tin` (SRS-73). Người bán (vai đã rõ): bước 1 của MỘT vòng agent
-   Sonnet gọi công cụ ghi / đọc / `tra_luat_o` (`agent_gop.mo`, SRS-371); người mua (vai đã rõ) cùng vòng (`agent_gop.mo_mua`, SRS-380);
-   vai chưa rõ: đọc nhanh `_doc_nhanh_chua_ro_vai` (SRS-406). Form JSON (OPERATIONS_SYSTEM_BAN / _MUA, model `AIOI_EXTRACT_MODEL` = Sonnet 5.5,
-   SRS-392) chỉ dự phòng / khi đọc nhanh cần đọc đủ.
+1. Bridge zca-js → POST /chat-reply (server.chat_reply): sổ msg_id chống gửi lặp (SRS-529), sự kiện cảm xúc không trả lời (SRS-364), khoá lượt theo người.
+2. Engine.handle: AI đọc ý → ô tin qua cổng bằng chứng `_loc_o_tin` (SRS-73); nghĩa pháp lý / mặt tiền do AI xác nhận, từ khoá chỉ xác nhận nhanh (SRS-530).
+   Người bán: bước 1 của MỘT vòng agent gọi công cụ ghi / đọc / `tra_luat_o` (`agent_gop.mo`, SRS-371), system `prompts.co_dinh_ban`
+   (`LEAN_GHI` + `KIEN_THUC_NGHE`, không mang giọng, SRS-506); người mua cùng vòng (`agent_gop.mo_mua`, SRS-380); vai chưa rõ đi vòng theo số
+   khách đang nhắn (SRS-511). Form JSON (OPERATIONS_SYSTEM_BAN / _MUA / đầy đủ) chỉ dự phòng và đọc lại khi vòng ra ý ngược vai.
 3. Tra địa danh: `_chuan_dia_danh` (tên chuẩn, SRS-366), `_phuong_tu_dia_chi` (ô hệ thống tự tra, SRS-359).
 4. Chọn MỘT việc cho lượt: `viec_luot` (SRS-314 / 328) → ô cần hỏi / khối hỏi còn lại.
-5. Dựng prompt: lượt hỏi ô phía bán = prompt gọn `lean_system_prompt_cho_luot` (`LEAN_SYSTEM_PROMPT`, khi `AIOI_PROMPT_GON=bat` — đang bật,
-   SRS-408 / 414; tắt thì phiếu lượt `build_phieu_luot`) / bản nháp / sau bản nháp, hoặc prompt mua; khối cố định trước RANH_GIOI_CACHE.
-6. Model viết lời (MODEL_CHAT; hỏng → Gemini → Groq, `llm/du_phong.py`). Người bán đi vòng gộp: bước 2 CÙNG cuộc hội thoại công cụ, kết quả
-   công cụ ghi = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt), `agent_gop.viet`. Người mua đã rõ vai: `agent_gop.viet_mua` cùng vòng (SRS-380);
-   lượt đầu / vòng lỗi mới dự phòng `agent_mua.chay` (tra `tim_can` / `xem_can` / `tra_du_an` / `du_an_trong_khu`; ghi `hen_xem` / `hoi_chu_nha` khi bóc tách sót, SRS-290 / 292).
-7. Soát đầu ra `_soat_hinh_thuc` theo bảng `LUAT_SOAT` (gồm `hoi_dung_o`, SRS-367): lệch → gọi lại tối đa một lần.
+5. Dựng prompt viết lời: mọi prompt nói với khách mở bằng `prompts.khoi_nhan_vat` (nhân vật + `GIONG`, SRS-5.6). Lượt hỏi thông tin phía bán =
+   `lean_system_prompt_cho_luot` (`LEAN_SYSTEM_PROMPT`, đường duy nhất từ SRS-531, kể cả lượt sau ảnh sổ) / bản nháp / sau bản nháp, hoặc prompt
+   mua; khối cố định trước RANH_GIOI_CACHE, tên trợ lý và dữ liệu lượt sau dấu (SRS-504).
+6. Model viết lời (MODEL_CHAT; Claude hỏng hoặc hết số dư → Gemini → Groq, `llm/du_phong.py`, SRS-529 / 534). Người bán: bước 2 CÙNG cuộc hội
+   thoại công cụ, kết quả công cụ ghi = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt), `agent_gop.viet`. Người mua:
+   `agent_gop.viet_mua` (SRS-380); vòng lỗi thì dự phòng `agent_mua.chay`.
+7. Soát đầu ra `_soat_hinh_thuc` theo bảng `LUAT_SOAT` (sự thật / tiền / riêng tư, nội dung bản tin và vài hình thức chủ dự án chốt — SRS-5.6):
+   lệch → gọi lại tối đa một lần.
 8. Lưu Supabase (tin, hội thoại, messages) rồi trả lời bridge.
 ```
 
@@ -797,9 +799,48 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
   (`Authorization: Bearer`). Hiện `admin_email` rỗng, `NTFY_TOKEN` chưa có.
 - Không hàng đợi/retry riêng: pg_net gửi một lần, kết quả `net._http_response` → `bot_health_tick` → `bot_errors`; việc thật vẫn ở `reminders`/`viewings`/`info_requests` nên email hụt không mất việc.
 
+### SRS-5.6 · Giọng bot: dựng ở đâu, sửa thế nào
+
+`[nguồn: src/aioi/prompts.py, src/aioi/engine.py, scripts/do-prompt.py, 23/11/2026]` Mục tiêu và các quyết định cứng ở `06 §6.8`: lời bot
+phải như người thật nhắn Zalo. Mục này tả code giữ mục tiêu đó ở đâu và sửa theo đường nào.
+
+**Dựng**
+- `prompts.khoi_nhan_vat` = vai (nhận tin rao / tư vấn bán hàng) + hiểu khách theo vai + `GIONG`, đứng đầu mọi prompt nói với khách. Prompt có
+  việc riêng dài (bản tin, đọc tài liệu) lấy hai đoạn đầu của chính `GIONG` (`kem_giong=False`). Không chỗ nào khác viết câu dặn giọng.
+- Xưng hô: `engine.khoi_xung_ho` theo `xung_ho.goi_toi`, kèm `_GIONG_CHUNG` (không "Dạ", không gọi "bạn" / "mình"); là dữ kiện sau ranh giới cache.
+- Lượt hỏi thông tin phía bán: `LEAN_SYSTEM_PROMPT` = `khoi_nhan_vat` + phần việc của lượt (hỏi dần, giá, điều chưa làm thì chưa nói). `viec_luot`
+  chọn MỘT việc đã quyết rồi giao thẳng; prompt không tự xếp trường hợp "nếu… thì…" (model kể lại việc xếp đó cho khách, SRS-494).
+- Bước ghi của vòng agent (`LEAN_GHI`) không mang giọng: chỉ đọc ý và gọi công cụ.
+- Câu code nói nguyên văn: `cau_mau.MAC_DINH` (bảng `cau_mau` đè, chủ dự án sửa ở `/admin/cau-chuan`).
+- Cỡ đo 23/11/2026 (`scripts/do-prompt.py`; token đếm bằng Gemini countTokens): nhân vật + giọng 3.846 ký tự ≈ 1.140 token (trần 4.500 ký tự);
+  phần riêng lượt hỏi thông tin 2.500 ký tự ≈ 855 token (trần 3.500); cả `LEAN_SYSTEM_PROMPT` ≈ 1.990 token. Cả lần gọi bước viết lượt hỏi
+  thông tin ≈ 4.800 token; phần ngoài giọng là `KIEN_THUC_NGHE` (≈ 1.200), công cụ, dữ liệu lượt và lịch sử.
+
+**Lưới soát đầu ra** (`engine.LUAT_SOAT`, nhóm `ly_do` gọi lại model tối đa một lần, `mem` chỉ ghi log) chỉ giữ hai loại: (1) sự thật / tiền /
+riêng tư (`LUAT_SU_THAT`: lộ ô riêng, khẳng định không có dữ liệu, phí theo vai, tin đã hiển thị, bình luận giá, số căn mua, số trong tin) và
+nội dung bản tin (tiêu đề, đơn vị, phường cũ, mặt tiền căn hộ, yêu cầu viết); (2) vài hình thức chủ dự án chốt: "Dạ" mở đầu, gọi "mình", một
+câu hỏi, tên khối / từ nội bộ lọt ra khách. `lap` và `dap_ok_dai` chỉ ghi log. **Không thêm luật giọng vào bảng này**: lời viết lại để chiều
+một luật giọng thường cứng hơn bản đầu.
+
+**Sửa khi lời bot lạ**, theo thứ tự:
+1. Đọc chat thật trong DB (không đoán từ một câu), soát bằng năm câu ở `06 §6.8`.
+2. Tìm gốc: thiếu dữ liệu, việc lượt giao sai, hai khối dặn chồng ý nhau, ví dụ trong prompt bị model chép, hay đúng là `GIONG` tả chưa trúng.
+3. Sửa ở gốc. Nếu là giọng thì VIẾT LẠI câu trong `GIONG`: nói điều nên làm và vì sao, như dặn một người mới vào nghề; rồi gộp hoặc gỡ một ý
+   cũ để vẫn nằm trong trần.
+4. Chạy `python scripts/do-prompt.py` (cỡ trước / sau, ba phép soát), rồi thử vài lượt trên 146 bằng những cách nói khác nhau, có cả không dấu.
+
+**Không làm:** thêm dòng "cấm X", đếm từ, danh sách từ cấm; câu mẫu hoàn chỉnh trong prompt cho model chép (ví dụ trong `GIONG` chỉ là lượt
+cảm xúc / ngoài lề, không chứa câu hỏi của một ô tin, SRS-196); luật vá rời ở từng prompt; lưới soát giọng; chép lại luật cũ từ
+`06-ui-design-luu-tru.md` hay `07-srs-luu-tru.md`. Muốn thêm một quyết định cứng thì phải có lời chủ dự án và ghi vào bảng ở `06 §6.8`.
+
 ---
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
+
+### SRS-5.1zzzzzzz535 · Docs giọng về một mục tiêu "rep như người thật"; 06 §6.8 gọn, luật cũ ra lưu trữ (23/11/2026)
+Chủ dự án 23/11: "làm sạch lại docs srs mục tiêu là giọng tự nhiên rep giống người". Soát: luật giọng rải năm nơi — `06 §6.8` (59 nghìn ký tự: Bảy quy tắc, Cấm, thư viện câu mẫu, bảng bỏ / giữ của bot TS đã gỡ), `07` §5.1 (còn tả `AIOI_PROMPT_GON`, phiếu lượt, đọc nhanh SRS-406), CLAUDE.md, `luat-dang-ap.md` (trần cũ 4.000 / 8.000), `10` (bài "đếm từ cấm"). **Lớp lỗi:** phiên agent đọc các chỗ đó rồi chép lại thành dòng cấm trong prompt, nên lời bot cứng lên lại sau mỗi lần dọn prompt.
+- **Sửa:** `06 §6.8` còn mục tiêu + năm câu soát chat thật + bảng quyết định cứng của chủ dự án + nhân xưng / danh tính / bố cục tin / phí; bản cũ nguyên văn ở `06-ui-design-luu-tru.md`. `07` thêm SRS-5.6 (dựng ở đâu, lưới soát còn gì, sửa giọng theo thứ tự nào, không làm gì) và sửa §5.1 theo code. CLAUDE.md §6.2, `luat-dang-ap.md`, `03`, `08`, `10` trỏ về hai chỗ đó; lưu trữ `07` có dòng chặn ở đầu.
+- **Đo:** nhân vật + giọng ≈ 1.140 token, cả `LEAN_SYSTEM_PROMPT` ≈ 1.990 token (Gemini countTokens). Không đổi code; `soat-truy-vet.sh` sạch.
 
 ### SRS-5.1zzzzzzz534 · Groq dự phòng bị Cloudflare chặn vì User-Agent mặc định (23/11/2026)
 Chủ dự án 23/11: "kiểm tra groq còn cho api free ko". Khoá vẫn tốt, vẫn gói miễn phí (gpt-oss-120b: 1.000 lượt / ngày, 8.000 token / phút; qwen3.8-27b: 7.000 token vào / phút). Lỗi 403 từ ≥ 18/11 là Cloudflare "error code: 1010": `du_phong._http` gọi bằng urllib không đặt User-Agent ("Python-urllib" bị chặn) → mọi lượt Groq 403, Gemini hụt một nhịp là khách nhận câu giữ chỗ.
@@ -874,13 +915,3 @@ Chủ dự án 17/11: "7 làm giống sếp đi" — chọn ba điểm: nhịp n
 - **Prompt:** người bán "hỏi thông tin" 59.037 → 55.381 ký tự.
 - **Thử (máy 146, ID thử):** người bán hỏi "giá cao hay thấp, có dính quy hoạch không" → FDA hẹn, câu hẹn nằm trong căn; BOA nhắn lại "chưa đủ dữ liệu để so giá", xin số tờ số thửa để tra quy hoạch, xoá hẹn; lượt model quá hạn thì giữ hẹn. Khách cần mua → ghi nhu cầu, chuyển người phụ trách, câu sau không hỏi tiếp. Lần bắn đầu BOA tự khẳng định "giá cạnh tranh, không vướng quy hoạch" khi không có dữ kiện — đã chặn bằng code (`2ae1cf8`).
 - **Chưa làm:** câu "chưa có dữ liệu" do code soạn chưa bắn qua Zalo thật; số Zalo tư vấn mua vẫn đăng nhập ở cầu nối.
-
-### SRS-5.1zzzzzzz525 · Mức chi cho môi giới giới thiệu khách; chốt và đánh dấu đã chi; báo admin qua Zalo (17/11/2026)
-Chủ dự án 17/11: "đưa con số theo thị trường đi … cứ đưa số hợp lý trước chỉnh sau, còn gì thiếu thì làm để chạy được đã".
-- **Mức khởi đầu: 20 % phí công ty thu được**, cả mua bán và cho thuê, chi sau khi công ty thu đủ phí, trước thuế thu nhập cá nhân. Mốc tra 17/11: môi giới có khách và môi giới giữ hàng thường chia 50/50; người chỉ giới thiệu nhận 10–20 %; HiFriendz chi cộng tác viên khoảng 12–22 % tiền thuê một tháng. Ở đây môi giới chỉ giới thiệu, admin dẫn khách.
-- **Chỉnh được:** bảng một dòng `cau_hinh_moi_gioi` (migration `20261117d`), admin sửa ngay đầu trang `/admin/khach-gioi-thieu`; `/quan-ly` và `/moi-gioi/dang-ky` đọc mức này để công bố.
-- **Chốt:** `chot_khach_gioi_thieu` — admin nhập phí công ty thu (và giá chốt nếu có), hệ thống tính phần môi giới theo mức lúc chốt, làm tròn nghìn, ghi nhật ký; `chi_hoa_hong_khach_gioi_thieu` đánh dấu đã chi (một chiều). Mở lại khách đã chốt thì xoá phần đã tính; đã chi thì không đổi trạng thái được. Môi giới thấy số tiền và tình trạng chi ở trang của mình.
-- **Vá để chạy được:** môi giới đăng ký hoặc gửi khách thì admin nhận một tin nội bộ qua Zalo (`reminders` kind escalation, không kèm số điện thoại); nút đăng nhập ở `/quan-ly` quay lại đúng `/quan-ly` (trước đó về `/tai-khoan`).
-- **Thử:** khối tự kiểm lúc áp migration (dữ liệu thử tự huỷ): phí 50 triệu → 10 triệu, phí thuê 7,5 triệu → 1,5 triệu, môi giới tự chốt bị từ chối, chốt qua hàm cũ bị từ chối, mở lại xoá phần đã tính, chi lần hai bị từ chối, người lạ không sửa được mức. Trang admin lúc đã đăng nhập chưa xem bằng mắt.
-- **Chưa làm:** khấu trừ thuế thu nhập cá nhân lúc chi (mới ghi "trước thuế"); gửi khách qua Zalo; `/moi-gioi` chưa hiện khu vực từng môi giới.
-

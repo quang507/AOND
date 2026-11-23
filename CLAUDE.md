@@ -32,7 +32,7 @@ Thứ tự đọc = thứ tự phụ thuộc. Tài liệu sau **không được 
 | 6 | `docs/06-ui-design.md` | Design system, token, component, tone giọng | `UI-` |
 | 7 | `docs/07-srs.md` | Đặc tả phần mềm: kiến trúc, data model, API, acceptance; 10 mục nhật ký sửa SRS-5.1… mới nhất | `SRS-` |
 | 7 | `docs/07-srs-luu-tru.md` | Nhật ký sửa cũ — LƯU TRỮ, chỉ tra cứu, không thêm mục | `SRS-` |
-| — | `docs/02-…`, `08-…`, `10-…-luu-tru.md` | Bản đầy đủ cũ của FR (02 §2.4), ma trận (08 §8.3), bộ test đã ngừng (10 §10.7) — LƯU TRỮ, chỉ tra cứu | — |
+| — | `docs/02-…`, `06-…`, `08-…`, `10-…-luu-tru.md` | Bản đầy đủ cũ của FR (02 §2.4), luật giọng cũ (06 §6.8), ma trận (08 §8.3), bộ test đã ngừng (10 §10.7) — LƯU TRỮ, chỉ tra cứu | — |
 | 8 | `docs/08-traceability.md` | Ma trận truy vết BR → FR → UF → WF → SRS | — |
 | 9 | `docs/09-open-issues.md` | Mâu thuẫn / quyết định còn treo | `OPEN-` |
 | 10 | `docs/10-ke-hoach-kiem-thu.md` | Kế hoạch kiểm thử 4 tầng | `TS-` |
@@ -95,7 +95,8 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 
 ### 6.2 Luật đang áp — lõi bot
 
-Chi tiết (ghi ô tin, dự án, địa chỉ, bản nháp, giọng, phí, phía mua, gửi chủ động, cache) ở `.claude/luat-dang-ap.md` §6.2 — **đọc trước khi sửa `src/aioi/`**. Năm luật hay sai nhất:
+Chi tiết (ghi ô tin, dự án, địa chỉ, bản nháp, giọng, phí, phía mua, gửi chủ động, cache) ở `.claude/luat-dang-ap.md` §6.2 — **đọc trước khi sửa `src/aioi/`**. Sáu luật hay sai nhất:
+- **Giọng: lời bot phải như người thật nhắn Zalo** (mục tiêu + quyết định cứng `docs/06` §6.8; dựng / sửa `docs/07` SRS-5.6). Lời lạ thì đọc chat thật, sửa ở gốc hoặc viết lại câu trong `GIONG` — KHÔNG thêm dòng cấm / đếm từ / câu mẫu cho model chép / lưới soát giọng, không chép luật cũ từ file lưu trữ.
 - Ô tin chỉ ghi điều KHÁCH nói (bằng chứng nằm nguyên trong lời khách, `Engine._loc_o_tin`, SRS-73); việc bot tự giao làm theo ý AI đọc, không so nguyên văn (SRS-281).
 - Một nguồn: phí `revenue.py` / `prompts.muc_phi` (đừng gõ tay "1%"), giọng `prompts.GIONG`, xưng hô `xung_ho.py`, câu mẫu `cau_mau.MAC_DINH` (+ migration `*_cau_mau_*`).
 - Tối đa MỘT câu hỏi mỗi lượt; mỗi lượt MỘT khối "ƯU TIÊN LƯỢT NÀY"; không mở đầu "Dạ", không gọi khách "mình".

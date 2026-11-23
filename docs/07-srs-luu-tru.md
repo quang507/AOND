@@ -2,6 +2,9 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+> **Giọng / câu chữ của bot (23/11/2026, SRS-5.1zzzzzzz535):** các mục cũ dưới đây có dòng "cấm", câu đếm, câu mẫu cho model — luật đang áp
+> chỉ là `06-ui-design.md` §6.8 và `07-srs.md` SRS-5.6. Đọc để tra vết quyết định, **không chép lại thành luật prompt**.
+
 ## Đặc tả thời TypeScript (chuyển từ docs/07 §5 ngày 02/11/2026 — edge function `chat-reply` / `nudge` đã gỡ)
 
 ### SRS-5.1 · Chu trình `chat-reply` v48
@@ -72,6 +75,15 @@ lặp không có trả lời; trigger `conversations_email_upset` gửi `[UPSET]
 Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
+
+### SRS-5.1zzzzzzz525 · Mức chi cho môi giới giới thiệu khách; chốt và đánh dấu đã chi; báo admin qua Zalo (17/11/2026)
+Chủ dự án 17/11: "đưa con số theo thị trường đi … cứ đưa số hợp lý trước chỉnh sau, còn gì thiếu thì làm để chạy được đã".
+- **Mức khởi đầu: 20 % phí công ty thu được**, cả mua bán và cho thuê, chi sau khi công ty thu đủ phí, trước thuế thu nhập cá nhân. Mốc tra 17/11: môi giới có khách và môi giới giữ hàng thường chia 50/50; người chỉ giới thiệu nhận 10–20 %; HiFriendz chi cộng tác viên khoảng 12–22 % tiền thuê một tháng. Ở đây môi giới chỉ giới thiệu, admin dẫn khách.
+- **Chỉnh được:** bảng một dòng `cau_hinh_moi_gioi` (migration `20261117d`), admin sửa ngay đầu trang `/admin/khach-gioi-thieu`; `/quan-ly` và `/moi-gioi/dang-ky` đọc mức này để công bố.
+- **Chốt:** `chot_khach_gioi_thieu` — admin nhập phí công ty thu (và giá chốt nếu có), hệ thống tính phần môi giới theo mức lúc chốt, làm tròn nghìn, ghi nhật ký; `chi_hoa_hong_khach_gioi_thieu` đánh dấu đã chi (một chiều). Mở lại khách đã chốt thì xoá phần đã tính; đã chi thì không đổi trạng thái được. Môi giới thấy số tiền và tình trạng chi ở trang của mình.
+- **Vá để chạy được:** môi giới đăng ký hoặc gửi khách thì admin nhận một tin nội bộ qua Zalo (`reminders` kind escalation, không kèm số điện thoại); nút đăng nhập ở `/quan-ly` quay lại đúng `/quan-ly` (trước đó về `/tai-khoan`).
+- **Thử:** khối tự kiểm lúc áp migration (dữ liệu thử tự huỷ): phí 50 triệu → 10 triệu, phí thuê 7,5 triệu → 1,5 triệu, môi giới tự chốt bị từ chối, chốt qua hàm cũ bị từ chối, mở lại xoá phần đã tính, chi lần hai bị từ chối, người lạ không sửa được mức. Trang admin lúc đã đăng nhập chưa xem bằng mắt.
+- **Chưa làm:** khấu trừ thuế thu nhập cá nhân lúc chi (mới ghi "trước thuế"); gửi khách qua Zalo; `/moi-gioi` chưa hiện khu vực từng môi giới.
 
 ### SRS-5.1zzzzzzz524 · Nối đăng ký môi giới với Zalo và tài khoản web; môi giới giới thiệu khách (17/11/2026)
 Chủ dự án 17/11, sau khi xem cổng agent của HiFriendz: "nối ba thứ thành một đi thì bên mình có khách riêng và môi giới đem khách về". **Đảo quyết định 28/10** (bỏ đội cộng tác viên, SRS-237): môi giới nay cũng đem khách về; người dẫn khách vẫn là admin.

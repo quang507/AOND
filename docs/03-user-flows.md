@@ -116,7 +116,7 @@ flowchart TD
 ```
 
 **Tiêu chí tối thiểu**: khu vực (≥ cấp quận) **và** khoảng giá. Tối đa 3 listing/tin
-(FR-24); hỏi gọn, không thành bảng hỏi, đủ khu vực + tầm giá thì ngừng dò (`06 §6.8`, "Nhịp nhắn giống người").
+(FR-24); hỏi gọn, không thành bảng hỏi, đủ khu vực + tầm giá thì ngừng dò (`06 §6.8`).
 
 ---
 
@@ -212,8 +212,8 @@ flowchart TD
 
 Góc follow-up xoay vòng, không lặp cùng mẫu hai lần liên tiếp: căn cuối đã xem
 (FR-61) · căn khác cùng khu/tầm giá (FR-62) · căn mới nhận (FR-64) · hỏi thẳng
-*"Chị đã tìm mua được nhà chưa ạ?"*. Tin chủ động thường kết bằng **một câu hỏi** —
-mục tiêu là B *nhắn lại* — nhưng khoảng 1/3 số tin kết bằng câu khẳng định rồi chờ (`06 §6.8`, Bảy quy tắc, 3); chỉ gửi trong 8h–21h VN (FR-133).
+*"Chị đã tìm mua được nhà chưa ạ?"*. Tin chủ động nhắm cho B *nhắn lại*,
+nhưng không phải tin nào cũng kết bằng câu hỏi — viết như người thật nhắn (`06 §6.8`); chỉ gửi trong 8h–21h VN (FR-133).
 
 ---
 
