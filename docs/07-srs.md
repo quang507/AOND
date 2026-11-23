@@ -801,7 +801,11 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
-<<<<<<< Updated upstream
+### SRS-5.1zzzzzzz534 · Groq dự phòng bị Cloudflare chặn vì User-Agent mặc định (23/11/2026)
+Chủ dự án 23/11: "kiểm tra groq còn cho api free ko". Khoá vẫn tốt, vẫn gói miễn phí (gpt-oss-120b: 1.000 lượt / ngày, 8.000 token / phút; qwen3.8-27b: 7.000 token vào / phút). Lỗi 403 từ ≥ 18/11 là Cloudflare "error code: 1010": `du_phong._http` gọi bằng urllib không đặt User-Agent ("Python-urllib" bị chặn) → mọi lượt Groq 403, Gemini hụt một nhịp là khách nhận câu giữ chỗ.
+- **Sửa:** `_http` gửi `User-Agent: aond-core/1.0`. Chép giọng nói (httpx, UA "python-httpx") không bị chặn. Thử: urllib không UA → 403 1010; có UA → 200; hàm `_http` của lõi gọi Groq → trả lời.
+- **Giới hạn gói miễn phí (đo bằng prompt thật):** bước viết (~14 nghìn ký tự, ~4.500 token) qua được nhưng chừng một lượt / phút; bước ghi (~39 nghìn ký tự, ~13–14 nghìn token) bị 413 "Request too large" — Groq miễn phí không thay được vòng agent, chỉ đỡ lời khi Gemini hụt. Đường dự phòng thật vẫn là Claude trả phí.
+
 ### SRS-5.1zzzzzzz533 · CRM: chỗ cần dài thì dài, chỗ không cần thì gọn — Báo cáo, Đăng tin, Câu chuẩn, Khách hàng (20/11/2026)
 
 Chủ dự án 20/11/2026 "rồi sửa hết các chỗ khác của CRM đi" (sau SRS-532 Rổ hàng). Đo 10 trang CRM trên web thật ở 1536px rồi sửa:
@@ -821,12 +825,6 @@ Trạng thái 144, Bán/thuê 80, Giá 104, Diện tích 88, Vị trí 376, Ngư
 còn lại (tối thiểu 360). Lề ô 8px (trước 12px). Các cột tới hết Vị trí ≈ 1.090px, địa chỉ một dòng không rớt chữ cuối (thêm text-wrap: pretty), vừa màn 1.536px trừ sidebar và cột Thao tác. Loại, Người bán xuống dòng; cột
 ngắn khác cắt "…" kèm title. Tiêu đề cột bỏ chữ hoa, không xuống dòng. Bỏ nút JSON (bóc tách chia nhóm) ở từng dòng — Thao tác còn Sửa,
 Xem; JSON cả rổ vẫn ở nút "{ } JSON" đầu trang. Theo thang chữ / khoảng cách skill landing-page-design (elayadesign); giữ Nunito, màu King.
-=======
-### SRS-5.1zzzzzzz532 · Groq dự phòng bị Cloudflare chặn vì User-Agent mặc định (23/11/2026)
-Chủ dự án 23/11: "kiểm tra groq còn cho api free ko". Khoá vẫn tốt, vẫn gói miễn phí (gpt-oss-120b: 1.000 lượt / ngày, 8.000 token / phút; qwen3.8-27b: 7.000 token vào / phút). Lỗi 403 từ ≥ 18/11 là Cloudflare "error code: 1010": `du_phong._http` gọi bằng urllib không đặt User-Agent ("Python-urllib" bị chặn) → mọi lượt Groq 403, Gemini hụt một nhịp là khách nhận câu giữ chỗ.
-- **Sửa:** `_http` gửi `User-Agent: aond-core/1.0`. Chép giọng nói (httpx, UA "python-httpx") không bị chặn. Thử: urllib không UA → 403 1010; có UA → 200; hàm `_http` của lõi gọi Groq → trả lời.
-- **Giới hạn gói miễn phí (đo bằng prompt thật):** bước viết (~14 nghìn ký tự, ~4.500 token) qua được nhưng chừng một lượt / phút; bước ghi (~39 nghìn ký tự, ~13–14 nghìn token) bị 413 "Request too large" — Groq miễn phí không thay được vòng agent, chỉ đỡ lời khi Gemini hụt. Đường dự phòng thật vẫn là Claude trả phí.
->>>>>>> Stashed changes
 
 ### SRS-5.1zzzzzzz531 · Nhân vật + giọng MỘT bản dùng chung, gỡ phiếu lượt cũ; xoá sạch số Zalo tư vấn (20/11/2026)
 Chủ dự án 20/11: "gọn thì dùng 1 bản thôi chứ ko phải là có cả Khối GIỌNG lẫn Prompt gọn (LEAN)"; "zalo bán xóa rồi mà xóa sạch đi ko cần tạo qr nữa".
@@ -885,21 +883,4 @@ Chủ dự án 17/11: "đưa con số theo thị trường đi … cứ đưa s�
 - **Vá để chạy được:** môi giới đăng ký hoặc gửi khách thì admin nhận một tin nội bộ qua Zalo (`reminders` kind escalation, không kèm số điện thoại); nút đăng nhập ở `/quan-ly` quay lại đúng `/quan-ly` (trước đó về `/tai-khoan`).
 - **Thử:** khối tự kiểm lúc áp migration (dữ liệu thử tự huỷ): phí 50 triệu → 10 triệu, phí thuê 7,5 triệu → 1,5 triệu, môi giới tự chốt bị từ chối, chốt qua hàm cũ bị từ chối, mở lại xoá phần đã tính, chi lần hai bị từ chối, người lạ không sửa được mức. Trang admin lúc đã đăng nhập chưa xem bằng mắt.
 - **Chưa làm:** khấu trừ thuế thu nhập cá nhân lúc chi (mới ghi "trước thuế"); gửi khách qua Zalo; `/moi-gioi` chưa hiện khu vực từng môi giới.
-
-### SRS-5.1zzzzzzz524 · Nối đăng ký môi giới với Zalo và tài khoản web; môi giới giới thiệu khách (17/11/2026)
-Chủ dự án 17/11, sau khi xem cổng agent của HiFriendz: "nối ba thứ thành một đi thì bên mình có khách riêng và môi giới đem khách về". **Đảo quyết định 28/10** (bỏ đội cộng tác viên, SRS-237): môi giới nay cũng đem khách về; người dẫn khách vẫn là admin.
-- **Mã:** admin duyệt đăng ký → DB cấp mã môi giới `MG0001…` và mã kích hoạt `AOND-XXXXXXXXXX` (trigger `dang_ky_moi_gioi_cap_ma`); `/admin/moi-gioi` hiện hai mã kèm nút sao chép lời nhắn.
-- **Nối** (`noi_moi_gioi`, migration `20261117c`): môi giới nhắn mã kích hoạt cho bot trên Zalo (`engine._MA_KICH_HOAT` → `supabase_store.noi_moi_gioi`, bot báo kết quả qua `prompts.khoi_kich_hoat_mg`) hoặc nhập ở `/quan-ly`. Hai kênh về MỘT dòng `sellers` (dòng có Zalo ID là dòng sống, tin của dòng kia chuyển sang); mỗi kênh nối một lần cho một đăng ký.
-- **`/quan-ly`** (`components/KhuMoiGioi.tsx`): ô kích hoạt; sau khi kích hoạt hiện mã môi giới, chuẩn của chính mình (`toi_la_moi_gioi` → `chuan_nmg`), form gửi khách cần mua / thuê và danh sách khách kèm nhật ký.
-- **Khách giới thiệu:** bảng `khach_gioi_thieu` + `khach_gioi_thieu_nhat_ky`; môi giới gửi qua `gui_khach_gioi_thieu` (phải xác nhận khách đồng ý; khách đang được chăm thì không nhận lần hai; tối đa 30 khách / ngày); admin xử lý ở `/admin/khach-gioi-thieu` qua `cap_nhat_khach_gioi_thieu`, mỗi bước một dòng nhật ký mà môi giới đọc được.
-- **Thử:** migration áp kèm khối tự kiểm (dữ liệu thử tự huỷ): nối web trước rồi Zalo sau về một dòng, Zalo khác bị từ chối, khách trùng bị chặn, người lạ đọc 0 dòng, trạng thái sai bị từ chối, 3 dòng nhật ký. Bắn thử trên 146 (flash-lite): nhắn mã đúng thì dòng `sellers` của Zalo đó thành `nmg` mang mã MG0001 và bot báo mã môi giới; mã sai thì bot báo chưa nối được. Hai lỗi lộ ra và đã sửa: bot đọc lại mã kích hoạt thay vì mã môi giới; cuộc chat đang ở vai mua thì lượt nhắn mã đi nhánh mua (nay lượt có mã luôn đi nhánh bán). Phần web lúc đã đăng nhập chưa xem bằng mắt.
-- **Chưa làm:** gửi khách qua Zalo (mới có form web); `/moi-gioi` chưa hiện khu vực từng môi giới. (Mức chi: làm ở SRS-525.)
-
-### SRS-5.1zzzzzzz523 · Môi giới đăng ký bằng form trên web, admin quản lý (17/11/2026)
-Chủ dự án 17/11, sau khi xem batdongsan.com.vn và hifriendz.com: "Form trên web như HiFriendz và có trang trong admin quản lý đi".
-- **Form** `/moi-gioi/dang-ky` (`components/FormDangKyMoiGioi.tsx`, lựa chọn ở `lib/moi-gioi.ts`): cá nhân hay sàn, họ tên, số điện thoại có Zalo, khu vực (13 cụm, tối đa 5), loại nhà đất, công ty, kinh nghiệm, số căn đang nhận, lời nhắn, ô đồng ý xử lý dữ liệu. Không thu căn cước hay tài khoản ngân hàng. Trang `/moi-gioi` đổi nút chính thành "Đăng ký tham gia", Zalo là lối phụ.
-- **DB** (migration `20261117b`): bảng `dang_ky_moi_gioi`; web ghi qua hàm `gui_dang_ky_moi_gioi(jsonb)` — kiểm dữ liệu, chuẩn số điện thoại, một số chỉ đăng ký một lần / 24 giờ, cả bảng tối đa 40 lượt / giờ. Chỉ admin đọc; admin chỉ sửa được bốn cột xử lý.
-- **Admin** `/admin/moi-gioi`: lọc theo trạng thái (mới → đã liên hệ → đã duyệt / từ chối), nút mở Zalo theo số, ghi chú nội bộ; thanh bên hiện số đăng ký mới.
-- **Thử:** hàm chạy trong giao dịch huỷ 6 ca rồi áp; form trên bản build thật báo lỗi đúng ô khi bỏ trống và ghi được một dòng thử; quyền kiểm bằng giả lập phiên: admin đọc và sửa được, người lạ 0 dòng, cột người đăng ký khai không sửa được. Trang admin lúc đã đăng nhập chưa xem bằng mắt (không có phiên admin).
-- **Chưa làm:** trang `/moi-gioi` chưa hiện khu vực của từng môi giới. (Nối với Zalo / web và mã môi giới gắn khách giới thiệu: làm ở SRS-524.)
 

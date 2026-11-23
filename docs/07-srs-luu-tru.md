@@ -73,6 +73,23 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz524 · Nối đăng ký môi giới với Zalo và tài khoản web; môi giới giới thiệu khách (17/11/2026)
+Chủ dự án 17/11, sau khi xem cổng agent của HiFriendz: "nối ba thứ thành một đi thì bên mình có khách riêng và môi giới đem khách về". **Đảo quyết định 28/10** (bỏ đội cộng tác viên, SRS-237): môi giới nay cũng đem khách về; người dẫn khách vẫn là admin.
+- **Mã:** admin duyệt đăng ký → DB cấp mã môi giới `MG0001…` và mã kích hoạt `AOND-XXXXXXXXXX` (trigger `dang_ky_moi_gioi_cap_ma`); `/admin/moi-gioi` hiện hai mã kèm nút sao chép lời nhắn.
+- **Nối** (`noi_moi_gioi`, migration `20261117c`): môi giới nhắn mã kích hoạt cho bot trên Zalo (`engine._MA_KICH_HOAT` → `supabase_store.noi_moi_gioi`, bot báo kết quả qua `prompts.khoi_kich_hoat_mg`) hoặc nhập ở `/quan-ly`. Hai kênh về MỘT dòng `sellers` (dòng có Zalo ID là dòng sống, tin của dòng kia chuyển sang); mỗi kênh nối một lần cho một đăng ký.
+- **`/quan-ly`** (`components/KhuMoiGioi.tsx`): ô kích hoạt; sau khi kích hoạt hiện mã môi giới, chuẩn của chính mình (`toi_la_moi_gioi` → `chuan_nmg`), form gửi khách cần mua / thuê và danh sách khách kèm nhật ký.
+- **Khách giới thiệu:** bảng `khach_gioi_thieu` + `khach_gioi_thieu_nhat_ky`; môi giới gửi qua `gui_khach_gioi_thieu` (phải xác nhận khách đồng ý; khách đang được chăm thì không nhận lần hai; tối đa 30 khách / ngày); admin xử lý ở `/admin/khach-gioi-thieu` qua `cap_nhat_khach_gioi_thieu`, mỗi bước một dòng nhật ký mà môi giới đọc được.
+- **Thử:** migration áp kèm khối tự kiểm (dữ liệu thử tự huỷ): nối web trước rồi Zalo sau về một dòng, Zalo khác bị từ chối, khách trùng bị chặn, người lạ đọc 0 dòng, trạng thái sai bị từ chối, 3 dòng nhật ký. Bắn thử trên 146 (flash-lite): nhắn mã đúng thì dòng `sellers` của Zalo đó thành `nmg` mang mã MG0001 và bot báo mã môi giới; mã sai thì bot báo chưa nối được. Hai lỗi lộ ra và đã sửa: bot đọc lại mã kích hoạt thay vì mã môi giới; cuộc chat đang ở vai mua thì lượt nhắn mã đi nhánh mua (nay lượt có mã luôn đi nhánh bán). Phần web lúc đã đăng nhập chưa xem bằng mắt.
+- **Chưa làm:** gửi khách qua Zalo (mới có form web); `/moi-gioi` chưa hiện khu vực từng môi giới. (Mức chi: làm ở SRS-525.)
+
+### SRS-5.1zzzzzzz523 · Môi giới đăng ký bằng form trên web, admin quản lý (17/11/2026)
+Chủ dự án 17/11, sau khi xem batdongsan.com.vn và hifriendz.com: "Form trên web như HiFriendz và có trang trong admin quản lý đi".
+- **Form** `/moi-gioi/dang-ky` (`components/FormDangKyMoiGioi.tsx`, lựa chọn ở `lib/moi-gioi.ts`): cá nhân hay sàn, họ tên, số điện thoại có Zalo, khu vực (13 cụm, tối đa 5), loại nhà đất, công ty, kinh nghiệm, số căn đang nhận, lời nhắn, ô đồng ý xử lý dữ liệu. Không thu căn cước hay tài khoản ngân hàng. Trang `/moi-gioi` đổi nút chính thành "Đăng ký tham gia", Zalo là lối phụ.
+- **DB** (migration `20261117b`): bảng `dang_ky_moi_gioi`; web ghi qua hàm `gui_dang_ky_moi_gioi(jsonb)` — kiểm dữ liệu, chuẩn số điện thoại, một số chỉ đăng ký một lần / 24 giờ, cả bảng tối đa 40 lượt / giờ. Chỉ admin đọc; admin chỉ sửa được bốn cột xử lý.
+- **Admin** `/admin/moi-gioi`: lọc theo trạng thái (mới → đã liên hệ → đã duyệt / từ chối), nút mở Zalo theo số, ghi chú nội bộ; thanh bên hiện số đăng ký mới.
+- **Thử:** hàm chạy trong giao dịch huỷ 6 ca rồi áp; form trên bản build thật báo lỗi đúng ô khi bỏ trống và ghi được một dòng thử; quyền kiểm bằng giả lập phiên: admin đọc và sửa được, người lạ 0 dòng, cột người đăng ký khai không sửa được. Trang admin lúc đã đăng nhập chưa xem bằng mắt (không có phiên admin).
+- **Chưa làm:** trang `/moi-gioi` chưa hiện khu vực của từng môi giới. (Nối với Zalo / web và mã môi giới gắn khách giới thiệu: làm ở SRS-524.)
+
 ### SRS-5.1zzzzzzz522 · Che thông tin cá nhân trên ảnh sổ; khung Gemini trả theo thang 0–1000 (17/11/2026)
 Chủ dự án 17/11: "làm mấy cái này đi". Bản anh Luận (`boa-phaply.md`): ảnh sổ che số sổ, tên, số định danh, mã QR trước khi lưu / đưa đi.
 - **Che sổ** (`che_so.py`, vòng nền `server._vong_che_so`, tắt bằng `CHE_SO=tat`): ảnh giấy tờ ở kho riêng đi một lần — model khoanh họ tên, số căn cước, năm sinh, địa chỉ người, số phát hành / số vào sổ, mã QR, chữ ký; code tô đen, khung nới 12 % bề ngang. Bản gốc chép sang `goc/` trong kho riêng, bản đã che ghi đè khoá cũ (CRM mở giấy tờ thấy bản đã che). Số thửa, số tờ, diện tích, địa chỉ thửa giữ nguyên.
