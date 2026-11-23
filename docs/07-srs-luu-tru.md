@@ -76,6 +76,16 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz526 · Theo thiết kế r2 của anh Luận: BOA 1 tin / ngày, FDA thôi tra cứu trong lượt, tắt phía người mua (18/11/2026)
+Chủ dự án 17/11: "7 làm giống sếp đi" — chọn ba điểm: nhịp nhắn 1 tin / ngày, FDA thôi tra cứu ngay, bỏ phía người mua. Giữ lại: môi giới gửi khách về (SRS-524, 525).
+- **Nhịp:** `TIN_CHU_DONG_MOT_NGAY` mặc định 1 (trước 3). Tin trả lời điều bot đã hẹn (`tra_hen`) không tính trần, không chờ chủ đáp câu cũ.
+- **FDA thôi tra cứu:** lượt chat bỏ các công cụ `tra_du_an`, `du_an_trong_khu`, `kiem_tra_phap_ly_so`, `tham_dinh_quy_hoach`, `tra_cuu_phong_thuy` (giữ rổ hàng, bộ nhớ dự án, giá đã gửi, tính phí; ảnh khách gửi vẫn đọc trong lượt). Khách hỏi điều phải tra (ô `can_tra_cuu` + cụm trích, hoặc hỏi giá cao hay thấp) thì FDA hẹn, câu hỏi ghi vào căn (`_cho_tra_cuu`, giữ 3 câu). `FDA_TRA_CUU=bat` trả lại như cũ.
+- **BOA trả lời:** `hoi_sau_dang._tra_loi_tra_cuu` — vòng nền xét căn có câu hẹn trước, chat im đủ lâu thì tra bằng các công cụ trên cùng căn đang rao gần rồi nhắn một tin. Không có dữ kiện nào thì tin của model bị bỏ; hai lượt vẫn không có thì code soạn câu "chưa có dữ liệu, không đoán" và chuyển người phụ trách. Hẹn quá 24 giờ thì bỏ.
+- **Tắt phía mua:** `PHIA_MUA` mặc định tắt. Khách cần mua / thuê: bot ghi nhu cầu, báo người phụ trách một lần (`bao_can_nguoi`), chỉ web; không gợi ý căn, không hẹn lịch xem; vòng báo căn mới không chạy. `PHIA_MUA=bat` trả lại.
+- **Prompt:** người bán "hỏi thông tin" 59.037 → 55.381 ký tự.
+- **Thử (máy 146, ID thử):** người bán hỏi "giá cao hay thấp, có dính quy hoạch không" → FDA hẹn, câu hẹn nằm trong căn; BOA nhắn lại "chưa đủ dữ liệu để so giá", xin số tờ số thửa để tra quy hoạch, xoá hẹn; lượt model quá hạn thì giữ hẹn. Khách cần mua → ghi nhu cầu, chuyển người phụ trách, câu sau không hỏi tiếp. Lần bắn đầu BOA tự khẳng định "giá cạnh tranh, không vướng quy hoạch" khi không có dữ kiện — đã chặn bằng code (`2ae1cf8`).
+- **Chưa làm:** câu "chưa có dữ liệu" do code soạn chưa bắn qua Zalo thật; số Zalo tư vấn mua vẫn đăng nhập ở cầu nối.
+
 ### SRS-5.1zzzzzzz525 · Mức chi cho môi giới giới thiệu khách; chốt và đánh dấu đã chi; báo admin qua Zalo (17/11/2026)
 Chủ dự án 17/11: "đưa con số theo thị trường đi … cứ đưa số hợp lý trước chỉnh sau, còn gì thiếu thì làm để chạy được đã".
 - **Mức khởi đầu: 20 % phí công ty thu được**, cả mua bán và cho thuê, chi sau khi công ty thu đủ phí, trước thuế thu nhập cá nhân. Mốc tra 17/11: môi giới có khách và môi giới giữ hàng thường chia 50/50; người chỉ giới thiệu nhận 10–20 %; HiFriendz chi cộng tác viên khoảng 12–22 % tiền thuê một tháng. Ở đây môi giới chỉ giới thiệu, admin dẫn khách.

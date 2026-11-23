@@ -151,8 +151,8 @@ def main() -> int:
                 g["on_dinh"] + "\n\n######## SAU RANH GIỚI CACHE ########\n" + g["dong"] + "\n\n######## CÔNG CỤ / SCHEMA ########\n" + g["cong_cu"])
     print("\nTổng ký tự mỗi lượt:", "  ·  ".join(f"{k}: {v:,}".replace(",", ".") for k, v in tong.items()))
     nv = len(P.khoi_nhan_vat("{TEN_TRO_LY}", "người gửi bán / cho thuê nhà"))
-    print(f"NHÂN VẬT + GIỌNG (một bản dùng chung mọi prompt) {nv:,} / 4.500 · phần riêng lượt hỏi thông tin "
-          f"{len(P.LEAN_SYSTEM_PROMPT) - nv:,} / 3.500".replace(",", "."))
+    print(f"NHÂN VẬT + GIỌNG (một bản dùng chung mọi prompt) {nv:,} / 3.000 · phần riêng lượt hỏi thông tin "
+          f"{len(P.LEAN_SYSTEM_PROMPT) - nv:,} / 1.800".replace(",", "."))
 
     loi: list[str] = []
     # 1. bảng luật
@@ -163,12 +163,15 @@ def main() -> int:
     # 2. kiến thức nghề
     def cua(nhan, loai):
         return next((g for g in GHI if g["luot"] == nhan and g["loai"] == loai), None)
+    # SRS-5.1zzzzzzz536: bước ghi mang khối trong system; bước viết tra bằng công cụ `kien_thuc_nghe` (không nằm sẵn trong system)
     for loai in ("buoc1-ghi", "buoc2-viet"):
         g = cua("A 2 hỏi thông tin", loai)
         if g is None:
             loi.append(f"KIẾN THỨC NGHỀ: không thấy lần gọi {loai} ở lượt hỏi thông tin (lõi không đi đường vòng công cụ?)")
-        elif "KIẾN THỨC NGHỀ" not in g["on_dinh"] + g["dong"]:
-            loi.append(f"KIẾN THỨC NGHỀ: không có trong system {loai} của lượt hỏi thông tin")
+        elif loai == "buoc1-ghi" and "KIẾN THỨC NGHỀ" not in g["on_dinh"] + g["dong"]:
+            loi.append("KIẾN THỨC NGHỀ: không có trong system bước ghi của lượt hỏi thông tin")
+        elif loai == "buoc2-viet" and '"kien_thuc_nghe"' not in g["cong_cu"]:
+            loi.append("KIẾN THỨC NGHỀ: bước viết của lượt hỏi thông tin không có công cụ kien_thuc_nghe")
     # 3. cache không tách theo tên trợ lý
     if ten_a == ten_b:
         loi.append("CACHE: không tìm được hai khách có tên trợ lý khác nhau để so")

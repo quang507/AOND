@@ -281,7 +281,8 @@ def _cau_theo_khach(uk: str, khoa: str) -> str:
         goi, toi = _engine._goi_toi(_engine.conversation(uk))
     except Exception:  # noqa: BLE001
         goi, toi = "anh/chị", "em"
-    return cau_mau.cau(khoa, goi, toi=toi)
+    from .engine import _bo_gach_cheo   # OPEN-62: câu giữ chỗ / xin lỗi cũng không viết "anh/chị" gạch chéo (SRS-5.1zzzzzzz536)
+    return _bo_gach_cheo(cau_mau.cau(khoa, goi, toi=toi), goi)
 THU_LAI_SAU = 20
 
 

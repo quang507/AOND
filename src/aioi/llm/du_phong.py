@@ -218,7 +218,8 @@ class DuPhongProvider(LLMProvider):
         if n.ten == "Groq":
             than["reasoning_format"] = "hidden"
         else:
-            than["reasoning_effort"] = "low"
+            # SRS-5.1zzzzzzz536 (23/11/2026): "low" làm gemini-3.1-flash-lite suy nghĩ trước — đo cùng yêu cầu bước ghi: 28,2 / 7,7 / 2,2 s (sát hạn 30 s → quá hạn hai lần, model nghỉ, cả lượt rơi xuống Groq rồi câu giữ chỗ); "minimal": 1,2–1,3 s, vẫn gọi đúng công cụ.
+            than["reasoning_effort"] = "minimal"
             than["max_completion_tokens"] = max(max_tokens, 1500)
         if schema is not None:
             than["response_format"] = {"type": "json_schema", "json_schema": {"name": "ket_qua", "schema": schema, "strict": False}}
@@ -317,7 +318,7 @@ class DuPhongProvider(LLMProvider):
     def _luot_cong_cu(self, n: Nguon, model: str, khoa: str, system: str, messages: list[dict[str, Any]],
                       tools: list[dict[str, Any]], max_tokens: int) -> ToolTurn:
         than: dict[str, Any] = {"model": model, "messages": [{"role": "system", "content": bo_ranh_gioi(system)}, *self._tin_openai(messages)],
-                                "max_completion_tokens": max(max_tokens, 1500), "temperature": 0.6, "reasoning_effort": "low"}
+                                "max_completion_tokens": max(max_tokens, 1500), "temperature": 0.6, "reasoning_effort": "minimal"}   # SRS-536: "low" chậm tới 28 s
         ct = self._cong_cu_openai(tools)
         if ct:
             than["tools"] = ct

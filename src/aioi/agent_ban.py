@@ -26,12 +26,9 @@ HAN_GIAY = 25.0     # trần lõi 40 s, bridge chờ 90 s
 TRAN_KET_QUA = 6000
 
 HUONG_DAN = (
-    "\n\n=== CÔNG CỤ TRA DỮ LIỆU CỦA KHÁCH (chỉ ĐỌC) ===\n"
-    "Dữ liệu tra KHÔNG nằm sẵn trong lời nhắc — dòng \"DỮ LIỆU CÓ THỂ TRA\" ở cuối cho biết lượt này có gì; mô tả từng công cụ nói khi nào "
-    "gọi. Lượt chỉ hỏi một ô tin thì KHÔNG tra. ro_hang: lời khách không chỉ ra được căn nào → HỎI LẠI căn nào (nêu địa chỉ các căn), "
-    "KHÔNG tự nhận căn, KHÔNG nói đã đổi trạng thái. Nói với khách KHÔNG dùng chữ \"rổ\".\n"
-    "Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có, không đoán. Lời gửi khách viết sau khi tra xong; không "
-    "viết 'để em tra / em kiểm tra'.\n"
+    "\n\n=== CÔNG CỤ TRA (chỉ ĐỌC) ===\n"
+    "Lượt chỉ hỏi một ô tin thì khỏi tra. Chỉ nói điều kết quả tra ghi, không ra thì nói chưa có; không viết 'để em tra'. Khách không chỉ "
+    "rõ căn nào trong các căn đã gửi thì hỏi lại (nêu địa chỉ), không tự nhận căn; không dùng chữ \"rổ\".\n"
 )
 
 CONG_CU: list[dict[str, Any]] = [
@@ -71,13 +68,13 @@ CONG_CU: list[dict[str, Any]] = [
          "required": ["chu_de"]
      }},
     {"name": "tinh_phi_moi_gioi",
-     "description": "Tính phí môi giới và hoa hồng ký gửi minh bạch khi khách hỏi về chi phí dịch vụ, hoa hồng bên em tính sao, hoặc bán/thuê thành công thì mất bao nhiêu phí. Khẳng định chính sách 'Chỉ thu khi giao dịch thành công — 0 đồng trước' và quyền lợi bảo mật ẩn số nhà, che SĐT.",
+     "description": "Tính phí môi giới khi khách hỏi chi phí dịch vụ / hoa hồng / bán được thì mất bao nhiêu (chỉ thu khi giao dịch thành công).",
      "input_schema": {
          "type": "object",
          "properties": {
-             "gia_vnd": {"type": "number", "description": "Giá bán mong muốn (VND) hoặc tiền thuê mỗi tháng (VND)"},
-             "vai_nguoi_gui": {"type": "string", "enum": ["chu_nha", "moi_gioi"], "description": "chu_nha (chủ nhà) hoặc moi_gioi (môi giới / sàn) — mức phí theo vai do công cụ tính"},
-             "loai_giao_dich": {"type": "string", "enum": ["ban", "thue"], "description": "ban (bán) hoặc thue (cho thuê)"}
+             "gia_vnd": {"type": "number", "description": "Giá bán hoặc tiền thuê / tháng (VND)"},
+             "vai_nguoi_gui": {"type": "string", "enum": ["chu_nha", "moi_gioi"], "description": "chủ nhà hay môi giới"},
+             "loai_giao_dich": {"type": "string", "enum": ["ban", "thue"], "description": "bán hay cho thuê"}
          }
      }},
     {"name": "tra_cuu_phong_thuy",

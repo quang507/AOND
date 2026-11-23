@@ -316,9 +316,18 @@ def cong_cu(schema: dict[str, Any], chia: dict[str, Any]) -> list[dict[str, Any]
     return tools + [_tra_cong_cu(chia)] + [copy.deepcopy(c) for c in agent_ban.CONG_CU if c["name"] in DOC_BUOC_1]
 
 
+CONG_CU_KIEN_THUC = {   # SRS-5.1zzzzzzz536: kiến thức nghề không nằm sẵn trong bước viết nữa — model tự tra khi khách hỏi
+    "name": "kien_thuc_nghe",
+    "description": "Tiếng nghề và kiến thức nghề BĐS (diện tích đất / sàn / sử dụng, hẻm ô tô, chữ viết tắt tin rao, pháp lý kéo theo, tên "
+                   "khu dân gian). Gọi khi khách hỏi nghĩa / kiến thức chung, hoặc có chữ nghề em chưa chắc nghĩa.",
+    "input_schema": {"type": "object", "properties": {}}}
+
+
 def cong_cu_viet(chia: dict[str, Any]) -> list[dict[str, Any]]:
-    """Công cụ bước 2: chỉ đọc + tra cứu — bước ghi đã đóng (không còn công cụ ghi để gọi)."""
-    return [_tra_cong_cu(chia)] + copy.deepcopy(agent_ban.cong_cu_fda())   # SRS-5.1zzzzzzz526: FDA không tra cứu trong lượt
+    """Công cụ bước 2: chỉ đọc + tra cứu — bước ghi đã đóng (không còn công cụ ghi để gọi). `tra_luat_o` giữ TÊN (lịch sử bước 1 có lần gọi
+    nó) nhưng mô tả ngắn: bước viết hầu như không cần danh sách khoá luật (SRS-5.1zzzzzzz536, ≈ 300 token mỗi lượt)."""
+    tra = {**_tra_cong_cu(chia), "description": "Luật ghi nguyên văn của một khoá ô tin (bước ghi đã xong — bước này hiếm khi cần)."}
+    return [tra, copy.deepcopy(CONG_CU_KIEN_THUC)] + copy.deepcopy(agent_ban.cong_cu_fda())   # SRS-5.1zzzzzzz526: FDA không tra cứu trong lượt
 
 
 HUONG_DAN_GHI = (
@@ -334,15 +343,14 @@ HUONG_DAN_GHI = (
 
 HUONG_DAN_VIET = (
     "\n\n" + DAU_BUOC_2 + "\n"
-    "Em vừa đọc ý khách và gọi công cụ ghi (bước 1). Kết quả công cụ cuối là KẾT QUẢ GHI LƯỢT NÀY — hệ thống đã áp qua cổng kiểm. Đánh giá kết "
-    "quả đó rồi viết lời gửi khách theo các luật ở trên và việc lượt này. Không kể cho khách tên công cụ, tên ô, cổng kiểm hay kết quả hệ thống.\n"
+    "Kết quả công cụ cuối là KẾT QUẢ GHI LƯỢT NÀY (bước 1 đã ghi, hệ thống đã áp). Đọc nó rồi viết lời gửi khách theo việc lượt này; không kể "
+    "cho khách tên công cụ, tên ô hay kết quả hệ thống.\n"
 )
 KHAI_HOI = (   # chỉ phía bán (lưới ô hỏi chỉ xét người bán) — bước viết phía mua dùng HUONG_DAN_VIET không kèm dòng này
-    "Xong lời, xuống dòng viết thêm MỘT dòng cho hệ thống (cắt trước khi gửi, khách không thấy): " + DAU_KHAI_HOI + " rồi mảng JSON các chỗ "
-    "lời em hỏi / xin / nhờ khách cho biết hay xác nhận một thông tin của căn — có \"?\" hay không đều tính; không tính hỏi duyệt / đăng "
-    "bản tin, phí, lịch xem, chấm sao, câu chào, chữ trong bản tin: [{\"o\": khoá ô (dòng KHOÁ Ô của kết quả ghi), \"trich\": cụm nguyên "
-    "văn ngắn trong lời em, \"khach_vua_hoi\": true chỉ khi để làm rõ điều khách vừa hỏi em, \"trich_khach\": cụm nguyên văn của khách khi "
-    "đó}]. Không hỏi gì: " + DAU_KHAI_HOI + "[]\n"
+    "Cuối lời, xuống dòng thêm MỘT dòng cho hệ thống (khách không thấy): " + DAU_KHAI_HOI + "[{\"o\": khoá ô (dòng KHOÁ Ô của kết quả ghi), "
+    "\"trich\": cụm ngắn nguyên văn trong lời em, \"khach_vua_hoi\": true nếu chỉ để làm rõ điều khách vừa hỏi, \"trich_khach\": cụm nguyên "
+    "văn của khách khi đó}] — mỗi chỗ lời em hỏi / xin khách một thông tin của căn, có \"?\" hay không; không tính hỏi duyệt / đăng tin, phí, "
+    "lịch xem, chấm sao, chào, chữ trong bản tin. Không hỏi gì: " + DAU_KHAI_HOI + "[]\n"
 )
 # SRS-5.1zzzzzzz496: bỏ câu "Bước ghi lượt này đã đóng (bước 2 chỉ còn công cụ đọc)" — bộ vàng 14/11 lời gửi khách chép nguyên ("Bước ghi đã
 # đóng, em rao lại bản tin…"); bước 2 vốn chỉ được giao công cụ đọc, gọi nhầm công cụ ghi thì `chay` trả lời riêng.
@@ -626,6 +634,9 @@ def viet(engine: Any, conv: Any, project: Any, system: str, captured: list[str],
         vao = dict(c.input or {})
         if c.name == "tra_luat_o":
             return tra_luat(vao.get("o"), st["schema"], st["chia"])
+        if c.name == "kien_thuc_nghe":
+            from .prompts import KIEN_THUC_TRA
+            return KIEN_THUC_TRA
         if c.name in DOC:
             return agent_ban._khoi(engine, conv, project, c.name, vao).strip() or "Không có dữ liệu này."
         if kho_du_an:
@@ -635,7 +646,7 @@ def viet(engine: Any, conv: Any, project: Any, system: str, captured: list[str],
     from .llm.base import KHONG_NGHI_LUOT
     co = KHONG_NGHI_LUOT.set(True)   # SRS-5.1zzzzzzz483: bước viết không nghĩ thêm — bước 1 đã đọc, ghi, áp xong; phía mua giữ nghĩ (tra kho ở bước này)
     try:
-        ra = _vong_viet(engine, he, tin, tools, chay, st["bat_dau"], max_tokens, "Agent gộp", bo_ket=("tra_luat_o",))
+        ra = _vong_viet(engine, he, tin, tools, chay, st["bat_dau"], max_tokens, "Agent gộp", bo_ket=("tra_luat_o", "kien_thuc_nghe"))
     finally:
         KHONG_NGHI_LUOT.reset(co)
     if ra is None:

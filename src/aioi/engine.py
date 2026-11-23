@@ -450,10 +450,23 @@ def _xung_ho_cau(cau: str, goi: str, toi: str) -> str:
     bằng {goi}"). Đổi một lượt (khách xưng em: "anh/chị" → "em" và "em" → "anh" không giẫm nhau). Chỉ dùng cho mảnh chữ do code viết — lời model
     đã theo khối xưng hô, đổi nữa là sai ("em" trong lời model có thể là cách gọi khách)."""
     if goi == "anh/chị" and toi == "em":
-        return cau
+        return _bo_gach_cheo(cau, goi)   # OPEN-62: câu code gửi thẳng cũng không gạch chéo (SRS-5.1zzzzzzz536)
     hoa = lambda s: s[:1].upper() + s[1:]
     bang = {"anh/chị": goi, "Anh/chị": hoa(goi), "em": toi, "Em": hoa(toi)}
     return _XUNG_HO_CAU_RE.sub(lambda m: bang[m.group(1)], cau)
+
+
+_GACH_CHEO_RE = re.compile(r"(?<![\wà-ỹđ])([Aa]nh)\s*/\s*(chị|Chị)(?![\wà-ỹđ])")
+
+
+def _bo_gach_cheo(loi: str, goi: str) -> str:
+    """OPEN-62 (chủ dự án 09/10/2026: "bật đi") — lời gửi khách không viết "anh/chị" gạch chéo; code thay ở ĐƯỜNG RA, không thêm dòng cấm vào
+    prompt (SRS-5.1zzzzzzz536). Phần chat (trước 📋): biết / đoán được cách gọi khách thì thay bằng chữ đó, chưa biết thì "anh chị". Thân bản
+    tin nói với người mua nên luôn là "anh chị"."""
+    def doi(chu: str, thay: str) -> str:
+        return _GACH_CHEO_RE.sub(lambda m: thay[:1].upper() + thay[1:] if m.group(1)[0] == "A" else thay, chu)
+    chat, dau, tin = (loi or "").partition("📋")
+    return doi(chat, goi if goi and goi != "anh/chị" else "anh chị") + dau + doi(tin, "anh chị")
 
 
 def _nhieu_cau_hoi(loi: str) -> bool:
@@ -808,8 +821,8 @@ class Conversation:
 # Luật giọng chung mọi cách xưng hô (SRS-5.1zzzzzzz86; quyết định chủ dự án: cấm mở đầu "Dạ"). Bắn thử 20/10: KB3 khách chưa tự
 # xưng → khối "chưa biết" không có luật "Dạ", bot mở "Dạ, phí quản lý…"; KB2 khách xưng em → chính sách chung cho phép gọi "bạn".
 # 19/11/2026: hai dòng cấm cũ ("Dạ", "bạn" / "mình") gộp thành một câu nói điều nên làm; `_CAM_GOI_MINH` giữ tên để khỏi đổi chỗ gọi.
-_GIONG_CHUNG = ("Câu đầu vào thẳng nội dung (không mở bằng \"Dạ\"). Gọi khách đúng chữ nêu trên — không \"bạn\", không dùng \"mình\" để gọi "
-                "khách; \"nhà mình / căn mình\" khi nói về căn của khách, hay \"mình\" nghĩa là chúng ta, thì được.\n")
+_GIONG_CHUNG = ("Câu đầu không mở bằng \"Dạ\". Gọi khách đúng chữ trên, không \"bạn\" hay \"mình\" (\"nhà mình\", \"mình\" nghĩa là "
+                "chúng ta thì được).\n")
 
 
 # SRS-5.1zzzzzzz171 (chủ dự án 24/10/2026: "sao nó xưng mình z"): bot gọi khách là "mình" ("em xin lỗi mình nhé. Mình đang cần gửi…") dù khách
@@ -884,7 +897,8 @@ def _khoi_xung_ho_rieng(p: str, ten: str | None = None) -> str:
         # mẫu, gọi khách "anh" suốt 10 lượt rồi đổi "chị" khi khách tự xưng.
         return (
             "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "Chưa biết khách là anh hay chị: gọi 'anh/chị', xưng 'em' — tới khi khách tự xưng (tên, giọng văn, ví dụ mẫu không tính).\n"
+            "Chưa biết khách là anh hay chị: xưng 'em', câu cần gọi thì bỏ đại từ (\"Nhà ở đường nào vậy ạ?\") — tới khi khách tự xưng "
+            "(tên, giọng văn; ví dụ mẫu không tính).\n"
         )
 
 
@@ -3528,11 +3542,10 @@ class Engine:
         elif conv.hoi_ve_luot == "uy_tin":
             hoi_ve_khoi = (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ UY TÍN / CÔNG TY: ===\n"
-                "Khách vừa hỏi về danh tính công ty hoặc lo ngại an toàn/lừa đảo. Trả lời để khách yên tâm:\n"
-                f"- Giới thiệu AI Ơi Nhà Đất ({SITE_HOST}) là nền tảng công nghệ kết nối người bán / cho thuê với người mua / thuê thực tế.\n"
-                "- Không chia sẻ thông tin cá nhân và số điện thoại của khách cho bên thứ ba.\n"
-                "- Chỉ thu phí khi giao dịch thành công.\n"
-                "Sau đó lịch sự mời khách an tâm chia sẻ tiếp thông tin căn nhà.\n"
+                # SRS-5.1zzzzzzz536: khối cũ là ba gạch nói sẵn → model đọc đủ ba như kịch bản ("nền tảng công nghệ…", "bảo mật tuyệt đối…").
+                "Khách hỏi bên em là ai hoặc lo bị lừa. Đáp như người thật, một hai câu, chọn đúng điều khách lo (không đọc hết dữ kiện): "
+                f"bên em là AI Ơi Nhà Đất ({SITE_HOST}), đăng tin và đưa tới người đang tìm nhà; số điện thoại của khách không đưa ai; "
+                "chỉ thu phí khi giao dịch thành công, không thu trước đồng nào.\n"
             )
         elif conv.hoi_ve_luot == "link_web":
             # Câu "tin đã lên web" do trạng thái THẬT quyết (khoi_trang_thai_web, SRS-5.1zzzzzzz44) — tin chưa ra bản nháp thì
@@ -3788,7 +3801,7 @@ class Engine:
                 if sai:
                     log.warning("Lời cuối vẫn hỏi ô ngoài bất biến (%s) — gọt câu hỏi đó", ", ".join(o for o, _, _ in sai))
                     reply = _bo_cau_hoi_sai(reply, [t for _, t, _ in sai])
-        return reply
+        return _bo_gach_cheo(reply, self._goi_toi(conv)[0])
 
     @staticmethod
     def _quyet_duyet(conv: Conversation, plan: dict, cuoi: str) -> str | None:

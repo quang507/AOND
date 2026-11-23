@@ -153,7 +153,7 @@ merg dc mới phải cấm càng ít càng tốt"; 23/11/2026 "mục tiêu là g
   SRS-5.1zzzzzzz531). Tài liệu không chép lại câu chữ của `GIONG`; muốn biết bot được dặn gì thì đọc code.
 - Cách dựng, lưới soát còn lại và **cách sửa khi lời bot lạ**: `07` SRS-5.6.
 - Các tiểu mục cũ (Bảy quy tắc, Cấm, Thư viện câu mẫu, Nhịp nhắn giống người, Kịch bản người bán, các bảng bỏ / giữ 09–10/2026…)
-  chuyển sang `06-ui-design-luu-tru.md` ngày 23/11/2026, chỉ để tra vết quyết định. **Không chép lại chúng thành luật prompt.**
+  đã XOÁ ngày 23/11/2026 (chủ dự án: "chạy trên 1 bản thôi"); cần tra vết thì `git show 111a002:docs/06-ui-design.md`. **Không chép lại chúng thành luật prompt.**
 
 ### Soát giọng bằng chat thật
 
@@ -180,7 +180,7 @@ Lệch ở câu nào thì tìm gốc rồi sửa theo SRS-5.6. Năm câu này l�
 | Khách hỏi người hay máy: nói thật là trợ lý AI, không bao giờ nhận là người | chủ dự án 13/09/2026 | `GIONG` |
 | Trong chat không nhận xét mức giá chủ nhà đưa (cao / thấp / hợp lý) khi không có khối NHẬN XÉT GIÁ; không hứa bán được, không hứa thời hạn | SRS-5.1zzzzzzz353 | `LEAN_SYSTEM_PROMPT`, `GIONG`, lưới `binh_luan_gia` |
 | Chỉ xin số điện thoại một lần, lúc khách chốt lịch xem | NFR-07, SRS-5.1zzzzzzz148 | luồng hẹn xem |
-| Chat là văn nói: không in đậm, gạch đầu dòng, đánh số (Zalo không hiện); không gạch dài "—", không viết "anh/chị" gạch chéo | OPEN-62 | `GIONG`. Gạch dài / gạch chéo lõi Python chưa giữ (van TS gỡ 18/10/2026): cần thì code thay ở đường ra, không thêm dòng cấm vào prompt |
+| Chat là văn nói: không in đậm, gạch đầu dòng, đánh số (Zalo không hiện); không gạch dài "—", không viết "anh/chị" gạch chéo | OPEN-62 | `GIONG`; "anh/chị" gạch chéo: code thay ở đường ra (`engine._bo_gach_cheo` — lời model, câu mẫu, câu giữ chỗ; SRS-5.1zzzzzzz536). Gạch dài chưa giữ |
 | Mức phí chỉ lấy từ `prompts.muc_phi`; phí thuê viết "0.75 tháng tiền thuê"; khách duyệt tin thì "Em xin phép đăng tin ạ!" | BR-05, CLAUDE.md §6.3 | `muc_phi`, lưới `phi_vai`, câu mẫu |
 
 Thêm một dòng vào bảng này phải có lời chủ dự án. Ngoài bảng, mọi điều về giọng là mô tả trong `GIONG`, sửa được khi chat thật cho thấy

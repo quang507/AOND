@@ -810,11 +810,12 @@ phải như người thật nhắn Zalo. Mục này tả code giữ mục tiêu 
 - Xưng hô: `engine.khoi_xung_ho` theo `xung_ho.goi_toi`, kèm `_GIONG_CHUNG` (không "Dạ", không gọi "bạn" / "mình"); là dữ kiện sau ranh giới cache.
 - Lượt hỏi thông tin phía bán: `LEAN_SYSTEM_PROMPT` = `khoi_nhan_vat` + phần việc của lượt (hỏi dần, giá, điều chưa làm thì chưa nói). `viec_luot`
   chọn MỘT việc đã quyết rồi giao thẳng; prompt không tự xếp trường hợp "nếu… thì…" (model kể lại việc xếp đó cho khách, SRS-494).
-- Bước ghi của vòng agent (`LEAN_GHI`) không mang giọng: chỉ đọc ý và gọi công cụ.
+- Bước ghi của vòng agent (`LEAN_GHI` + tiếng nghề + `KIEN_THUC_NGHE`) không mang giọng: chỉ đọc ý và gọi công cụ. Bước viết không mang
+  sẵn tiếng nghề / kiến thức nghề: model tự tra bằng công cụ `kien_thuc_nghe` khi khách hỏi (SRS-536).
 - Câu code nói nguyên văn: `cau_mau.MAC_DINH` (bảng `cau_mau` đè, chủ dự án sửa ở `/admin/cau-chuan`).
-- Cỡ đo 23/11/2026 (`scripts/do-prompt.py`; token đếm bằng Gemini countTokens): nhân vật + giọng 3.846 ký tự ≈ 1.140 token (trần 4.500 ký tự);
-  phần riêng lượt hỏi thông tin 2.500 ký tự ≈ 855 token (trần 3.500); cả `LEAN_SYSTEM_PROMPT` ≈ 1.990 token. Cả lần gọi bước viết lượt hỏi
-  thông tin ≈ 4.800 token; phần ngoài giọng là `KIEN_THUC_NGHE` (≈ 1.200), công cụ, dữ liệu lượt và lịch sử.
+- Cỡ sau SRS-536 (`scripts/do-prompt.py`; token đếm bằng Gemini countTokens): nhân vật + giọng 2.406 ký tự ≈ 710 token (trần 3.000 ký tự);
+  phần riêng lượt hỏi thông tin 1.268 ký tự ≈ 400 token (trần 1.800); cả lần gọi bước viết lượt hỏi thông tin ≈ 2.250 token chưa tính lịch
+  sử chat (trước 4.805). Thêm một ý thì gộp hay gỡ một ý cho vừa trần.
 
 **Lưới soát đầu ra** (`engine.LUAT_SOAT`, nhóm `ly_do` gọi lại model tối đa một lần, `mem` chỉ ghi log) chỉ giữ hai loại: (1) sự thật / tiền /
 riêng tư (`LUAT_SU_THAT`: lộ ô riêng, khẳng định không có dữ liệu, phí theo vai, tin đã hiển thị, bình luận giá, số căn mua, số trong tin) và
@@ -831,15 +832,20 @@ một luật giọng thường cứng hơn bản đầu.
 
 **Không làm:** thêm dòng "cấm X", đếm từ, danh sách từ cấm; câu mẫu hoàn chỉnh trong prompt cho model chép (ví dụ trong `GIONG` chỉ là lượt
 cảm xúc / ngoài lề, không chứa câu hỏi của một ô tin, SRS-196); luật vá rời ở từng prompt; lưới soát giọng; chép lại luật cũ từ
-`06-ui-design-luu-tru.md` hay `07-srs-luu-tru.md`. Muốn thêm một quyết định cứng thì phải có lời chủ dự án và ghi vào bảng ở `06 §6.8`.
+lịch sử git hay `07-srs-luu-tru.md`. Muốn thêm một quyết định cứng thì phải có lời chủ dự án và ghi vào bảng ở `06 §6.8`.
 
 ---
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz536 · Lượt viết lời 4.805 → ~2.400 token; giọng môi giới Sài Gòn; "anh/chị" thay ở đường ra; Gemini suy nghĩ "minimal" (23/11/2026)
+Chủ dự án 23/11: "gọt cả đi rồi bắn thử xem nó có tự nhiên không … chạy trên 1 bản thôi", rồi "sao nó cảm ơn lắm vậy … kiểu giọng môi giới người miền nam nhưng giọng phổ thông, Ok anh ơi". **Lớp lỗi:** bước viết mang cả khối đọc nghĩa của bước ghi (tiếng nghề + kiến thức nghề ≈ 1.550 token, mô tả `tra_luat_o` ≈ 300); `GIONG` bỏ "Dạ" và "báo đã ghi" mà không tả người môi giới nhận lời ra sao → model lấp bằng "Em cảm ơn anh" / "Em đã nhận thông tin"; khối xưng hô chưa rõ giới dặn nguyên văn "gọi 'anh/chị'"; khối khách hỏi uy tín là ba gạch nói sẵn (đọc lại như kịch bản); Gemini `reasoning_effort: low` có lần 28 s với hạn 30 s → quá hạn hai lần, model nghỉ, lượt rơi xuống Groq → câu giữ chỗ cả cuộc chat.
+- **Sửa:** `GIONG` gọn (≈ 710 token cả nhân vật) + đoạn đầu tả giọng miền Nam phổ thông ("ok anh", "nha"), người quen không cảm ơn từng câu, hỏi không kèm lý do, ví dụ khu / giá vàng ở "Nói thật"; tiếng nghề + kiến thức nghề rời bước viết thành công cụ `kien_thuc_nghe`; rút `HUONG_DAN_VIET`, `KHAI_HOI`, `agent_ban.HUONG_DAN`, `_GIONG_CHUNG`, `TIN_HE_THONG`, `LUAT_DAP_CHUA_CHON`, mô tả công cụ; khối uy tín thành dữ kiện; chưa rõ giới thì bỏ đại từ; `engine._bo_gach_cheo` (OPEN-62) ở `_soat_hinh_thuc`, `_xung_ho_cau`, câu giữ chỗ; Gemini "minimal" (cùng yêu cầu 1,2 s); trần `do-prompt.py` 3.000 / 1.800 ký tự; xoá `docs/06-ui-design-luu-tru.md` (một bản, tra vết bằng git).
+- **Kiểm:** Gemini countTokens — hỏi thông tin 4.805 → 2.408, chào 4.903 → 2.506, phía mua ≈ 3.800 → ≈ 1.800. Bắn thử tuần tự trên 146 (gemini-3.1-flash-lite, hội thoại để lại trên CRM, tin thử đã xoá): hết "cảm ơn" từng câu, mở "Ok chị" / "Được anh ơi"; còn sót "Em đã nhận thông tin…", một lần bịa giá vàng, một lần sót nhà Hà Nội (ngoài vùng) sau khi hạ "minimal"; Gemini vẫn có lần quá hạn nhưng đổi khoá đỡ được. Đo lại khi về Claude.
+
 ### SRS-5.1zzzzzzz535 · Docs giọng về một mục tiêu "rep như người thật"; 06 §6.8 gọn, luật cũ ra lưu trữ (23/11/2026)
 Chủ dự án 23/11: "làm sạch lại docs srs mục tiêu là giọng tự nhiên rep giống người". Soát: luật giọng rải năm nơi — `06 §6.8` (59 nghìn ký tự: Bảy quy tắc, Cấm, thư viện câu mẫu, bảng bỏ / giữ của bot TS đã gỡ), `07` §5.1 (còn tả `AIOI_PROMPT_GON`, phiếu lượt, đọc nhanh SRS-406), CLAUDE.md, `luat-dang-ap.md` (trần cũ 4.000 / 8.000), `10` (bài "đếm từ cấm"). **Lớp lỗi:** phiên agent đọc các chỗ đó rồi chép lại thành dòng cấm trong prompt, nên lời bot cứng lên lại sau mỗi lần dọn prompt.
-- **Sửa:** `06 §6.8` còn mục tiêu + năm câu soát chat thật + bảng quyết định cứng của chủ dự án + nhân xưng / danh tính / bố cục tin / phí; bản cũ nguyên văn ở `06-ui-design-luu-tru.md`. `07` thêm SRS-5.6 (dựng ở đâu, lưới soát còn gì, sửa giọng theo thứ tự nào, không làm gì) và sửa §5.1 theo code. CLAUDE.md §6.2, `luat-dang-ap.md`, `03`, `08`, `10` trỏ về hai chỗ đó; lưu trữ `07` có dòng chặn ở đầu.
+- **Sửa:** `06 §6.8` còn mục tiêu + năm câu soát chat thật + bảng quyết định cứng của chủ dự án + nhân xưng / danh tính / bố cục tin / phí; bản cũ đã xoá ở SRS-536 (tra vết: lịch sử git). `07` thêm SRS-5.6 (dựng ở đâu, lưới soát còn gì, sửa giọng theo thứ tự nào, không làm gì) và sửa §5.1 theo code. CLAUDE.md §6.2, `luat-dang-ap.md`, `03`, `08`, `10` trỏ về hai chỗ đó; lưu trữ `07` có dòng chặn ở đầu.
 - **Đo:** nhân vật + giọng ≈ 1.140 token, cả `LEAN_SYSTEM_PROMPT` ≈ 1.990 token (Gemini countTokens). Không đổi code; `soat-truy-vet.sh` sạch.
 
 ### SRS-5.1zzzzzzz534 · Groq dự phòng bị Cloudflare chặn vì User-Agent mặc định (23/11/2026)
@@ -905,13 +911,3 @@ Lỗ hổng sau SRS-524 → 526: hồ sơ khách môi giới gửi chỉ có tê
 - **Số đã có từ trước:** môi giới gửi một số đã là người mua / người bán trong hệ thống thì hồ sơ ghi `da_co_truoc`, tin báo admin và trang `/admin/khach-gioi-thieu` hiện nhãn. Không tự từ chối, admin quyết ai được ghi nhận.
 - **Thử:** khối tự kiểm lúc áp migration 11 / 11 (dữ liệu thử tự huỷ). Bắn thử máy 146 ba ca: nhắn mã → hồ sơ nối, bot báo đã nhận giới thiệu; nhắn số điện thoại ở lượt hai → nối; mã sai → bot nhờ xem lại mã. Dữ liệu thử đã xoá.
 - **Chưa kiểm:** tin báo admin có tên môi giới chưa đi qua Zalo thật (ID thử không nhắn admin); hai trang web chưa xem bằng mắt lúc đăng nhập.
-
-### SRS-5.1zzzzzzz526 · Theo thiết kế r2 của anh Luận: BOA 1 tin / ngày, FDA thôi tra cứu trong lượt, tắt phía người mua (18/11/2026)
-Chủ dự án 17/11: "7 làm giống sếp đi" — chọn ba điểm: nhịp nhắn 1 tin / ngày, FDA thôi tra cứu ngay, bỏ phía người mua. Giữ lại: môi giới gửi khách về (SRS-524, 525).
-- **Nhịp:** `TIN_CHU_DONG_MOT_NGAY` mặc định 1 (trước 3). Tin trả lời điều bot đã hẹn (`tra_hen`) không tính trần, không chờ chủ đáp câu cũ.
-- **FDA thôi tra cứu:** lượt chat bỏ các công cụ `tra_du_an`, `du_an_trong_khu`, `kiem_tra_phap_ly_so`, `tham_dinh_quy_hoach`, `tra_cuu_phong_thuy` (giữ rổ hàng, bộ nhớ dự án, giá đã gửi, tính phí; ảnh khách gửi vẫn đọc trong lượt). Khách hỏi điều phải tra (ô `can_tra_cuu` + cụm trích, hoặc hỏi giá cao hay thấp) thì FDA hẹn, câu hỏi ghi vào căn (`_cho_tra_cuu`, giữ 3 câu). `FDA_TRA_CUU=bat` trả lại như cũ.
-- **BOA trả lời:** `hoi_sau_dang._tra_loi_tra_cuu` — vòng nền xét căn có câu hẹn trước, chat im đủ lâu thì tra bằng các công cụ trên cùng căn đang rao gần rồi nhắn một tin. Không có dữ kiện nào thì tin của model bị bỏ; hai lượt vẫn không có thì code soạn câu "chưa có dữ liệu, không đoán" và chuyển người phụ trách. Hẹn quá 24 giờ thì bỏ.
-- **Tắt phía mua:** `PHIA_MUA` mặc định tắt. Khách cần mua / thuê: bot ghi nhu cầu, báo người phụ trách một lần (`bao_can_nguoi`), chỉ web; không gợi ý căn, không hẹn lịch xem; vòng báo căn mới không chạy. `PHIA_MUA=bat` trả lại.
-- **Prompt:** người bán "hỏi thông tin" 59.037 → 55.381 ký tự.
-- **Thử (máy 146, ID thử):** người bán hỏi "giá cao hay thấp, có dính quy hoạch không" → FDA hẹn, câu hẹn nằm trong căn; BOA nhắn lại "chưa đủ dữ liệu để so giá", xin số tờ số thửa để tra quy hoạch, xoá hẹn; lượt model quá hạn thì giữ hẹn. Khách cần mua → ghi nhu cầu, chuyển người phụ trách, câu sau không hỏi tiếp. Lần bắn đầu BOA tự khẳng định "giá cạnh tranh, không vướng quy hoạch" khi không có dữ kiện — đã chặn bằng code (`2ae1cf8`).
-- **Chưa làm:** câu "chưa có dữ liệu" do code soạn chưa bắn qua Zalo thật; số Zalo tư vấn mua vẫn đăng nhập ở cầu nối.
