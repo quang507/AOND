@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz522 · Che thông tin cá nhân trên ảnh sổ; khung Gemini trả theo thang 0–1000 (17/11/2026)
+Chủ dự án 17/11: "làm mấy cái này đi". Bản anh Luận (`boa-phaply.md`): ảnh sổ che số sổ, tên, số định danh, mã QR trước khi lưu / đưa đi.
+- **Che sổ** (`che_so.py`, vòng nền `server._vong_che_so`, tắt bằng `CHE_SO=tat`): ảnh giấy tờ ở kho riêng đi một lần — model khoanh họ tên, số căn cước, năm sinh, địa chỉ người, số phát hành / số vào sổ, mã QR, chữ ký; code tô đen, khung nới 12 % bề ngang. Bản gốc chép sang `goc/` trong kho riêng, bản đã che ghi đè khoá cũ (CRM mở giấy tờ thấy bản đã che). Số thửa, số tờ, diện tích, địa chỉ thửa giữ nguyên.
+- **Lỗi lộ ra khi thử, sửa ở `xoa_logo.chuan_vung`:** Gemini trả toạ độ theo thang 0–1000 dù hướng dẫn ghi 0–1; bản cũ cắt về 1 nên khung nào cũng rỗng — từ khi chạy chỉ-Gemini (16/11) vòng xoá logo không xoá được vùng nào. Nay có số vượt 1 thì chia 1000.
+- **Thử:** tờ sổ GIẢ tự vẽ, flash-lite, 4 lần. Hai lần đầu (nới 0,6 % rồi 4,5 %) còn lộ ba số cuối căn cước, một năm sinh; hai lần sau (nới 12 %) che kín mọi thông tin người, phần thửa đất nguyên vẹn.
+- **Chưa làm / chưa đo:** chưa thử trên sổ thật (thư mục mẫu sổ không được đọc). Lời bot về ảnh sổ giữ nguyên "chỉ để em kiểm, không đăng", chưa hứa "em xoá thông tin".
+
 ### SRS-5.1zzzzzzz521 · Cụm trích của sự thật căn là trường bắt buộc; lọc khách hỏi dạo / tin rác (17/11/2026)
 Chủ dự án 17/11: "sửa luôn lỗi flash-lite không ghi sổ hồng riêng đi"; lọc hỏi dạo: "làm mấy cái này đi".
 - **Mã giấy tờ rớt:** SRS-519 bắt buộc mã mà cụm trích tuỳ chọn → flash-lite trả mã, bỏ cụm trích, engine loại vì thiếu bằng chứng. Nay `<mã>_trich_dan` bắt buộc cùng mã (`agent_gop._cong_cu_ghi`); mã bị loại thì ghi log lý do. Thử 3 / 3 lần ghi `so_hong_rieng` (cả khi khách gõ "SHR").

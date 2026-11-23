@@ -199,8 +199,11 @@ class DuPhongProvider(LLMProvider):
     # --- HTTP giọng OpenAI ----------------------------------------------------------------------
 
     def _http(self, n: Nguon, khoa: str, than: dict[str, Any], han: float) -> dict[str, Any]:
+        # SRS-5.1zzzzzzz532 (23/11/2026): Groq đứng sau Cloudflare chặn User-Agent mặc định "Python-urllib" (HTTP 403, "error code: 1010") —
+        # từ ít nhất 18/11 MỌI lượt gọi Groq dự phòng đều 403, Gemini hụt một nhịp là khách nhận câu giữ chỗ. Khoá vẫn tốt (thử 23/11: 200).
         req = urllib.request.Request(n.url, data=json.dumps(than).encode("utf-8"),
-                                     headers={"Authorization": f"Bearer {khoa}", "Content-Type": "application/json"})
+                                     headers={"Authorization": f"Bearer {khoa}", "Content-Type": "application/json",
+                                              "User-Agent": "aond-core/1.0"})
         try:
             with urllib.request.urlopen(req, timeout=han) as r:
                 return json.loads(r.read().decode("utf-8"))

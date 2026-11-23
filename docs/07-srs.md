@@ -801,6 +801,7 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+<<<<<<< Updated upstream
 ### SRS-5.1zzzzzzz533 · CRM: chỗ cần dài thì dài, chỗ không cần thì gọn — Báo cáo, Đăng tin, Câu chuẩn, Khách hàng (20/11/2026)
 
 Chủ dự án 20/11/2026 "rồi sửa hết các chỗ khác của CRM đi" (sau SRS-532 Rổ hàng). Đo 10 trang CRM trên web thật ở 1536px rồi sửa:
@@ -820,6 +821,12 @@ Trạng thái 144, Bán/thuê 80, Giá 104, Diện tích 88, Vị trí 376, Ngư
 còn lại (tối thiểu 360). Lề ô 8px (trước 12px). Các cột tới hết Vị trí ≈ 1.090px, địa chỉ một dòng không rớt chữ cuối (thêm text-wrap: pretty), vừa màn 1.536px trừ sidebar và cột Thao tác. Loại, Người bán xuống dòng; cột
 ngắn khác cắt "…" kèm title. Tiêu đề cột bỏ chữ hoa, không xuống dòng. Bỏ nút JSON (bóc tách chia nhóm) ở từng dòng — Thao tác còn Sửa,
 Xem; JSON cả rổ vẫn ở nút "{ } JSON" đầu trang. Theo thang chữ / khoảng cách skill landing-page-design (elayadesign); giữ Nunito, màu King.
+=======
+### SRS-5.1zzzzzzz532 · Groq dự phòng bị Cloudflare chặn vì User-Agent mặc định (23/11/2026)
+Chủ dự án 23/11: "kiểm tra groq còn cho api free ko". Khoá vẫn tốt, vẫn gói miễn phí (gpt-oss-120b: 1.000 lượt / ngày, 8.000 token / phút; qwen3.8-27b: 7.000 token vào / phút). Lỗi 403 từ ≥ 18/11 là Cloudflare "error code: 1010": `du_phong._http` gọi bằng urllib không đặt User-Agent ("Python-urllib" bị chặn) → mọi lượt Groq 403, Gemini hụt một nhịp là khách nhận câu giữ chỗ.
+- **Sửa:** `_http` gửi `User-Agent: aond-core/1.0`. Chép giọng nói (httpx, UA "python-httpx") không bị chặn. Thử: urllib không UA → 403 1010; có UA → 200; hàm `_http` của lõi gọi Groq → trả lời.
+- **Giới hạn gói miễn phí (đo bằng prompt thật):** bước viết (~14 nghìn ký tự, ~4.500 token) qua được nhưng chừng một lượt / phút; bước ghi (~39 nghìn ký tự, ~13–14 nghìn token) bị 413 "Request too large" — Groq miễn phí không thay được vòng agent, chỉ đỡ lời khi Gemini hụt. Đường dự phòng thật vẫn là Claude trả phí.
+>>>>>>> Stashed changes
 
 ### SRS-5.1zzzzzzz531 · Nhân vật + giọng MỘT bản dùng chung, gỡ phiếu lượt cũ; xoá sạch số Zalo tư vấn (20/11/2026)
 Chủ dự án 20/11: "gọn thì dùng 1 bản thôi chứ ko phải là có cả Khối GIỌNG lẫn Prompt gọn (LEAN)"; "zalo bán xóa rồi mà xóa sạch đi ko cần tạo qr nữa".
@@ -895,11 +902,4 @@ Chủ dự án 17/11, sau khi xem batdongsan.com.vn và hifriendz.com: "Form tr�
 - **Admin** `/admin/moi-gioi`: lọc theo trạng thái (mới → đã liên hệ → đã duyệt / từ chối), nút mở Zalo theo số, ghi chú nội bộ; thanh bên hiện số đăng ký mới.
 - **Thử:** hàm chạy trong giao dịch huỷ 6 ca rồi áp; form trên bản build thật báo lỗi đúng ô khi bỏ trống và ghi được một dòng thử; quyền kiểm bằng giả lập phiên: admin đọc và sửa được, người lạ 0 dòng, cột người đăng ký khai không sửa được. Trang admin lúc đã đăng nhập chưa xem bằng mắt (không có phiên admin).
 - **Chưa làm:** trang `/moi-gioi` chưa hiện khu vực của từng môi giới. (Nối với Zalo / web và mã môi giới gắn khách giới thiệu: làm ở SRS-524.)
-
-### SRS-5.1zzzzzzz522 · Che thông tin cá nhân trên ảnh sổ; khung Gemini trả theo thang 0–1000 (17/11/2026)
-Chủ dự án 17/11: "làm mấy cái này đi". Bản anh Luận (`boa-phaply.md`): ảnh sổ che số sổ, tên, số định danh, mã QR trước khi lưu / đưa đi.
-- **Che sổ** (`che_so.py`, vòng nền `server._vong_che_so`, tắt bằng `CHE_SO=tat`): ảnh giấy tờ ở kho riêng đi một lần — model khoanh họ tên, số căn cước, năm sinh, địa chỉ người, số phát hành / số vào sổ, mã QR, chữ ký; code tô đen, khung nới 12 % bề ngang. Bản gốc chép sang `goc/` trong kho riêng, bản đã che ghi đè khoá cũ (CRM mở giấy tờ thấy bản đã che). Số thửa, số tờ, diện tích, địa chỉ thửa giữ nguyên.
-- **Lỗi lộ ra khi thử, sửa ở `xoa_logo.chuan_vung`:** Gemini trả toạ độ theo thang 0–1000 dù hướng dẫn ghi 0–1; bản cũ cắt về 1 nên khung nào cũng rỗng — từ khi chạy chỉ-Gemini (16/11) vòng xoá logo không xoá được vùng nào. Nay có số vượt 1 thì chia 1000.
-- **Thử:** tờ sổ GIẢ tự vẽ, flash-lite, 4 lần. Hai lần đầu (nới 0,6 % rồi 4,5 %) còn lộ ba số cuối căn cước, một năm sinh; hai lần sau (nới 12 %) che kín mọi thông tin người, phần thửa đất nguyên vẹn.
-- **Chưa làm / chưa đo:** chưa thử trên sổ thật (thư mục mẫu sổ không được đọc). Lời bot về ảnh sổ giữ nguyên "chỉ để em kiểm, không đăng", chưa hứa "em xoá thông tin".
 
