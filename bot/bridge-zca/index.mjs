@@ -579,6 +579,58 @@ function choGom(text, coAnhTep, batDau) {
   return Math.max(0, Math.min(cho, GOM_TOI_DA_MS - (Date.now() - batDau)));
 }
 
+// SRS-5.1zzzzzzz544 (audit ECC chat Zalo P1-2): TRẦN LƯỢT MỖI KHÁCH. Log 25/11 14:56–15:56: một tài khoản bot khác nhắn 54 tin / 60 phút (41 lần
+// cùng một câu chào), bot đáp ~57 bong bóng — hai bot nói với nhau vô hạn (rủi ro Zalo khoá acc, tốn model), lõi chỉ có trần theo giờ / ngày.
+// Đếm theo LƯỢT đã gom (album 10 ảnh là một lượt): quá TRAN_LUOT_CUA_SO lượt trong 10 phút, hoặc cùng một câu (chuẩn hoá) TRAN_LAP_CUNG_CAU lần
+// → ngừng chuyển tin khách đó NGHI_KHI_VUOT_MS, ghi sổ lỗi một lần. Người thật hiếm khi gõ 20 lượt / 10 phút hay lặp y một câu 5 lần.
+const CUA_SO_LUOT_MS = 10 * 60 * 1000;
+const TRAN_LUOT_CUA_SO = 20;
+const TRAN_LAP_CUNG_CAU = 5;
+const NGHI_KHI_VUOT_MS = 30 * 60 * 1000;
+const nhipKhach = new Map();   // tid → { moc: number[], cau: Map<câu chuẩn hoá, number[]>, nghiDen: number }
+
+function chuanCau(t) {
+  return String(t || "").normalize("NFC").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+// Trả lý do khi phải chặn ("đang nghỉ" cho các lượt sau lần chặn đầu), null khi được chuyển.
+function vuotTranLuot(tid, textGom, bayGio = Date.now()) {
+  if (nhipKhach.size > 5000) {
+    for (const [k, v] of nhipKhach) {
+      if (v.nghiDen < bayGio && !v.moc.some((t) => t > bayGio - CUA_SO_LUOT_MS)) nhipKhach.delete(k);
+    }
+  }
+  let n = nhipKhach.get(tid);
+  if (!n) {
+    n = { moc: [], cau: new Map(), nghiDen: 0 };
+    nhipKhach.set(tid, n);
+  }
+  if (n.nghiDen > bayGio) return "đang nghỉ";
+  const tu = bayGio - CUA_SO_LUOT_MS;
+  n.moc = n.moc.filter((t) => t > tu);
+  n.moc.push(bayGio);
+  for (const [k, ds] of n.cau) {
+    const con = ds.filter((t) => t > tu);
+    if (con.length) n.cau.set(k, con); else n.cau.delete(k);
+  }
+  let lap = 0;
+  const c = chuanCau(textGom);
+  if (c) {
+    const ds = n.cau.get(c) || [];
+    ds.push(bayGio);
+    n.cau.set(c, ds);
+    lap = ds.length;
+  }
+  const lyDo = n.moc.length > TRAN_LUOT_CUA_SO ? `${n.moc.length} lượt trong 10 phút`
+    : lap >= TRAN_LAP_CUNG_CAU ? `lặp cùng một câu ${lap} lần trong 10 phút` : null;
+  if (lyDo) {
+    n.nghiDen = bayGio + NGHI_KHI_VUOT_MS;
+    n.moc = [];
+    n.cau.clear();
+  }
+  return lyDo;
+}
+
 function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId, quote) {
   const tid = String(threadId);
   const hienTai = bufferTin.get(tid) || {
@@ -608,6 +660,14 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId, 
     bufferTin.delete(tid);
     const textGom = hienTai.texts.filter(Boolean).join("\n");
     if (!textGom && !hienTai.imageUrls.length && !hienTai.tep) return;
+    const vuot = vuotTranLuot(tid, textGom);
+    if (vuot) {
+      console.log(`⏸️ khách [...${tid.slice(-4)}] ${vuot} — không chuyển lõi`);
+      if (vuot !== "đang nghỉ") {
+        await ghiLoi("tran luot khach", `khách ...${tid.slice(-4)}: ${vuot} — bridge ngừng chuyển tin của khách này ${NGHI_KHI_VUOT_MS / 60000} phút (xem tin trên Zalo)`);
+      }
+      return;
+    }
     try {
       await handleIncoming(tid, textGom, hienTai.imageUrls, hienTai.lastMsgId, hienTai.tep, hienTai.sticker, hienTai.lastCliMsgId, hienTai.quote);
     } catch (e) {

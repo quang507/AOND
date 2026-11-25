@@ -20,6 +20,7 @@ import http.client
 import ipaddress
 import re
 import socket
+import time
 import urllib.request
 from dataclasses import dataclass
 from urllib.parse import parse_qs, unquote, urlparse
@@ -48,6 +49,10 @@ def sniff_media_type(data: bytes) -> str | None:
 
 DEFAULT_MAX_BYTES = 20 * 1024 * 1024  # 20 MB — per-file cap (never read a file partially)
 DEFAULT_TIMEOUT = 20.0
+# SRS-5.1zzzzzzz544 (audit ECC chat Zalo P1-4): `timeout` của urllib chỉ áp cho MỖI lần đọc socket — máy chủ nhả 1 byte mỗi vài giây giữ luồng
+# mãi (`resp.read(n)` không có hạn tổng), mà lượt chat giữ khoá khách + một trong 40 luồng của lõi. Nay đọc theo khối, quá hạn tổng thì bỏ.
+HAN_TONG_GIAY = 30.0
+_KHOI_DOC = 64 * 1024
 
 
 class FetchError(Exception):
@@ -173,6 +178,24 @@ def assert_public_url(url: str) -> None:
 TRINH_DUYET = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36")
 
 
+def _doc_co_han(resp, toi_da: int, het_han: float) -> bytes:
+    """Đọc thân phản hồi theo khối tới `toi_da` byte; quá mốc `het_han` (time.monotonic) thì ném FetchError (SRS-5.1zzzzzzz544). Mỗi lần
+    đọc vẫn chịu `timeout` socket, nên tổng thời gian tối đa ≈ hạn tổng + một `timeout`."""
+    khoi: list[bytes] = []
+    con = toi_da
+    # `read1`: tối đa MỘT lần gọi socket — `read(n)` chờ đủ n byte mới trả, máy chủ nhỏ giọt thì không bao giờ tới chỗ kiểm hạn.
+    doc = getattr(resp, "read1", None) or resp.read
+    while con > 0:
+        if time.monotonic() > het_han:
+            raise FetchError("Link tải quá chậm — em dừng tải.")
+        b = doc(min(_KHOI_DOC, con))
+        if not b:
+            break
+        khoi.append(b)
+        con -= len(b)
+    return b"".join(khoi)
+
+
 def fetch_raw(url: str, *, max_bytes: int = 10 * 1024 * 1024, timeout: float = DEFAULT_TIMEOUT,
               user_agent: str = "AOND/1.0") -> tuple[bytes, str]:
     """Fetch ANY file's bytes + content-type with the same SSRF/redirect/size guards as
@@ -181,10 +204,11 @@ def fetch_raw(url: str, *, max_bytes: int = 10 * 1024 * 1024, timeout: float = D
     assert_public_url(url)
     opener = _mo_an_toan()
     req = urllib.request.Request(url, headers={"User-Agent": user_agent, "Accept-Language": "vi-VN,vi;q=0.9"})
+    het_han = time.monotonic() + max(timeout, HAN_TONG_GIAY)
     try:
         with opener.open(req, timeout=timeout) as resp:
             media_type = (resp.headers.get_content_type() or "").lower()
-            data = resp.read(max_bytes + 1)
+            data = _doc_co_han(resp, max_bytes + 1, het_han)
     except FetchError:
         raise
     except Exception as e:
@@ -272,11 +296,12 @@ def fetch_media(
     assert_public_url(url)
     opener = _mo_an_toan()
     req = urllib.request.Request(url, headers={"User-Agent": "AOND/1.0"})
+    het_han = time.monotonic() + max(timeout, HAN_TONG_GIAY)
     try:
         with opener.open(req, timeout=timeout) as resp:
             declared = (resp.headers.get_content_type() or "").lower()
             filename = _filename_from_headers(resp.headers)
-            data = resp.read(max_bytes + 1)  # one over the cap to detect oversize
+            data = _doc_co_han(resp, max_bytes + 1, het_han)  # one over the cap to detect oversize
     except FetchError:
         raise
     except Exception as e:  # urllib raises many error types

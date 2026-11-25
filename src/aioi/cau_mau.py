@@ -108,6 +108,10 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                        "Khách gửi link bảng tính (rổ hàng). {n} = số căn đã nhập", "Nhận tệp"),
     "bang_tinh_trong": ("Em có nhận bảng tính nhưng chưa đọc ra căn nào — {goi} kiểm tra lại các cột (loại hình, địa chỉ, diện tích, "
                         "giá...) giúp em nhé.", "Bảng tính không đọc ra căn nào", "Nhận tệp"),
+    # SRS-5.1zzzzzzz544 (audit ECC chat Zalo P1-5): nhập bảng tính chỉ mở cho admin / môi giới đã duyệt.
+    "bang_tinh_chua_mo": ("Em nhận link bảng tính rồi, nhưng nhập cả danh sách từ bảng tính hiện chỉ mở cho tài khoản môi giới đã kích hoạt. "
+                          "{Goi} nhắn em từng căn (địa chỉ, diện tích, giá) là em lên tin ngay nhé.",
+                          "Người chưa phải môi giới đã duyệt gửi link bảng tính", "Nhận tệp"),
     "chua_co_ban_ve": ("Em chưa có bản vẽ / mặt bằng {can}. {Goi} có file bản vẽ thì gửi em, em gắn vào tin ngay. Các tin đang rao em vẫn "
                        "giữ nguyên.",
                        "Khách xin bản vẽ / mặt bằng mà chưa có. {can} = căn đang nói (vd \"căn A12 (mẫu Fusion)\"). 27/10 (SRS-216): bỏ \"để em xin bên "

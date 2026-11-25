@@ -701,6 +701,10 @@ class Conversation:
     # Transient (not persisted): khách vừa ĐỒNG Ý / KHÔNG ĐỒNG Ý bản tin nháp ở lượt này ("dong_y" / "khong_dong_y"), do lượt AI
     # lập thao tác đọc theo nghĩa và code kiểm trích dẫn (SRS-5.1zzzzzzz47). None = không phải câu duyệt.
     duyet_luot: str | None = None
+    # Transient (SRS-5.1zzzzzzz544, audit ECC chat Zalo P0-2): id căn khách duyệt / không duyệt — chốt lúc AI quyết duyệt, TRƯỚC khi áp thao tác.
+    # Thao tác cùng lượt có thể đổi căn đang nói ("ok đăng đi em, anh còn căn nữa…" mở căn mới); ghi duyệt theo căn đang nói cuối lượt từng
+    # đặt dấu duyệt lên căn mới chưa ai xem bản nháp, căn vừa duyệt không lên web.
+    duyet_can_id: str = ""
     # Transient: khách HỎI VỀ gì ở lượt này ("phi" / "uy_tin" / "link_web") và khách TỰ XƯNG gì ("em" / "anh" / "chi" /
     # "chu_co_bac", giữ qua các lượt) — lượt AI lập thao tác đọc theo nghĩa, code kiểm trích dẫn (SRS-5.1zzzzzzz54).
     hoi_ve_luot: str | None = None
@@ -1658,9 +1662,9 @@ def _la_ban_nhap(reply: str) -> bool:
     return bool(reply) and ("📋" in reply or _MO_DAU_RE.search(reply) is not None or _is_formatted_post(reply))
 
 
-def _ban_tin_da_trinh(conv: "Conversation") -> tuple[str, str] | None:
-    """Bản tin 📋 cuối cùng bot gửi cho căn đang nói (từ lượt căn này bắt đầu) — chính bản khách vừa duyệt."""
-    for t in reversed(conv.history[conv.active.history_start:]):
+def _ban_tin_da_trinh(conv: "Conversation", can: "Listing | None" = None) -> tuple[str, str] | None:
+    """Bản tin 📋 cuối cùng bot gửi cho căn `can` (mặc định căn đang nói; từ lượt căn đó bắt đầu) — chính bản khách vừa duyệt."""
+    for t in reversed(conv.history[(can or conv.active).history_start:]):
         if t.role == "assistant" and "📋" in t.content:
             return _than_ban_tin(t.content)
     return None
@@ -2019,6 +2023,23 @@ def _soat_don_vi(eng, conv, reply, nc) -> list[str]:
 
 
 _la_ban_tin = _la_ban_nhap   # cùng một phép nhận bản tin (📋 / dòng mở / bố cục) — SRS-5.1zzzzzzz505 gộp hai hàm trùng thân
+
+
+_SU_THAT_CHO = "_su_that_cho_ap"   # khoá nội bộ trong kế hoạch: lời khách gần đây, chờ ghi mã sự thật sau khi áp thao tác (SRS-5.1zzzzzzz544)
+
+
+def _ke_hoach_doi_can(plan: dict | None) -> bool:
+    """Kế hoạch AI có thao tác có thể đổi căn đang nói: mở căn mới (`add`) hay nhắm căn cụ thể (target / targets / trích căn) — SRS-5.1zzzzzzz544.
+    Đọc cấu trúc đầu ra AI, không đọc chữ khách."""
+    return any(isinstance(op, dict) and (op.get("op") == "add" or op.get("target") or op.get("targets") or op.get("trich_dan_can"))
+               for op in ((plan or {}).get("operations") or []))
+
+
+def ghi_su_that_cho(conv: "Conversation", plan: dict) -> None:
+    """Ghi mã sự thật đã hoãn (nếu có) vào căn đang nói — gọi sau khi áp thao tác, hoặc ở nhánh không áp thao tác (SRS-5.1zzzzzzz544)."""
+    gan_khach = plan.pop(_SU_THAT_CHO, None)
+    if gan_khach is not None:
+        _ghi_su_that_can(conv, plan, gan_khach)
 
 
 def _ke_hoach_ghi_o(plan: dict | None) -> bool:
@@ -2852,9 +2873,23 @@ class Engine:
         return mapping
 
     def import_csv(self, user_key: str, text: str) -> int:
-        """Bulk-import a CSV (deterministic + LLM-assisted column mapping for odd headers)."""
+        """Bulk-import a CSV (deterministic + LLM-assisted column mapping for odd headers). SRS-5.1zzzzzzz544 (audit ECC chat Zalo P1-5):
+        tối đa `bulk.TRAN_DONG_BANG_TINH` dòng — mỗi dòng một tin, cả rổ được ghi lại mỗi lượt."""
         rows = bulk.rows_from_mapping(text, self._map_columns(bulk.csv_headers(text)))
+        if len(rows) > bulk.TRAN_DONG_BANG_TINH:
+            log.warning("Bảng tính %d dòng — chỉ nhập %d dòng đầu", len(rows), bulk.TRAN_DONG_BANG_TINH)
+            rows = rows[:bulk.TRAN_DONG_BANG_TINH]
         return self.import_listings(user_key, rows)
+
+    def _duoc_nhap_bang_tinh(self, user_key: str) -> bool:
+        """Ai được nhập rổ hàng từ bảng tính (SRS-5.1zzzzzzz544): ID thử, admin, môi giới đã duyệt (`duoc_nhap_bang_tinh` của kho). Không có kho
+        Supabase (chạy CLI / thử cục bộ) → được."""
+        if _la_id_thu(user_key):
+            return True
+        kiem = getattr(self._convstore, "duoc_nhap_bang_tinh", None)
+        if kiem is None or not getattr(self._convstore, "is_configured", False):
+            return True
+        return bool(kiem(user_key))
 
     def import_from_url(self, user_key: str, url: str) -> int:
         """Import listings from a Google Sheets link, or a Drive/other link to a CSV/Excel file."""
@@ -3128,6 +3163,7 @@ class Engine:
         #    (e.g. "lô 42 và 50?") as adding căn. The agent loop answers it below.
         if agent_project and factual_q:
             captured = []
+            ghi_su_that_cho(conv, ke_hoach)   # SRS-5.1zzzzzzz544: không áp thao tác thì mã sự thật hoãn (nếu có) vào căn đang nói như trước
         else:
             conv.bc_luot, conv.bo_luot = {}, []
             captured, conv.last_receipts = self._ap_dung_ke_hoach(conv, ke_hoach)
@@ -3155,19 +3191,7 @@ class Engine:
 
             # 1a-duyệt (SRS-5.1zzzzzzz47): tin từ chat chỉ lên web khi khách ĐỒNG Ý bản nháp — ghi / xoá dấu duyệt trên DB
             #     trước khi soạn lời, để câu "đã đăng" đọc đúng trạng thái mới.
-            ghi_duyet = getattr(self._convstore, "ghi_duyet", None)
-            if conv.duyet_luot and ghi_duyet is not None:
-                try:
-                    self._convstore.save(conv)
-                    ghi_duyet(conv, conv.duyet_luot == "dong_y")
-                    # Mô tả trên web = ĐÚNG bản tin khách vừa duyệt (SRS-5.1zzzzzzz89): trước đây lõi không ghi `description` ở đâu
-                    # cả — tin lên web không có mô tả, CRM báo "thiếu mô tả" dù khách đã duyệt cả bài.
-                    ban = _ban_tin_da_trinh(conv)
-                    ghi_ban_tin = getattr(self._convstore, "ghi_ban_tin", None)
-                    if conv.duyet_luot == "dong_y" and ban and ghi_ban_tin is not None:
-                        ghi_ban_tin(conv, ban[1])
-                except Exception as e:  # noqa: BLE001 — ghi duyệt hỏng thì lời bot vẫn đọc trạng thái thật
-                    log.warning("ghi_duyet lỗi: %s", e)
+            self._ghi_duyet_luot(conv)
 
             # 1a-ngã tư (18/10/2026, SRS-5.1zzzzzzz43): khách tả vị trí bằng ngã tư mà chưa nói phường → tra bảng giao lộ;
             #     ngã tư nằm trong đúng một phường thì điền phường, khỏi hỏi lại.
@@ -3815,6 +3839,31 @@ class Engine:
                     reply = _bo_cau_hoi_sai(reply, [t for _, t, _ in sai])
         return _bo_gach_cheo(reply, self._goi_toi(conv)[0])
 
+    def _ghi_duyet_luot(self, conv: Conversation) -> None:
+        """Lời duyệt / không duyệt bản nháp lượt này → DB (`chu_duyet_at` + mô tả) trên CĂN KHÁCH DUYỆT (SRS-5.1zzzzzzz47 / 89 / 544). Căn duyệt
+        khác căn đang nói sau khi áp thao tác → bỏ cờ duyệt của lượt (lời lượt nói về căn đang nói)."""
+        ghi_duyet = getattr(self._convstore, "ghi_duyet", None)
+        # SRS-5.1zzzzzzz544 (audit ECC chat Zalo P0-2): dấu duyệt + mô tả ghi lên CĂN KHÁCH DUYỆT (chốt lúc quyết duyệt), không phải căn
+        # đang nói sau khi áp thao tác — "ok đăng đi em, anh còn căn nữa…" từng đặt dấu duyệt lên căn mới.
+        can_duyet = next((li for li in conv.listings if li.listing_id == conv.duyet_can_id), conv.active)
+        if conv.duyet_luot and ghi_duyet is not None:
+            try:
+                self._convstore.save(conv)
+                ghi_duyet(conv, conv.duyet_luot == "dong_y", can=can_duyet)
+                # Mô tả trên web = ĐÚNG bản tin khách vừa duyệt (SRS-5.1zzzzzzz89): trước đây lõi không ghi `description` ở đâu
+                # cả — tin lên web không có mô tả, CRM báo "thiếu mô tả" dù khách đã duyệt cả bài.
+                ban = _ban_tin_da_trinh(conv, can_duyet)
+                ghi_ban_tin = getattr(self._convstore, "ghi_ban_tin", None)
+                if conv.duyet_luot == "dong_y" and ban and ghi_ban_tin is not None:
+                    ghi_ban_tin(conv, ban[1], can=can_duyet)
+            except Exception as e:  # noqa: BLE001 — ghi duyệt hỏng thì lời bot vẫn đọc trạng thái thật
+                log.warning("ghi_duyet lỗi: %s", e)
+        if conv.duyet_luot and can_duyet is not conv.active:
+            # Lời lượt này nói về căn ĐANG NÓI (căn mới / căn khác) — không đọc lời duyệt như duyệt căn này. Căn đã duyệt giữ `_duyet_ban`:
+            # lượt quay lại căn đó báo đăng qua nhánh "đã duyệt từ trước, nay mới lên web".
+            log.warning("Duyệt căn %s, lượt kết ở căn khác — lời lượt này không coi là lượt duyệt", can_duyet.ma_tin)
+            conv.duyet_luot = None
+
     @staticmethod
     def _quyet_duyet(conv: Conversation, plan: dict, cuoi: str) -> str | None:
         """Khách duyệt bản nháp lượt này không — MỘT nơi quyết (Đợt 4, AU-10, SRS-5.1zzzzzzz328; bản trước bốn chỗ ghi đè nhau). Thứ tự:
@@ -4109,11 +4158,16 @@ class Engine:
         # bộ giải link đổi ra link tải thật. Tải thô link Drive chỉ nhận trang đăng nhập Drive, bị đọc nhầm thành "trang web
         # dự án" ("đang rao dự án nào?"). Sheets là ngoại lệ (đã tách ở trên). Theo bản anh Luận 4ebeb18 (SRS-5.1zzzzzzz50).
         is_drive = extract_drive_id(url) is not None
+        # SRS-5.1zzzzzzz544 (audit ECC chat Zalo P1-5): nhập bảng tính (mỗi dòng một tin, ghi lại mỗi lượt) trước đây mở cho MỌI người nhắn,
+        # không trần dòng, xlsx giải nén không giới hạn. Nay chỉ admin / môi giới đã duyệt; người khác nhận câu mời gửi từng căn.
+        bi_chan = False
         if bulk.sheets_export_url(url) is not None:  # Google Sheets
-            try:
-                text = self._spreadsheet_text(url)
-            except FetchError:
-                text = None
+            bi_chan = not self._duoc_nhap_bang_tinh(user_key)
+            if not bi_chan:
+                try:
+                    text = self._spreadsheet_text(url)
+                except (FetchError, ValueError):
+                    text = None
         elif not is_drive:
             try:
                 data, media_type = fetch_raw(url)
@@ -4121,10 +4175,22 @@ class Engine:
                 data = None
             if data is not None:
                 kind = bulk.sniff_kind(data, media_type, url)
-                if kind == "xlsx":
-                    text = bulk.xlsx_to_csv(data)
-                elif kind == "csv":
-                    text = data.decode("utf-8-sig", "replace")
+                bi_chan = kind in ("xlsx", "csv") and not self._duoc_nhap_bang_tinh(user_key)
+                if kind in ("xlsx", "csv") and not bi_chan:
+                    try:
+                        text = bulk.xlsx_to_csv(data) if kind == "xlsx" else data.decode("utf-8-sig", "replace")
+                    except ValueError as e:   # bảng quá lớn / tệp nén bất thường (bulk.xlsx_to_csv)
+                        log.warning("Bảng tính bị từ chối: %s", e)
+                        text = None
+
+        if bi_chan:
+            conv = self.conversation(user_key)
+            reply = self._cau_khach(conv, "bang_tinh_chua_mo")
+            conv.history.append(Turn("user", f"[Khách gửi bảng tính qua link: {url}]", now))
+            conv.history.append(Turn("assistant", reply, now))
+            conv.last_ai_at = now
+            log.warning("Bảng tính: người gửi chưa được nhập hàng loạt — không đọc")
+            return self._build_result(conv, reply, captured=[], now=now)
 
         if text is not None:  # it's a spreadsheet → bulk import
             conv = self.conversation(user_key)
@@ -4656,16 +4722,17 @@ class Engine:
 
     def _route_readout_media(
         self, conv: Conversation, description: str, fetched: list[FetchedMedia],
-        user_key: str, store: bool = True,
+        user_key: str, store: bool = True, rieng: bool = False,
     ) -> tuple[list[str], int]:
         """After a vision read-out, register the project + model, then store the files where
         they BELONG: a MẪU NHÀ brochure (house model) → the UnitType's shared media (every
         unit of the model inherits them), otherwise the active căn's own folder. `store=False`
         for a pure DATA page (infometric — bảng giá/thông số): the DATA is still extracted, the
-        image is abandoned. Returns `(captured, n_capped)`."""
+        image is abandoned. `rieng=True` (giấy tờ / không chắc là ảnh chụp thật, SRS-5.1zzzzzzz544): chỉ cất vào kho RIÊNG của căn —
+        không vào kho mẫu nhà / tài liệu dự án dùng chung (cả hai công khai hoặc ai cùng dự án cũng đọc được). Returns `(captured, n_capped)`."""
         proj = self.register_project_from_text(description, voter=user_key)
         ut = self.register_unit_type_from_text(description, voter=user_key)
-        if ut is not None and proj is not None:
+        if ut is not None and proj is not None and not rieng:
             if store:
                 self._store_unittype_media(proj.name, ut.name, fetched)
                 # A lone brochure PDF for a model → also transcribe to a grounded .md.
@@ -4679,7 +4746,7 @@ class Engine:
         co_anh = any(m.kind == "image" for m in fetched)
         is_ref = bool(store and du_an and co_anh) and self._la_tai_lieu_chung(description)
         to_ingest = [m for m in fetched if m.kind == "pdf" or (is_ref and m.kind == "image")]
-        if store and du_an and to_ingest:
+        if store and du_an and to_ingest and not rieng:
             for m in to_ingest:
                 title = self._doc_title(m.filename, description)
                 try:
@@ -4694,10 +4761,10 @@ class Engine:
         if store:
             refs, capped = self._upload_media(
                 self._folder_for(conv.active), fetched,
-                image_slots=self._max_photos - _image_count(conv.active.media),
+                image_slots=self._max_photos - _image_count(conv.active.media), rieng=rieng,
             )
             conv.active.media += refs
-            so_anh = _image_count(refs)
+            so_anh = 0 if rieng else _image_count(refs)   # ảnh kho riêng không lên web — không báo khách mua "đã có thêm ảnh"
             tra = getattr(self._convstore, "tra_loi_xin_anh", None)
             if so_anh and tra is not None:   # SRS-5.1zzzzzzz254: khách mua đang chờ thêm ảnh căn này → báo lại khách
                 tra(conv.user_key, conv.active.ma_tin, so_anh)
@@ -4887,8 +4954,12 @@ class Engine:
                 f"{dau} {len(fetched)} tệp ({names}). Nội dung em đọc được từ tài liệu của khách:]\n{description}",
                 now,
             ))
+            # SRS-5.1zzzzzzz544 (audit ECC chat Zalo P0-1): album gom ra MỘT nhóm từng cất vào kho CÔNG KHAI bất kể cờ giấy tờ — hai trang sổ
+            # gửi cùng lúc lên `listing-public`, hiện web + gửi khách mua. Cùng luật nhánh nhiều nhóm: không chắc là ảnh chụp thật (thiếu cờ
+            # cũng vậy) thì cất RIÊNG (§5). Tài liệu chung dự án / mẫu nhà (`pham_vi`) đi đường kho dự án như nhánh nhiều nhóm.
+            tai_lieu_du_an = bool(groups) and groups[0].get("pham_vi") in ("chung", "mau_nha")
             captured, capped = self._route_readout_media(
-                conv, description, fetched, user_key, store=not data_only)
+                conv, description, fetched, user_key, store=not data_only, rieng=not anh_chup and not tai_lieu_du_an)
             tail = _xung_ho_cau("\n\n(Em đã lấy thông tin từ tài liệu, không cần lưu ảnh bảng dữ liệu nha.)", *self._goi_toi(conv)) if data_only else ""
             return (self._hoi_trung_ten(conv, f"{description}{tail}") + self._cap_note(capped, conv), captured)
 
@@ -5449,7 +5520,13 @@ class Engine:
             # SRS-5.1zzzzzzz320: người nhà đăng giùm không phải chính chủ — không giữ vai chủ nhà (bản tin không được ghi "Chính chủ"). Phí:
             # về UNKNOWN như khách chưa nói vai (câu phí nêu cả hai mức), không tự gán mức mới.
             conv.user_type = SellerRole.UNKNOWN
-        _ghi_su_that_can(conv, plan, gan_khach)
+        # SRS-5.1zzzzzzz544 (audit ECC chat Zalo P0-3): mã sự thật (giấy tờ / hoàn công / đường vào…) ở cấp kế hoạch, không theo từng căn — ghi
+        # NGAY vào căn đang nói thì "căn 2 hẻm xe hơi, sổ hồng riêng" đè lên căn cũ đang hiện web. Kế hoạch có thao tác đổi căn (mở căn mới / nhắm
+        # căn khác) → hoãn tới `_ap_dung_ke_hoach`, ghi vào căn của thao tác sau khi áp.
+        if _ke_hoach_doi_can(plan):
+            plan[_SU_THAT_CHO] = gan_khach
+        else:
+            _ghi_su_that_can(conv, plan, gan_khach)
         if conv.role != "buyer":
             from .lqc import ghi_tu_ke_hoach
             ghi_tu_ke_hoach(conv, plan, gan_khach, time.time())   # SRS-5.1zzzzzzz476: hẹn / bận / không có / thôi hỏi
@@ -5531,6 +5608,7 @@ class Engine:
             conv.vong_mua = None   # SRS-5.1zzzzzzz380: vai lượt này không còn là mua (vd đổi số Zalo) — bước 2 mua không chạy
 
         conv.duyet_luot = None   # quyết ở `_quyet_duyet` (một nơi, Đợt 4) sau khi đọc xong xin_dang / yeu_cau_viet
+        conv.duyet_can_id = ""
         y = plan.get("duyet_ban_nhap")
         cuoi = next((t.content for t in reversed(conv.history) if t.role == "user"), "")
         # SRS-5.1zzzzzzz177 (chat thử 24/10: cư dân hỏi "đồng hồ nước… cắt ngày nào" bị ép vào luồng rao bán, có cả dòng `listings`): khách hỏi việc
@@ -5705,11 +5783,6 @@ class Engine:
                 conv.y_luot[k] = True
         if conv.y_luot.get("xin_xem_ban_ve") and plan.get("ban_do_du_an") is True:
             conv.y_luot["ban_do_du_an"] = True
-        # SRS-5.1zzzzzzz241 (chủ dự án 28/10, OPEN-59 a): khách muốn CÙNG căn vừa bán vừa cho thuê → mở thêm tin loại kia (hai tin, hai giá).
-        if plan.get("ca_ban_ca_thue") is True and _trich_dan_khop(plan.get("ca_ban_ca_thue_trich_dan"), cuoi):
-            loai = self._tach_tin_ban_thue(conv)
-            if loai:
-                conv.y_luot["tach_ban_thue"] = loai
         # Xin gặp người thật (SRS-5.1zzzzzzz82). SRS-5.1zzzzzzz281: AI đọc theo ý khách ("cho anh nói chuyện với ai đó", "gọi anh nhé") — nhận
         # luôn; bản trước đòi cụm nguyên văn nên lời AI tóm lại bị bỏ, bot không báo admin.
         if isinstance(plan.get("can_nguoi_that"), str) and plan["can_nguoi_that"].strip():
@@ -5777,6 +5850,15 @@ class Engine:
             moc = _tin_khach_sau_ban_nhap(conv)[0]
             if moc is not None:
                 conv.prop.fields["_duyet_ban"] = moc   # SRS-5.1zzzzzzz247: bản nháp này đã duyệt
+        if conv.duyet_luot:
+            conv.duyet_can_id = conv.active.listing_id   # SRS-5.1zzzzzzz544 (P0-2): chốt căn được duyệt trước khi thao tác đổi căn đang nói
+        # SRS-5.1zzzzzzz241 (chủ dự án 28/10, OPEN-59 a): khách muốn CÙNG căn vừa bán vừa cho thuê → mở thêm tin loại kia (hai tin, hai giá).
+        # SRS-5.1zzzzzzz544 (audit ECC chat Zalo P0-2): tách SAU bước quyết duyệt — tách đổi căn đang nói sang tin mới (chưa có bản nháp), bản
+        # trước chạy trước `_quyet_duyet` nên lời duyệt của căn gốc mất.
+        if plan.get("ca_ban_ca_thue") is True and _trich_dan_khop(plan.get("ca_ban_ca_thue_trich_dan"), cuoi):
+            loai = self._tach_tin_ban_thue(conv)
+            if loai:
+                conv.y_luot["tach_ban_thue"] = loai
         nv = str(plan.get("ngoai_vung") or "").strip()
         if conv.role != "buyer":
             # Một dòng mỗi lượt người bán (SRS-5.1zzzzzzz96, đo nhận vùng): chỉ cờ — không ghi tên tỉnh / lời khách.
@@ -6238,6 +6320,7 @@ class Engine:
         destructive = [op for op in ops if op.get("op") in _DESTRUCTIVE_OPS]
         for op in safe:  # updates/adds/status apply immediately — they don't lose data
             self._apply_operation(conv, op, changed, receipts)
+        ghi_su_that_cho(conv, plan)   # SRS-5.1zzzzzzz544 (P0-3): mã sự thật vào căn của thao tác, sau khi áp
         # DESTRUCTIVE ops (clear / bỏ / chỉ giữ) do NOT apply on first read — a misread or garbled
         # message must never silently wipe the rổ. Hold them for an explicit CONFIRM (handled at
         # the top of handle()). Skip the gate only when there's nothing real to lose.

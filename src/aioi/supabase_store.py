@@ -261,11 +261,18 @@ def so_m2(fields: dict[str, str], thue: bool = False) -> float | None:
             v = float(nhan.group(1).replace(",", ".")) * float(nhan.group(2).replace(",", "."))
             if 5 <= v <= 100000:
                 return round(v, 1)
-        m = m2 or re.search(r"\d+(?:[.,]\d+)?", s)
-        if m:
-            v = float(m.group(1 if m is m2 else 0).replace(",", "."))
-            if v > 0:
-                return v
+        # SRS-5.1zzzzzzz544 (audit ECC chat Zalo P1-8): ô không có m² cũng không có "x" mà mang HAI số trở lên ("ngang 4 dài 16") thì số đầu
+        # là bề ngang, không phải diện tích — bản trước lên web 4 m². Chỉ nhận số trơn khi ô có ĐÚNG một số; không thì sang ô kế / tính từ
+        # số AI bóc (`dien_tich_tu_kich_thuoc`).
+        so = re.findall(r"\d+(?:[.,]\d+)?", s)
+        if m2:
+            v = float(m2.group(1).replace(",", "."))
+        elif len(so) == 1:
+            v = float(so[0].replace(",", "."))
+        else:
+            continue
+        if v > 0:
+            return v
     uoc = dien_tich_tu_kich_thuoc(fields)   # SRS-5.1zzzzzzz409: từ số AI bóc (ngang / dài / hậu), không dò chuỗi
     return float(uoc.removeprefix("khoảng ")[:-2]) if uoc else None
 
@@ -1238,28 +1245,28 @@ class SupabaseConversationStore(KhoNguoiMua):
         except Exception as e:  # noqa: BLE001 — ghi ảnh hỏng thì tin vẫn lưu, lượt sau thử lại
             log.warning("ghi listing_media lỗi: %s", e)
 
-    def ghi_duyet(self, conv: Conversation, dong_y: bool) -> None:
+    def ghi_duyet(self, conv: Conversation, dong_y: bool, can: Any = None) -> None:
         """Khách ĐỒNG Ý bản nháp → `chu_duyet_at` = bây giờ (trigger cho lên web nếu đủ giá / diện tích / phường); KHÔNG đồng ý →
         xoá dấu (tin đang hiển thị thì trigger hạ về `cho_thong_tin`). Quyết định đồng ý hay không là của lượt AI, đã kiểm trích
-        dẫn ở engine (SRS-5.1zzzzzzz47)."""
+        dẫn ở engine (SRS-5.1zzzzzzz47). `can` = căn khách duyệt (engine chốt lúc quyết duyệt, SRS-5.1zzzzzzz544); thiếu thì căn đang nói."""
         if not self.is_configured:
             return
         sid = self._get_or_create_seller(conv.user_key)
         if not sid:
             return
-        code = _ma_tin(conv.active)
+        code = _ma_tin(can or conv.active)
         self._patch(f"listings?seller_id=eq.{sid}&code=eq.{code}",
                     {"chu_duyet_at": datetime.now(timezone.utc).isoformat() if dong_y else None})
 
-    def ghi_ban_tin(self, conv: Conversation, mo_ta: str) -> None:
+    def ghi_ban_tin(self, conv: Conversation, mo_ta: str, can: Any = None) -> None:
         """Thân bản tin khách vừa duyệt → `listings.description` (web hiện qua sanitizeDescription — lọc SĐT, FR-104). Ghi đúng chữ
-        khách đã thấy, không viết lại (SRS-5.1zzzzzzz89)."""
+        khách đã thấy, không viết lại (SRS-5.1zzzzzzz89). `can` như `ghi_duyet`."""
         if not self.is_configured or not (mo_ta or "").strip():
             return
         sid = self._get_or_create_seller(conv.user_key)
         if not sid:
             return
-        code = _ma_tin(conv.active)
+        code = _ma_tin(can or conv.active)
         self._patch(f"listings?seller_id=eq.{sid}&code=eq.{code}", {"description": mo_ta.strip()})
 
     # Cột → ô bot hỏi: đúng ba điều kiện của `listing_du_dang_tin` (giá · diện tích · phường).
@@ -1321,6 +1328,20 @@ class SupabaseConversationStore(KhoNguoiMua):
             nho.clear()
         nho[user_key] = (time.time(), hang)
         return hang
+
+    def duoc_nhap_bang_tinh(self, user_key: str) -> bool:
+        """SRS-5.1zzzzzzz544 (audit ECC chat Zalo P1-5): nhập rổ hàng từ bảng tính (một dòng một tin) chỉ cho admin (bảng `admins`) hoặc môi
+        giới đã được duyệt (`sellers.ma_moi_gioi`). Lỗi mạng → False (không mở cửa nhập hàng loạt khi không kiểm được)."""
+        if not self.is_configured or not user_key:
+            return False
+        la_nv = getattr(self, "la_nhan_vien", None)
+        if la_nv is not None and la_nv(user_key):
+            return True
+        try:
+            return bool(self._get(f"sellers?zalo_user_id=eq.{urllib.parse.quote(user_key)}&ma_moi_gioi=not.is.null&select=id&limit=1"))
+        except Exception as e:  # noqa: BLE001
+            log.warning("duoc_nhap_bang_tinh lỗi: %s", type(e).__name__)
+            return False
 
     def trang_thai_tin(self, conv: Conversation) -> dict | None:
         """Tin đang nói có ĐANG HIỂN THỊ trên web không — đọc `status` thật (trigger `listings_quyet_dinh_dang_tin` quyết),

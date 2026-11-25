@@ -157,9 +157,11 @@ function bocGia(t: string, goc?: string): GiaKQ | null {
   // "8ty2", "6ty5" → 8,2 / 6,5 tỉ (FR-154 lóng)
   // SRS-5.1zzzzzzz543 (audit ECC P2-9): số sau tỷ là số LƯỢNG ("nhà 5 tỷ 2 phòng ngủ", "4 tỷ 3 tầng") thì không phải phần lẻ — bản trước đọc
   // 5,2 / 4,3 tỷ. Cùng danh sách đơn vị chặn với `docTien` (luat-tien.ts) và SQL `parse_vnd`; `t` đã bỏ dấu nên chỉ cần dạng không dấu.
-  let m = new RegExp(`(^|[^a-z0-9])${SO}\\s*(ty|ti)\\s*(\\d)(?![a-z0-9])(?!\\s*(?:m|phong|pn|lau|tang|tam|wc|thang|nam|nguoi|can))`).exec(t);
+  // SRS-5.1zzzzzzz544 (audit ECC chat Zalo P1-7): nhận 1–3 chữ số sau tỷ, lấp nhóm ba chữ số từ trái như `docTien` ("3 ty 85" = 3,85 tỉ;
+  // bản trước chỉ nhận một chữ số, "3 ty 85" rơi xuống nhánh dưới thành "khoảng 3 tỉ").
+  let m = new RegExp(`(^|[^a-z0-9])${SO}\\s*(ty|ti)\\s*(\\d{1,3})(?![a-z0-9])(?!\\s*(?:m|phong|pn|lau|tang|tam|wc|thang|nam|nguoi|can))`).exec(t);
   if (m) {
-    const v = (so(m[2]) + Number(m[4]) / 10) * TY;
+    const v = (so(m[2]) + Number(m[4]) / 10 ** m[4].length) * TY;
     return { approx: v, min: v * 0.85, max: v * 1.15, conf: 0.85, raw: rawCua(m) };
   }
   // "5-8 ty", "5 den 8 ty", "tu 5 den 8 ty", "5 toi 8 ty"

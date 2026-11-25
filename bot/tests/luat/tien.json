@@ -70,6 +70,12 @@
     { "cau": "4 tỷ 3 tầng",        "mong": 4000000000, "vi_sao": "audit ECC P2-9: số tầng" },
     { "cau": "6 ty 2pn",           "mong": 6000000000, "vi_sao": "số phòng viết tắt dính liền" },
     { "cau": "7 tỷ 3 lầu",         "mong": 7000000000, "vi_sao": "số lầu" },
-    { "cau": "giá 7 tỷ 5 thương lượng", "mong": 7500000000, "vi_sao": "chữ sau phần lẻ không phải đơn vị đếm — vẫn là 7,5 tỷ" }
+    { "cau": "giá 7 tỷ 5 thương lượng", "mong": 7500000000, "vi_sao": "chữ sau phần lẻ không phải đơn vị đếm — vẫn là 7,5 tỷ" },
+    { "cau": "3 tỷ 85",            "mong": 3850000000, "vi_sao": "audit ECC chat Zalo P1-7: hai chữ số sau tỷ là chục triệu — bản trước 3,085 tỷ" },
+    { "cau": "5t85",               "mong": 5850000000, "vi_sao": "lóng t kẹp giữa, hai chữ số" },
+    { "cau": "giá 2 tỷ 05",        "mong": 2050000000, "vi_sao": "05 = 50 triệu" },
+    { "cau": "12 ty 45 thuong luong", "mong": 12450000000, "vi_sao": "không dấu, hai chữ số" },
+    { "cau": "3 triệu 85",         "mong": 3850000,    "vi_sao": "nhánh triệu cùng luật: hai chữ số = chục nghìn" },
+    { "cau": "3tr85",              "mong": 3850000,    "vi_sao": "tr kẹp giữa, hai chữ số" }
   ]
 }

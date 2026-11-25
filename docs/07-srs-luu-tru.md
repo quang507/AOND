@@ -76,6 +76,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz534 · Groq dự phòng bị Cloudflare chặn vì User-Agent mặc định (23/11/2026)
+Chủ dự án 23/11: "kiểm tra groq còn cho api free ko". Khoá vẫn tốt, vẫn gói miễn phí (gpt-oss-120b: 1.000 lượt / ngày, 8.000 token / phút; qwen3.8-27b: 7.000 token vào / phút). Lỗi 403 từ ≥ 18/11 là Cloudflare "error code: 1010": `du_phong._http` gọi bằng urllib không đặt User-Agent ("Python-urllib" bị chặn) → mọi lượt Groq 403, Gemini hụt một nhịp là khách nhận câu giữ chỗ.
+- **Sửa:** `_http` gửi `User-Agent: aond-core/1.0`. Chép giọng nói (httpx, UA "python-httpx") không bị chặn. Thử: urllib không UA → 403 1010; có UA → 200; hàm `_http` của lõi gọi Groq → trả lời.
+- **Giới hạn gói miễn phí (đo bằng prompt thật):** bước viết (~14 nghìn ký tự, ~4.500 token) qua được nhưng chừng một lượt / phút; bước ghi (~39 nghìn ký tự, ~13–14 nghìn token) bị 413 "Request too large" — Groq miễn phí không thay được vòng agent, chỉ đỡ lời khi Gemini hụt. Đường dự phòng thật vẫn là Claude trả phí.
+
 ### SRS-5.1zzzzzzz533 · CRM: chỗ cần dài thì dài, chỗ không cần thì gọn — Báo cáo, Đăng tin, Câu chuẩn, Khách hàng (20/11/2026)
 
 Chủ dự án 20/11/2026 "rồi sửa hết các chỗ khác của CRM đi" (sau SRS-532 Rổ hàng). Đo 10 trang CRM trên web thật ở 1536px rồi sửa:

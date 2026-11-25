@@ -243,7 +243,15 @@ def xu_ly_mot(engine: Any, kho: Any, kho_tep: SupabaseMediaStore, dong: dict) ->
         return "loi"
     giay_to, vung = tim_vung(engine, data, dong.get("mime_type") or mime)
     if giay_to:
-        _danh_dau(kho, mid, {**variants, "xoa_logo": ""})
+        # SRS-5.1zzzzzzz544 (audit ECC chat Zalo P0-1): ảnh GIẤY TỜ nằm ở kho công khai là lỗi ở khâu cất (sổ đỏ không bao giờ lên web, §5) —
+        # bản trước chỉ đánh dấu bỏ qua, ảnh sổ vẫn hiện web / gửi khách mua. Nay ẩn khỏi web (`listing_photos_v` lọc `an_khoi_web` — cả web
+        # lẫn `anh_can` đọc view đó) + ghi sổ lỗi cho admin chuyển / xoá.
+        kho._request("PATCH", f"listing_media?id=eq.{mid}", data={"variants": {**variants, "xoa_logo": ""}, "an_khoi_web": True},
+                     prefer="return=minimal")
+        ghi = getattr(kho, "_ghi_so_loi", None)
+        if ghi is not None:
+            ghi("anh giay to cong khai", f"tin {lid[:8]}: ảnh giấy tờ ở kho công khai — đã ẩn khỏi web, cần chuyển sang kho riêng / xoá")
+        log.warning("xoa_logo: ảnh giấy tờ ở kho công khai (tin %s) — ẩn khỏi web", lid[:8])
         return "bo_qua"
     moi = xu_ly(data, vung, khoa)
     if moi is None:

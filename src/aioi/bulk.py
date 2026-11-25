@@ -13,6 +13,13 @@ import re
 from .chu import bo_dau
 import zipfile
 
+# SRS-5.1zzzzzzz544 (audit ECC chat Zalo P1-5): trần cho bảng tính khách gửi — mỗi dòng thành một tin và cả rổ ghi lại mỗi lượt; xlsx là tệp nén,
+# một tệp vài MB có thể giải nén ra hàng GB (zip bomb) trước khi đọc được dòng nào.
+TRAN_DONG_BANG_TINH = 200
+TRAN_COT_BANG_TINH = 60
+TRAN_GIAI_NEN_XLSX = 50 * 1024 * 1024   # tổng kích thước các phần trong tệp xlsx sau giải nén
+TRAN_TI_LE_NEN_XLSX = 200               # phần nào nén hơn 200 lần là bất thường
+
 # Normalized header → field slug.
 COLUMN_ALIASES: dict[str, str] = {
     "loai hinh": "loai_hinh", "loai": "loai_hinh", "type": "loai_hinh",
@@ -113,12 +120,24 @@ def sheets_export_url(url: str) -> str | None:
 
 
 def xlsx_to_csv(data: bytes) -> str:
-    """Convert an Excel (.xlsx) file's active sheet to CSV text (first sheet)."""
+    """Convert an Excel (.xlsx) file's active sheet to CSV text (first sheet). SRS-5.1zzzzzzz544: kiểm kích thước giải nén trước khi mở (ném
+    ValueError khi bất thường), chỉ đọc tối đa `TRAN_DONG_BANG_TINH` + 1 dòng (dòng tiêu đề) × `TRAN_COT_BANG_TINH` cột."""
     import openpyxl  # lazy: only needed for Excel imports
 
+    try:
+        infos = zipfile.ZipFile(io.BytesIO(data)).infolist()
+    except zipfile.BadZipFile as e:
+        raise ValueError("tệp xlsx hỏng") from e
+    tong = sum(i.file_size for i in infos)
+    if tong > TRAN_GIAI_NEN_XLSX:
+        raise ValueError(f"xlsx giải nén {tong // (1024 * 1024)} MB — quá trần")
+    if any(i.compress_size and i.file_size / i.compress_size > TRAN_TI_LE_NEN_XLSX for i in infos if i.file_size > 1024 * 1024):
+        raise ValueError("xlsx có phần nén bất thường")
     wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
     out = io.StringIO()
     writer = csv.writer(out)
-    for row in wb.active.iter_rows(values_only=True):
+    for i, row in enumerate(wb.active.iter_rows(values_only=True, max_col=TRAN_COT_BANG_TINH)):
+        if i > TRAN_DONG_BANG_TINH:
+            break
         writer.writerow(["" if c is None else str(c) for c in row])
     return out.getvalue()

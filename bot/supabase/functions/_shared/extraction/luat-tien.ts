@@ -112,9 +112,11 @@ export function docTien(p: string | null | undefined): number | null {
   // "5 tỷ 50m2" (diện tích) — cấm chữ số lẫn "m" đứng ngay sau.
   // SRS-5.1zzzzzzz543 (audit ECC P2-9): số sau tỷ mà là số LƯỢNG ("nhà 5 tỷ 2 phòng ngủ", "4 tỷ 3 tầng") thì không phải phần lẻ — bản trước
   // đọc 5,2 / 4,3 tỷ. Cùng danh sách đơn vị chặn của nhánh triệu bên dưới; SQL `parse_vnd` cùng luật (20261125c).
+  // SRS-5.1zzzzzzz544 (audit ECC chat Zalo P1-7): phần lẻ lấp nhóm ba chữ số kế tiếp TỪ TRÁI — 1 chữ số = trăm triệu, 2 chữ số = chục triệu
+  // ("3 tỷ 85" = 3,85 tỷ; bản trước nhân 1e6 thành 3,085 tỷ, web lệch 765 triệu), 3 chữ số = triệu. Nhánh triệu cùng luật.
   let m = /([0-9]+)\s*_ty\s*([0-9]{1,3})(?![0-9.,]|\s*(?:m|phòng|phong|pn|lầu|lau|tầng|tang|tấm|tam|wc|tháng|thang|năm|nam|người|nguoi|căn|can))/.exec(t);
   if (m) {
-    return Number(m[1]) * 1e9 + (m[2].length === 1 ? Number(m[2]) * 1e8 : Number(m[2]) * 1e6);
+    return Number(m[1]) * 1e9 + Number(m[2]) * 10 ** (9 - m[2].length);
   }
   m = /([0-9]+[.,]?[0-9]*)\s*_ty/.exec(t);
   if (m) {
@@ -127,7 +129,7 @@ export function docTien(p: string | null | undefined): number | null {
   // triệu 100m2") thì không phải phần lẻ.
   m = /([0-9]+)\s*_trieu\s*([0-9]{1,3})(?![0-9.,]|\s*(?:m2|m²|mét|met|m(?![\p{L}])|phòng|phong|pn|lầu|lau|tầng|tang|tấm|tam|wc|tháng|thang|năm|nam|người|nguoi|căn|can))/u.exec(t);
   if (m) {
-    return Number(m[1]) * 1e6 + (m[2].length === 1 ? Number(m[2]) * 1e5 : Number(m[2]) * 1e3);
+    return Number(m[1]) * 1e6 + Number(m[2]) * 10 ** (6 - m[2].length);
   }
   m = /([0-9]+[.,]?[0-9]*)\s*_trieu/.exec(t);
   if (m) {
