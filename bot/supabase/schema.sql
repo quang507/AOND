@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-26 00:07 (giờ VN)
+-- Sinh lúc: 2026-11-26 00:38 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -5864,6 +5864,13 @@ begin
   -- ("50" bi lui ve "5" cho khop) — nen cam ca chu so lan m dung ngay sau.
   -- 20261125c (SRS-5.1zzzzzzz543, audit ECC P2-9): so sau ty ma la so LUONG ("nha 5 ty 2 phong ngu", "4 ty 3 tang")
   -- khong phai phan le — cung danh sach chan cua nhanh trieu; luat-tien.ts docTien cung luat.
+  -- 20261126a (SRS-5.1zzzzzzz545, ra lai SRS-544): so sau ty ma ghi ro don vi TRIEU theo sau ("2 ty 50 trieu", "2ty50tr") la so trieu,
+  -- khong phai phan le — ban 20261125e doc 2,5 ty. luat-tien.ts docTien cung luat.
+  m := regexp_match(t, '([0-9]+)\s*_ty\s*([0-9]{1,3})\s*_trieu');
+  if m is not null then
+    return (m[1]::numeric * 1e9 + m[2]::numeric * 1e6)::bigint;
+  end if;
+
   m := regexp_match(t, '([0-9]+)\s*_ty\s*([0-9]{1,3})(?![0-9.,]|\s*(m|phòng|phong|pn|lầu|lau|tầng|tang|tấm|tam|wc|tháng|thang|năm|nam|người|nguoi|căn|can))');
   if m is not null then
     return (m[1]::numeric * 1e9
@@ -5879,6 +5886,12 @@ begin
 
   -- Phan le sau trieu: "3 trieu 5" = 3,5 trieu | "3 trieu 500" = 3,5 trieu.
   -- So dung sau ma la so LUONG (thang, phong, m2...) thi khong phai phan le.
+  -- 20261126a: "4 trieu 50 nghin" / "4tr50k" = 4,05 trieu.
+  m := regexp_match(t, '([0-9]+)\s*_trieu\s*([0-9]{1,3})\s*(nghìn|nghin|ngàn|ngan|k)(?![[:alpha:]])');
+  if m is not null then
+    return (m[1]::numeric * 1e6 + m[2]::numeric * 1e3)::bigint;
+  end if;
+
   m := regexp_match(t, '([0-9]+)\s*_trieu\s*([0-9]{1,3})(?![0-9.,]|\s*(m2|m²|mét|met|m\M|phòng|phong|pn|lầu|lau|tầng|tang|tấm|tam|wc|tháng|thang|năm|nam|người|nguoi|căn|can))');
   if m is not null then
     return (m[1]::numeric * 1e6
