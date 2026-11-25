@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-25 13:37 (giờ VN)
+-- Sinh lúc: 2026-11-25 17:51 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -11,6 +11,7 @@ create extension if not exists http with schema extensions;
 create extension if not exists pg_cron with schema pg_catalog;
 create extension if not exists pg_net with schema public;
 create extension if not exists pg_stat_statements with schema extensions;
+create extension if not exists pg_trgm with schema extensions;
 create extension if not exists pgcrypto with schema extensions;
 create extension if not exists supabase_vault with schema vault;
 create extension if not exists "uuid-ossp" with schema extensions;
@@ -1303,6 +1304,7 @@ create index if not exists duong_hem ON public.duong USING btree (upper(so_hem),
 create index if not exists duong_lat_lng ON public.duong USING btree (lat, lng);
 create index if not exists duong_ten_gon ON public.duong USING btree (length(ten_khong_dau)) INCLUDE (ten_khong_dau, ten, loai, quan_cu, phuong, tinh) WHERE (loai <> 'hem'::text);
 create index if not exists duong_ten_khong_dau_idx ON public.duong USING btree (ten_khong_dau);
+create index if not exists duong_ten_khong_dau_trgm ON public.duong USING gin (ten_khong_dau extensions.gin_trgm_ops);
 create index if not exists giao_lo_a_idx ON public.giao_lo USING btree (a_khong_dau);
 create index if not exists giao_lo_b_idx ON public.giao_lo USING btree (b_khong_dau);
 create index if not exists giao_lo_lat_lng_idx ON public.giao_lo USING btree (lat, lng);
@@ -1334,6 +1336,7 @@ create index if not exists media_cleanup_can_lam_idx ON public.media_cleanup_que
 create index if not exists messages_conv_seq_idx ON public.messages USING btree (conversation_id, seq DESC);
 create index if not exists messages_conv_time_idx ON public.messages USING btree (conversation_id, created_at);
 create index if not exists projects_priority_idx ON public.projects USING btree (priority, district);
+create index if not exists projects_ten_kd_trgm ON public.projects USING gin (bo_dau(name) extensions.gin_trgm_ops);
 create index if not exists property_events_at_idx ON public.property_events USING btree (at DESC);
 create index if not exists property_events_buyer_idx ON public.property_events USING btree (buyer_id);
 create index if not exists property_events_listing_at_idx ON public.property_events USING btree (listing_id, at DESC);
@@ -1352,6 +1355,7 @@ create index if not exists reminders_viewing_id_idx ON public.reminders USING bt
 create index if not exists sellers_active_listing_idx ON public.sellers USING btree (active_listing_id) WHERE (active_listing_id IS NOT NULL);
 CREATE UNIQUE INDEX sellers_ma_moi_gioi_key ON public.sellers USING btree (ma_moi_gioi) WHERE (ma_moi_gioi IS NOT NULL);
 create index if not exists tien_ich_loai_lat_lng_idx ON public.tien_ich USING btree (loai, lat, lng);
+create index if not exists tien_ich_ten_kd_trgm ON public.tien_ich USING gin (ten_kd extensions.gin_trgm_ops);
 create index if not exists viewings_buyer_id_idx ON public.viewings USING btree (buyer_id);
 create index if not exists viewings_listing_id_idx ON public.viewings USING btree (listing_id);
 CREATE UNIQUE INDEX viewings_mot_hen_cho_moi_can_idx ON public.viewings USING btree (buyer_id, COALESCE(listing_code, (listing_id)::text)) WHERE (status = 'pending'::text);
@@ -2511,6 +2515,21 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.buyers_chan_doi_zalo()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+begin
+  -- Người dùng web (authenticated, không phải admin) không được tự gắn / đổi Zalo ID — chỉ lõi (service_role) và admin.
+  if new.zalo_user_id is distinct from old.zalo_user_id
+     and coalesce(auth.role(), '') in ('anon', 'authenticated') and not public.la_admin() then
+    raise exception 'không được đổi zalo_user_id' using errcode = '42501';
+  end if;
+  return new;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.can_cung_khu(p_buyer_id uuid, p_listing_id uuid DEFAULT NULL::uuid, p_limit integer DEFAULT 3)
  RETURNS TABLE(id uuid, code text, ward text, district text, price_raw text, area_m2 numeric, tom_tat text)
  LANGUAGE plpgsql
@@ -3015,6 +3034,17 @@ AS $function$
            'ty_le_chot', case when tong_6t > 0 then round(100.0 * chot_6t / tong_6t, 1) else 0 end,
            'dat_chuan', dang_rao >= 10 and tong_6t > 0 and chot_6t::numeric / tong_6t >= 0.05)
     from t;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.co_dau_hieu_link(p text)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO 'public'
+AS $function$
+  -- Dấu hiệu một đường link Zalo sẽ tự biến thành chỗ bấm: giao thức, www., hoặc tên miền có đuôi phổ biến. "TP.HCM" / "Q.7" không khớp.
+  select coalesce(p, '') ~* '(://|www\.|[a-z0-9-]+\.(com|net|org|vn|info|xyz|top|io|me|ly|link|site|online|club|shop|app|biz|cc|co)(\M|/))'
 $function$
 ;
 
@@ -3836,12 +3866,19 @@ begin
   -- Mã lỗi ngắn để form hiện đúng chỗ; không bao giờ trả lại dữ liệu người khác.
   if v_loai not in ('ca_nhan', 'san') then return jsonb_build_object('ok', false, 'loi', 'loai'); end if;
   if char_length(v_ten) < 2 or char_length(v_ten) > 80 then return jsonb_build_object('ok', false, 'loi', 'ho_ten'); end if;
+  -- 20261125d (audit ECC P2-16): tên và khu vực được ghép NGUYÊN vào tin Zalo gửi admin — người lạ (anon) chèn được link giả
+  -- ("Nguyen Van A https://…"), Zalo tự biến thành link bấm được. Có dấu hiệu link thì trả lỗi đúng ô; ký tự điều khiển / vô hình bỏ đi.
+  v_ten := regexp_replace(v_ten, '[[:cntrl:]\u200b-\u200f\u2028-\u202e\u2060-\u2064\ufeff]', '', 'g');
+  if public.co_dau_hieu_link(v_ten) then return jsonb_build_object('ok', false, 'loi', 'ho_ten'); end if;
   if v_sdt like '84%' and char_length(v_sdt) = 11 then v_sdt := '0' || substr(v_sdt, 3); end if;
   if v_sdt !~ '^0[35789]\d{8}$' then return jsonb_build_object('ok', false, 'loi', 'so_dien_thoai'); end if;
   if coalesce(p->>'dong_y', '') <> 'true' then return jsonb_build_object('ok', false, 'loi', 'dong_y'); end if;
   if jsonb_typeof(p->'khu_vuc') is distinct from 'array' then return jsonb_build_object('ok', false, 'loi', 'khu_vuc'); end if;
   select array_agg(distinct btrim(x)) into v_khu from jsonb_array_elements_text(p->'khu_vuc') x where char_length(btrim(x)) between 2 and 60;
   if v_khu is null or cardinality(v_khu) > 5 then return jsonb_build_object('ok', false, 'loi', 'khu_vuc'); end if;
+  if exists (select 1 from unnest(v_khu) k where public.co_dau_hieu_link(k) or k ~ '[[:cntrl:]\u200b-\u200f\u2028-\u202e\u2060-\u2064\ufeff]') then
+    return jsonb_build_object('ok', false, 'loi', 'khu_vuc');
+  end if;
   if jsonb_typeof(p->'loai_bds') = 'array' then
     select array_agg(distinct btrim(x)) into v_bds from jsonb_array_elements_text(p->'loai_bds') x where char_length(btrim(x)) between 2 and 40;
   end if;
@@ -4666,8 +4703,12 @@ begin
     new.status := 'cho_thong_tin';
   end if;
   -- SRS-5.1zzzzzzz466: hạng Đồng hiển thị bình thường tối đa 5 căn; căn thứ 6 trở đi vẫn lên kệ, gắn nhãn "cần kiểm chứng thêm"
+  -- 20261125d (audit ECC P2-14): bản trước tính lại mỗi UPDATE — cả lượt ghi nền (geocode, tiện ích gần) trên tin của người bán 962 tin
+  -- tốn ~230 ms / lượt vì `diem_nguoi_ban` (~380 ms). Nay chỉ khi tin MỚI, đổi trạng thái hoặc đổi người bán. Nhãn có thể cũ đi khi
+  -- hạng người bán đổi mà tin không đổi trạng thái — chấp nhận (nhãn chỉ là "cần kiểm chứng thêm", không ẩn tin).
   if new.seller_id is not null and coalesce(auth.role(), '') = 'service_role'
-     and new.status in ('dang_ban', 'dang_quan_tam', 'da_coc') then
+     and new.status in ('dang_ban', 'dang_quan_tam', 'da_coc')
+     and (tg_op = 'INSERT' or new.status is distinct from old.status or new.seller_id is distinct from old.seller_id) then
     begin
       select count(*) into v_dang_hien
         from listings l
@@ -5810,7 +5851,9 @@ begin
   -- Phan le sau don vi: "5 ty 5" = 5,5 ty | "3 ty 200" = 3,2 ty.
   -- Chan hai kieu bat nham: "5 ty 50m2" (dien tich) va viec cat bot chu so
   -- ("50" bi lui ve "5" cho khop) — nen cam ca chu so lan m dung ngay sau.
-  m := regexp_match(t, '([0-9]+)\s*_ty\s*([0-9]{1,3})(?![0-9.,]|\s*m)');
+  -- 20261125c (SRS-5.1zzzzzzz543, audit ECC P2-9): so sau ty ma la so LUONG ("nha 5 ty 2 phong ngu", "4 ty 3 tang")
+  -- khong phai phan le — cung danh sach chan cua nhanh trieu; luat-tien.ts docTien cung luat.
+  m := regexp_match(t, '([0-9]+)\s*_ty\s*([0-9]{1,3})(?![0-9.,]|\s*(m|phòng|phong|pn|lầu|lau|tầng|tang|tấm|tam|wc|tháng|thang|năm|nam|người|nguoi|căn|can))');
   if m is not null then
     return (m[1]::numeric * 1e9
             + case when length(m[2]) = 1
@@ -6300,7 +6343,9 @@ begin
      group by 1 having count(*) > 2
   )
   select 'gui_qua_hai_tin_mot_ngay', 'NANG', count(*)::int,
-         coalesce(string_agg('…' || right(uid, 4) || ': ' || so_tin || ' tin', ', ' order by so_tin desc), '')
+         -- 20261125d (audit ECC P2-13): hàm mở cho anon — không kèm đuôi Zalo ID nữa, chỉ số tin mỗi người nhận. Ai cần biết là ai thì
+         -- chạy câu `gui` trong SQL Editor (service_role).
+         coalesce(string_agg(so_tin || ' tin', ', ' order by so_tin desc), '')
     from gui
   having count(*) > 0;
 end $function$
@@ -7833,6 +7878,8 @@ create or replace view public.tin_cong_khai as
 -- ══ Trigger ══
 drop trigger if exists trg_bot_errors_het_tien on public.bot_errors;
 CREATE TRIGGER trg_bot_errors_het_tien AFTER INSERT ON public.bot_errors FOR EACH ROW EXECUTE FUNCTION bat_het_tien_api();
+drop trigger if exists trg_buyers_chan_doi_zalo on public.buyers;
+CREATE TRIGGER trg_buyers_chan_doi_zalo BEFORE UPDATE OF zalo_user_id ON public.buyers FOR EACH ROW EXECUTE FUNCTION buyers_chan_doi_zalo();
 drop trigger if exists cau_chuan_cap_nhat_luc on public.cau_chuan;
 CREATE TRIGGER cau_chuan_cap_nhat_luc BEFORE UPDATE ON public.cau_chuan FOR EACH ROW EXECUTE FUNCTION cau_chuan_cap_nhat_luc();
 drop trigger if exists cau_mau_cap_nhat_luc on public.cau_mau;
@@ -8010,7 +8057,7 @@ create policy buyers_admin_update on public.buyers as permissive for UPDATE to a
    FROM admins a
   WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text)))));
 drop policy if exists buyers_self_insert on public.buyers;
-create policy buyers_self_insert on public.buyers as permissive for INSERT to authenticated with check ((auth_user_id = ( SELECT auth.uid() AS uid)));
+create policy buyers_self_insert on public.buyers as permissive for INSERT to authenticated with check (((auth_user_id = ( SELECT auth.uid() AS uid)) AND (zalo_user_id IS NULL)));
 drop policy if exists buyers_self_read on public.buyers;
 create policy buyers_self_read on public.buyers as permissive for SELECT to authenticated using ((auth_user_id = ( SELECT auth.uid() AS uid)));
 drop policy if exists buyers_self_update on public.buyers;
@@ -8350,6 +8397,8 @@ revoke all on function public.bump_model_quota(p_limit integer) from public, ano
 grant execute on function public.bump_model_quota(p_limit integer) to service_role;
 revoke all on function public.bump_user_quota(p_uid text, p_gio_limit integer, p_ngay_limit integer) from public, anon, authenticated;
 grant execute on function public.bump_user_quota(p_uid text, p_gio_limit integer, p_ngay_limit integer) to service_role;
+revoke all on function public.buyers_chan_doi_zalo() from public, anon, authenticated;
+grant execute on function public.buyers_chan_doi_zalo() to service_role;
 revoke all on function public.can_cung_khu(p_buyer_id uuid, p_listing_id uuid, p_limit integer) from public, anon, authenticated;
 grant execute on function public.can_cung_khu(p_buyer_id uuid, p_listing_id uuid, p_limit integer) to service_role;
 revoke all on function public.can_dang_rao_gan(p_listing_id uuid, p_ban_kinh_m integer, p_toi_da integer) from public, anon, authenticated;
@@ -8405,6 +8454,8 @@ grant execute on function public.chuan_hoa_phuong(p_text text) to authenticated;
 grant execute on function public.chuan_hoa_phuong(p_text text) to service_role;
 revoke all on function public.chuan_nmg(p_seller_id uuid) from public, anon, authenticated;
 grant execute on function public.chuan_nmg(p_seller_id uuid) to service_role;
+revoke all on function public.co_dau_hieu_link(p text) from public, anon, authenticated;
+grant execute on function public.co_dau_hieu_link(p text) to service_role;
 revoke all on function public.cong_token(p_in bigint, p_out bigint, p_cache_write bigint, p_cache_read bigint, p_model text) from public, anon, authenticated;
 grant execute on function public.cong_token(p_in bigint, p_out bigint, p_cache_write bigint, p_cache_read bigint, p_model text) to service_role;
 revoke all on function public.conversations_email_upset() from public, anon, authenticated;

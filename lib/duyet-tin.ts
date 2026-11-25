@@ -74,6 +74,17 @@ export type Truy = {
 
 export const layTin = unstable_cache(
   async (t: Truy) => {
+    const kq = await truyVanTin(t);
+    // SRS-5.1zzzzzzz543: cột `nhan` hiện TRỐNG ở mọi tin (870/870 ngày 25/11 — chưa có đường nào gắn nhãn), lọc nhãn mà ra 0 thì hiện như
+    // chưa lọc nhãn (đúng hành vi cũ) thay vì trang trắng cho mọi câu tìm có "yên tĩnh" / "an ninh"… Kho có nhãn rồi thì lọc thật.
+    if (kq.total === 0 && t.nhan && t.nhan.length > 0) return truyVanTin({ ...t, nhan: undefined });
+    return kq;
+  },
+  ["listing-browse-v4"],
+  { revalidate: 10800, tags: ["listings"] }, // SRS-5.1zl: 3 giờ (giảm egress Supabase); b9e03c3 hạ về 300 s → SRS-5.1zzzzzzz25 trả lại
+);
+
+async function truyVanTin(t: Truy): Promise<{ data: CardRow[]; total: number }> {
     let q = supabase
       .from("tin_cong_khai")
       // MAP_COLS (thẻ + lat, lng): nút "Xem bản đồ" cần toạ độ — với CARD_COLS ghim rơi về wardPoint, chỉ biết phường Q5 cũ, nên
@@ -120,10 +131,7 @@ export const layTin = unstable_cache(
 
     const { data, count } = await q;
     return { data: (data ?? []) as CardRow[], total: count ?? 0 };
-  },
-  ["listing-browse-v4"],
-  { revalidate: 10800, tags: ["listings"] }, // SRS-5.1zl: 3 giờ (giảm egress Supabase); b9e03c3 hạ về 300 s → SRS-5.1zzzzzzz25 trả lại
-);
+}
 
 /** Đọc searchParams của /mua-ban, /cho-thue (và /api/tin) thành truy vấn. Giữ nguyên mọi luật lọc cũ. */
 export function docThamSo(deal: "ban" | "cho_thue", rawParams: Record<string, string | string[] | undefined>) {
