@@ -124,7 +124,8 @@ jobs:
           co=""
           if [ "${{ steps.truoc.outputs.verify_jwt }}" = "false" ]; then co="--no-verify-jwt"; fi
           echo "supabase functions deploy ${{ inputs.ham }} $co"
-          supabase functions deploy "${{ inputs.ham }}" --project-ref "$PROJECT_REF" $co 2>&1 | tee /tmp/deploy.log
+          # --yes: CLI bản mới (25/11/2026) đòi xác nhận khi stdout không phải terminal, thiếu cờ thì "Nothing was changed" + exit 1.
+          supabase functions deploy "${{ inputs.ham }}" --project-ref "$PROJECT_REF" $co --yes 2>&1 | tee /tmp/deploy.log
 
       # "Đã gọi lệnh deploy" không phải bằng chứng đã deploy — cùng cái bẫy
       # NFR-18. Đọc lại bản đang chạy: số version PHẢI tăng, verify_jwt PHẢI
