@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache";
 import { MAP_COLS, supabase, type ListingCard as CardRow, TRANG_THAI_HIEN } from "@/lib/supabase";
 import { oTheoLoai } from "@/lib/format";
 import { parseQuery } from "@/lib/parse-query";
+import { NHAN_HOP_LE } from "@/bot/supabase/functions/_shared/extraction/nhan";
 
 export const PAGE_SIZE = 24;
 const TY = 1_000_000_000;
@@ -99,7 +100,9 @@ export const layTin = unstable_cache(
     if (t.tang != null) q = q.gte("floors", t.tang);
     if (t.vao && t.vao.length > 0) q = q.in("access_type", t.vao);
     if (t.pl && t.pl.length > 0) q = q.in("legal_status", t.pl);
-    if (t.nhan && t.nhan.length > 0) q = q.overlaps("tags", t.nhan);
+    // SRS-5.1zzzzzzz543 (audit ECC P2-10): cột của view là `nhan` (không có `tags` — lọc cũ mà chạy là lỗi, trang rỗng). Lọc `contains`
+    // (đủ mọi nhãn khách nêu) như FR-211 ở `parse-query.ts`.
+    if (t.nhan && t.nhan.length > 0) q = q.contains("nhan", t.nhan);
 
     switch (t.xep) {
       case "gia-tang": q = q.order("price_vnd", { ascending: true, nullsFirst: false }); break;
@@ -168,6 +171,13 @@ export function docThamSo(deal: "ban" | "cho_thue", rawParams: Record<string, st
   const tang = sp.tang ? Number(sp.tang) || undefined : undefined;
   const pl = sp.pl ? PL.find((x) => x.key === sp.pl)?.statuses : undefined;
 
+  // SRS-5.1zzzzzzz543 (audit ECC P2-10): `docThamSo` chưa bao giờ gán `nhan` — tiêu đề trang ghi "yên tĩnh · gần chợ" mà kết quả là cả kho.
+  // Nguồn: tham số `nhan` (link do `parse-query` dựng, "a,b") hoặc nhãn đọc từ ô tìm; chỉ nhận khoá có trong từ điển nhãn.
+  const nhanThamSo = typeof rawParams.nhan === "string"
+    ? rawParams.nhan.split(",").map((s) => s.trim()).filter((s) => NHAN_HOP_LE.has(s))
+    : [];
+  const nhan = nhanThamSo.length > 0 ? nhanThamSo : (dienGiai?.filters.tags?.filter((s) => NHAN_HOP_LE.has(s)) ?? []);
+
   const coLocPN = !loai || loai.some((t) => oTheoLoai(t).phongNgu);
   const pn = coLocPN && sp.pn ? Number(sp.pn) || null : null;
 
@@ -191,6 +201,7 @@ export function docThamSo(deal: "ban" | "cho_thue", rawParams: Record<string, st
     loai,
     duong,
     moc,
+    nhan: nhan.length > 0 ? nhan.slice(0, 6) : undefined,
     xep: xep.key,
     page,
   };

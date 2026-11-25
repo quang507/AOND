@@ -18,6 +18,9 @@ export function useTaiThem(api: string, trangDau: number, tongTrang: number, daC
   const [coJs, setCoJs] = useState(false);
   const bay = useRef(false);
   const tuDong = useRef(0);
+  // SRS-5.1zzzzzzz543 (audit ECC P2-11): đổi bộ lọc lúc trang kế đang tải → bản trước nối tin của bộ lọc CŨ vào danh sách mới. Mỗi lần đổi
+  // bộ lọc tăng "đời"; lượt tải về mà đời đã khác thì bỏ kết quả.
+  const doi = useRef(0);
   const moc = useRef<HTMLDivElement>(null);
   const het = trang >= tong;
 
@@ -25,6 +28,9 @@ export function useTaiThem(api: string, trangDau: number, tongTrang: number, daC
 
   // Bộ lọc đổi (link chip lọc là điều hướng mềm, component giữ nguyên) → bỏ tin đã nối thêm của bộ lọc cũ.
   useEffect(() => {
+    doi.current += 1;
+    bay.current = false;
+    setDangTai(false);
     setThem([]);
     setAnh({});
     setTrang(trangDau);
@@ -35,6 +41,7 @@ export function useTaiThem(api: string, trangDau: number, tongTrang: number, daC
 
   const taiTiep = useCallback(async () => {
     if (bay.current || trang >= tong) return;
+    const lan = doi.current;
     bay.current = true;
     setDangTai(true);
     setLoi(false);
@@ -42,6 +49,7 @@ export function useTaiThem(api: string, trangDau: number, tongTrang: number, daC
       const r = await fetch(`${api}${api.includes("?") ? "&" : "?"}trang=${trang + 1}`);
       if (!r.ok) throw new Error(String(r.status));
       const j = (await r.json()) as { tin: CardRow[]; anh: Record<string, string>; tongTrang: number };
+      if (lan !== doi.current) return;   // bộ lọc đã đổi giữa chừng — kết quả này của bộ lọc cũ
       setThem((cu) => {
         // Tin mới lên kệ giữa chừng đẩy lệch phân trang theo offset → bỏ tin đã hiện, khỏi trùng thẻ.
         const co = new Set([...daCo, ...cu].map((l) => l.id));
@@ -51,10 +59,12 @@ export function useTaiThem(api: string, trangDau: number, tongTrang: number, daC
       setTrang(trang + 1);
       setTong(j.tongTrang);
     } catch {
-      setLoi(true);
+      if (lan === doi.current) setLoi(true);
     } finally {
-      bay.current = false;
-      setDangTai(false);
+      if (lan === doi.current) {   // lượt của bộ lọc cũ không được mở khoá / tắt "đang tải" của lượt mới
+        bay.current = false;
+        setDangTai(false);
+      }
     }
   }, [api, trang, tong, daCo]);
 

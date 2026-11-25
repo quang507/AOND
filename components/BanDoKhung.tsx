@@ -89,6 +89,10 @@ export default function BanDoKhung() {
     const so = ++luot.current;
     setDaKeo(false);
     if (xin.length === 0) {
+      // SRS-5.1zzzzzzz543 (audit ECC P2-11): tắt hết lớp lúc lượt trước đang tải → lượt đó về thấy `so` cũ nên bỏ đi, không ai tắt
+      // "Đang tải…" — kẹt mãi. Lượt rỗng tự tắt cờ.
+      setDangTai(false);
+      setLoi(false);
       setKq(RONG);
       return;
     }

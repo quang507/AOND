@@ -60,8 +60,9 @@ export default async function Page({ params }: { params: Promise<{ token: string
           <p className="eyebrow text-brand">Danh sách tụi em lọc riêng cho anh chị</p>
           <h1 className="mt-2 text-3xl font-extrabold md:text-4xl">{ds.title ?? "Các căn hợp nhu cầu"}</h1>
           <p className="mt-2 text-white/60">
-            {ds.listings.length} căn · lọc lúc {tao.toLocaleString("vi-VN")} · link sống tới{" "}
-            {new Date(ds.expires_at).toLocaleDateString("vi-VN")}
+            {/* SRS-5.1zzzzzzz543 (audit ECC P2-11): máy chủ Vercel chạy giờ UTC — thiếu múi giờ thì "lọc lúc" lệch 7 tiếng. */}
+            {ds.listings.length} căn · lọc lúc {tao.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })} · link sống tới{" "}
+            {new Date(ds.expires_at).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}
           </p>
         </div>
       </div>

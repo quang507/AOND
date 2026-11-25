@@ -13,7 +13,10 @@ import tempfile
 from typing import Optional
 import httpx
 
+from .fetch import FetchError, fetch_raw
+
 log = logging.getLogger("aioi.voice")
+TRAN_TIN_THOAI_BYTES = 25 * 1024 * 1024
 
 AUDIO_EXTENSIONS = (
     ".m4a", ".aac", ".mp3", ".wav", ".ogg",
@@ -157,12 +160,13 @@ def transcribe_voice_url(
 
     try:
         log.info("Downloading voice note from %s...", url)
-        with httpx.Client(timeout=20.0, follow_redirects=True) as client:
-            resp = client.get(url)
-            if resp.status_code != 200:
-                log.error("Failed to download voice note [%d] from %s", resp.status_code, url)
-                return None
-            audio_bytes = resp.content
+        # SRS-5.1zzzzzzz543 (audit ECC P2-15): bản trước tải bằng httpx — không qua rào SSRF, theo mọi bước chuyển hướng, không trần kích thước.
+        # Nay đi chung `fetch_raw` (chỉ địa chỉ công khai, kiểm từng bước chuyển hướng, trần 25 MB = trần tệp của Groq Whisper).
+        try:
+            audio_bytes, _ = fetch_raw(url, max_bytes=TRAN_TIN_THOAI_BYTES, timeout=20.0)
+        except FetchError as e:
+            log.error("Failed to download voice note: %s", e)
+            return None
 
         # Determine filename
         filename = "voice_note.m4a"

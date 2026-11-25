@@ -155,7 +155,9 @@ function bocGia(t: string, goc?: string): GiaKQ | null {
   const rawCua = (m: RegExpExecArray) =>
     (goc ?? t).slice(m.index + m[1].length, m.index + m[0].length).replace(/^[^\p{L}\p{N}]+/u, "").trim();
   // "8ty2", "6ty5" → 8,2 / 6,5 tỉ (FR-154 lóng)
-  let m = new RegExp(`(^|[^a-z0-9])${SO}\\s*(ty|ti)\\s*(\\d)(?![a-z0-9])`).exec(t);
+  // SRS-5.1zzzzzzz543 (audit ECC P2-9): số sau tỷ là số LƯỢNG ("nhà 5 tỷ 2 phòng ngủ", "4 tỷ 3 tầng") thì không phải phần lẻ — bản trước đọc
+  // 5,2 / 4,3 tỷ. Cùng danh sách đơn vị chặn với `docTien` (luat-tien.ts) và SQL `parse_vnd`; `t` đã bỏ dấu nên chỉ cần dạng không dấu.
+  let m = new RegExp(`(^|[^a-z0-9])${SO}\\s*(ty|ti)\\s*(\\d)(?![a-z0-9])(?!\\s*(?:m|phong|pn|lau|tang|tam|wc|thang|nam|nguoi|can))`).exec(t);
   if (m) {
     const v = (so(m[2]) + Number(m[4]) / 10) * TY;
     return { approx: v, min: v * 0.85, max: v * 1.15, conf: 0.85, raw: rawCua(m) };

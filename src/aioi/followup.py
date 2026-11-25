@@ -298,7 +298,13 @@ class FollowUpManager:
                 with urllib.request.urlopen(req, timeout=10) as resp:
                     log.info("Sent follow-up to bridge (%s) for %s: %s", resp.status, user_key, follow_up_msg)
             except Exception as bridge_err:
-                log.warning("Bridge send notice for %s (non-fatal): %s", user_key, bridge_err)
+                # SRS-5.1zzzzzzz543 (audit ECC P2-4): bridge hụt thì DỪNG. Bản trước vẫn ghi câu nhắc vào lịch sử, đặt cờ đã nhắc và
+                # đồng bộ CRM — model và admin tưởng khách đã nhận câu khách chưa hề thấy, và căn không bao giờ được nhắc lại.
+                log.warning("Follow-up cho %s: bridge gửi hụt (%s) — không ghi lịch sử, không đặt cờ", user_key, bridge_err)
+                ghi = getattr(engine._convstore, "_ghi_so_loi", None)
+                if ghi is not None:   # không kèm id khách / nội dung câu nhắc
+                    ghi("nhac khi im", f"bridge gửi hụt: {type(bridge_err).__name__}: {str(bridge_err)[:120]}")
+                return
 
             # 2. Append turn to conversation history to preserve 100% context
             conv.history.append(Turn(role="assistant", content=follow_up_msg, at=time.time()))

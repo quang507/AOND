@@ -93,6 +93,17 @@ def _qua_han(e: BaseException) -> bool:
     return isinstance(e, TimeoutError) or isinstance(ly_do, TimeoutError) or bool(re.search(r"timed? ?out", f"{e} {ly_do or ''}", re.I))
 
 
+_KHUON_KHOA = re.compile(r"(key=)[^&\s\"']+|AIza[0-9A-Za-z_\-]{20,}|gsk_[0-9A-Za-z]{20,}|sk-ant-[0-9A-Za-z_\-]{20,}")
+
+
+def _mo_ta_loi(e: BaseException) -> str:
+    """Tên lớp lỗi + mã HTTP (nếu có) + 120 ký tự lời lỗi, đã che mọi chuỗi trông như khoá — SRS-5.1zzzzzzz543 (audit ECC P2-7): bản trước chỉ
+    log tên lớp, mất mã HTTP (vụ Groq 403 18–23/11 chỉ thấy "LoiNguon")."""
+    ma = getattr(e, "status_code", None) or getattr(e, "ma", None) or getattr(e, "code", None)
+    chu = _KHUON_KHOA.sub(lambda m: (m.group(1) or "") + "***", str(e))[:120]
+    return f"{type(e).__name__}{f' {ma}' if ma else ''}: {chu}"
+
+
 def _bo_nghi(chu: str) -> str:
     """Model suy luận có lượt trả kèm đoạn nghĩ (bắt tại trận 10/09 ở bot cũ: "<think> Here's a thinking process…" tới tận chủ nhà)."""
     chu = re.sub(r"<think>.*?</think>", "", chu or "", flags=re.S | re.I)
@@ -121,6 +132,7 @@ class DuPhongProvider(LLMProvider):
         self._nghi_den = 0.0
         self._loi_nghi: BaseException | None = None
         self._bao_luc = 0.0
+        self._bao_hong_luc: dict[str, float] = {}   # nguồn dự phòng → lần cuối ghi sổ "hỏng" (tiết chế 10 phút mỗi nguồn)
         self._nghi_model: dict[tuple[str, str], float] = {}   # (nguồn, model) quá hạn → bỏ qua tới mốc này
 
     # --- chọn đường -----------------------------------------------------------------------------
@@ -176,7 +188,8 @@ class DuPhongProvider(LLMProvider):
                         return kq
                     except Exception as e:  # noqa: BLE001
                         loi = e
-                        log.warning("Dự phòng %s/%s (%s) hỏng: %s", n.ten, model, viec, type(e).__name__)
+                        log.warning("Dự phòng %s/%s (%s) hỏng: %s", n.ten, model, viec, _mo_ta_loi(e))
+                        self._bao_hong(n, model, viec, e)
                         if not nen_doi_sang(e) and not isinstance(e, (ValueError, LoiNguon, urllib.error.URLError, OSError)):
                             raise
                         if _qua_han(e):
@@ -195,6 +208,17 @@ class DuPhongProvider(LLMProvider):
             self._bao_luc = time.time()
             ly_do = ("hết số dư" if _het_so_du(loi_chinh) else type(loi_chinh).__name__) if loi_chinh else "?"
             self._so.ghi_loi("du phong", f"Claude hỏng ({ly_do}) — đang trả lời bằng {n.ten}/{model}")
+
+    def _bao_hong(self, n: Nguon, model: str, viec: str, e: BaseException) -> None:
+        """SRS-5.1zzzzzzz543 (audit ECC P2-7): một nguồn dự phòng HỎNG cũng ghi sổ (mỗi nguồn tối đa 10 phút một dòng). Bản trước chỉ ghi khi
+        dự phòng THÀNH CÔNG — Groq 403 suốt 18–23/11 không để lại dòng nào. Không bao giờ ném."""
+        if self._so is None or time.time() - self._bao_hong_luc.get(n.ten, 0.0) <= 600:
+            return
+        self._bao_hong_luc[n.ten] = time.time()
+        try:
+            self._so.ghi_loi("du phong hong", f"{n.ten}/{model} ({viec}) hỏng: {_mo_ta_loi(e)}")
+        except Exception as e2:  # noqa: BLE001
+            log.warning("Dự phòng: ghi sổ hỏng lỗi (%s)", type(e2).__name__)
 
     # --- HTTP giọng OpenAI ----------------------------------------------------------------------
 

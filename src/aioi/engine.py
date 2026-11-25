@@ -1319,22 +1319,31 @@ def _lo_thong_tin_rieng(reply: str, prop: Property) -> list[str]:
 # tính; lượt hỏi AI hỏng → giữ quyết định ban đầu của AI (code không tự bác).
 _DAU_HIEU_NGHIA: dict[tuple[str, str], tuple[re.Pattern, str, str]] = {
     ("phap_ly_trang_thai", "so_hong_rieng"): (
-        re.compile(r"rieng|shr"), "so_hong",
+        re.compile(r"rieng|\bshr\b"), "so_hong",
         "Khách có nói rõ sổ của căn là sổ RIÊNG (một người, hoặc hai vợ chồng, đứng tên; không chung với ai) không? Chỉ nói \"có sổ hồng\" / "
         "\"sổ đỏ\" mà không nói riêng hay chung thì là KHÔNG."),
     ("phap_ly_trang_thai", "so_hong_chung"): (
-        re.compile(r"so chung|shc|dong so huu|thua ke"), "so_hong",
+        re.compile(r"so chung|\bshc\b|dong so huu|thua ke"), "so_hong",
         "Khách có nói rõ sổ là sổ CHUNG — nhiều người cùng đứng tên, đồng sở hữu, thừa kế chưa chia, chưa tách thửa — không?"),
     ("duong_vao", "mat_tien"): (
-        re.compile(r"mat tien|mt|mtkd"), "chua_ro",
+        re.compile(r"mat tien|\bmt\b|\bmtkd\b"), "chua_ro",
         "Khách có nói rõ căn nằm MẶT TIỀN đường (ngay mặt đường / mặt phố, không phải trong hẻm) không? Chỉ nêu tên đường thì là KHÔNG."),
     ("duong_vao", "hem_xe_hoi"): (
-        re.compile(r"xe hoi|o to|hxh"), "chua_ro",
+        re.compile(r"xe hoi|o to|\bhxh\b"), "chua_ro",
         "Khách có nói rõ ô tô / xe hơi vào TỚI nhà được không? Chỉ nói độ rộng hẻm thì là KHÔNG."),
 }
 _HOI_O_PHAP_LY = ("Cụm khách nói có phải là thông tin về GIẤY TỜ pháp lý của căn (sổ hồng, sổ đỏ, hợp đồng mua bán, giấy tay, vi bằng, hoàn "
                   "công, thổ cư…) không? Nói mình là chủ nhà / chính chủ thì là KHÔNG.")
-_DAU_HIEU_PHAP_LY = re.compile(r"so|so hong|so do|giay|hdmb|hop dong|vi bang|hoan cong|tho cu|phap ly|shr|shc")
+# SRS-5.1zzzzzzz543 (audit ECC P2-8): SRS-530 ghi `\b` thành ký tự BACKSPACE (0x08) ở dòng này và bốn regex trên — `so` / `shr` / `shc` /
+# `mt` / `mtkd` / `hxh` không bao giờ khớp (chỉ đi đường AI, tốn thêm lượt gọi). Nay ranh giới từ thật. Chữ "sổ" đứng riêng chỉ nhận khi CÓ DẤU:
+# bỏ dấu thì "sổ" = "số" (audit: `so` trần mà khớp thì "chính chủ, số nhà 12" lọt ô pháp lý không qua AI). Không khớp thì AI đọc nghĩa
+# quyết như cũ — từ khoá chỉ xác nhận nhanh, không bác (CLAUDE.md §4.8).
+_DAU_HIEU_PHAP_LY = re.compile(r"\b(?:so hong|so do|giay|hdmb|hop dong|vi bang|hoan cong|tho cu|phap ly|shr|shc)\b")
+_CHU_SO_CO_DAU = re.compile(r"(?<!\w)sổ(?!\w)")
+
+
+def _co_dau_hieu_phap_ly(cum: str) -> bool:
+    return bool(_DAU_HIEU_PHAP_LY.search(bo_dau(cum).lower()) or _CHU_SO_CO_DAU.search(cum.lower()))
 
 # Hàm AI xác nhận nghĩa của lượt đang chạy (Engine._ai_xac_nhan_nghia) — đặt ở đầu `_handle`, mỗi lượt một luồng.
 _XAC_NHAN_NGHIA: contextvars.ContextVar = contextvars.ContextVar("xac_nhan_nghia", default=None)
@@ -6314,7 +6323,7 @@ class Engine:
             return None
         cum_pl = f"{v} {bang_chung.get(k) if isinstance(bang_chung.get(k), str) else ''}"
         if (k in KHOA_PHAP_LY and k not in (conv.y_luot.get("_bot_vua_hoi") or ()) and conv.prop.fields.get(k) != v
-                and not _DAU_HIEU_PHAP_LY.search(bo_dau(cum_pl).lower())
+                and not _co_dau_hieu_phap_ly(cum_pl)
                 and _ai_dong_y(_HOI_O_PHAP_LY, cum_pl, conv) is False):
             # SRS-5.1zzzzzzz530 (kịch bản E 20/11): "chính chủ nha" vào ô phap_ly_so_do. Từ khoá giấy tờ chỉ xác nhận nhanh; không có thì AI đọc
             # nghĩa quyết (luật CLAUDE.md §4.8) — AI nói không phải giấy tờ mới bỏ ô; khách đáp câu bot vừa hỏi đúng ô đó thì không hỏi.

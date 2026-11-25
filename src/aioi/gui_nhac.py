@@ -36,6 +36,9 @@ CHO_LEN_WEB_PHUT = 10
 CHO_LEN_WEB_TOI_DA = timedelta(days=7)
 ATTEMPTS_TOI_DA = 5
 TOI_DA_MOT_LUOT = 10
+# SRS-5.1zzzzzzz543 (audit ECC P2-5): bridge đã gửi mà PATCH `sent` hụt (Supabase chớp) → dòng còn `pending`, bản trước gửi lại mỗi lượt quét.
+# Nhớ id → (nội dung, giờ gửi) trong bộ nhớ tiến trình; lượt sau chỉ ghi lại `sent`, KHÔNG gửi lại. Lõi khởi động lại thì mất bản nhớ.
+_DA_GUI_CHUA_KET: dict[str, tuple[str, datetime]] = {}
 
 
 def _q(s: str) -> str:
@@ -177,6 +180,15 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str], bool], xung_ho_cua: Callab
     trong_gio = trong_khung_gio(bay_gio)
     ra: list[dict] = []
     for r in rows:
+        rid = str(r.get("id"))
+        if rid in _DA_GUI_CHUA_KET:   # đã tới khách, chỉ còn ghi `sent` — không gửi lại
+            chu_cu, luc_gui = _DA_GUI_CHUA_KET[rid]
+            try:
+                _ket(kho, r, "sent", luc_gui, noi_dung=chu_cu)
+                _DA_GUI_CHUA_KET.pop(rid, None)
+            except Exception as e:  # noqa: BLE001
+                log.warning("gui_nhac: ghi lại sent %s vẫn hụt (%s)", rid, type(e).__name__)
+            continue
         if r.get("kind") in KIND_TU_DONG and not trong_gio:
             continue   # để pending, lượt sau trong khung giờ mới gửi
         try:
@@ -193,8 +205,14 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str], bool], xung_ho_cua: Callab
             if not chu:
                 _ket(kho, r, "dead", bay_gio, loi="không có nội dung để gửi (thiếu câu trả lời / mã căn)")
                 continue
-        except Exception as e:  # noqa: BLE001 — một dòng hỏng không chặn dòng khác; lượt sau xét lại
+        except Exception as e:  # noqa: BLE001 — một dòng hỏng không chặn dòng khác
+            # SRS-5.1zzzzzzz543 (audit ECC P2-5): bản trước chỉ `continue`, không đếm lần, không hẹn giờ → dòng hỏng nằm mãi đầu hàng
+            # (xếp theo due_at, mỗi lượt 10 dòng): 10 dòng hỏng là chặn mọi nhắc sau. Nay đếm như gửi hụt — hẹn lùi, quá trần thì `dead`.
             log.warning("gui_nhac: soạn tin %s lỗi (%s)", r.get("id"), type(e).__name__)
+            try:
+                _hut(kho, r, bay_gio, f"soạn tin lỗi: {type(e).__name__}: {e}")
+            except Exception as e2:  # noqa: BLE001 — DB hỏng thì lượt sau xét lại
+                log.warning("gui_nhac: đếm hụt %s lỗi (%s)", r.get("id"), type(e2).__name__)
             continue
         ok = False
         try:
@@ -206,7 +224,11 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str], bool], xung_ho_cua: Callab
         if not ok:
             _hut(kho, r, bay_gio, "bridge không nhận")
             continue
-        _ket(kho, r, "sent", bay_gio, noi_dung=chu)
+        try:
+            _ket(kho, r, "sent", bay_gio, noi_dung=chu)
+        except Exception as e:  # noqa: BLE001 — đã tới khách: nhớ để lượt sau ghi lại, không gửi lại
+            _DA_GUI_CHUA_KET[rid] = (chu, bay_gio)
+            log.warning("gui_nhac: đã gửi %s nhưng ghi sent hụt (%s) — lượt sau ghi lại", rid, type(e).__name__)
         if ghi_lich_su:
             try:
                 ghi_lich_su(zalo, chu, vai, ten, "human" if r.get("kind") == "admin_reply" else "bot")

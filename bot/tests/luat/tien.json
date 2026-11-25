@@ -65,6 +65,11 @@
     { "cau": "gia chin ty ruoi",   "mong": 9500000000, "vi_sao": "không dấu" },
     { "cau": "năm 2020 giá 5 tỷ",  "mong": 5000000000, "vi_sao": "'năm' trước số năm không phải chữ số tiền" },
     { "cau": "bán năm căn",        "mong": null,       "vi_sao": "chữ số không đứng trước đơn vị tiền" },
-    { "cau": "chín tỷ hai thương lượng", "mong": 9000000000, "vi_sao": "chữ sau 'hai' — không dám đọc phần lẻ" }
+    { "cau": "chín tỷ hai thương lượng", "mong": 9000000000, "vi_sao": "chữ sau 'hai' — không dám đọc phần lẻ" },
+    { "cau": "nhà 5 tỷ 2 phòng ngủ", "mong": 5000000000, "vi_sao": "audit ECC P2-9: số sau tỷ là số phòng, không phải phần lẻ" },
+    { "cau": "4 tỷ 3 tầng",        "mong": 4000000000, "vi_sao": "audit ECC P2-9: số tầng" },
+    { "cau": "6 ty 2pn",           "mong": 6000000000, "vi_sao": "số phòng viết tắt dính liền" },
+    { "cau": "7 tỷ 3 lầu",         "mong": 7000000000, "vi_sao": "số lầu" },
+    { "cau": "giá 7 tỷ 5 thương lượng", "mong": 7500000000, "vi_sao": "chữ sau phần lẻ không phải đơn vị đếm — vẫn là 7,5 tỷ" }
   ]
 }

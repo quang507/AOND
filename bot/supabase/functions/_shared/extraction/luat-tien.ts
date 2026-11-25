@@ -110,7 +110,9 @@ export function docTien(p: string | null | undefined): number | null {
 
   // Phần lẻ sau đơn vị: "5 tỷ 5" = 5,5 tỷ · "3 tỷ 200" = 3,2 tỷ. Không nuốt
   // "5 tỷ 50m2" (diện tích) — cấm chữ số lẫn "m" đứng ngay sau.
-  let m = /([0-9]+)\s*_ty\s*([0-9]{1,3})(?![0-9.,]|\s*m)/.exec(t);
+  // SRS-5.1zzzzzzz543 (audit ECC P2-9): số sau tỷ mà là số LƯỢNG ("nhà 5 tỷ 2 phòng ngủ", "4 tỷ 3 tầng") thì không phải phần lẻ — bản trước
+  // đọc 5,2 / 4,3 tỷ. Cùng danh sách đơn vị chặn của nhánh triệu bên dưới; SQL `parse_vnd` cùng luật (20261125c).
+  let m = /([0-9]+)\s*_ty\s*([0-9]{1,3})(?![0-9.,]|\s*(?:m|phòng|phong|pn|lầu|lau|tầng|tang|tấm|tam|wc|tháng|thang|năm|nam|người|nguoi|căn|can))/.exec(t);
   if (m) {
     return Number(m[1]) * 1e9 + (m[2].length === 1 ? Number(m[2]) * 1e8 : Number(m[2]) * 1e6);
   }

@@ -7,8 +7,14 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabase, TRANG_THAI_HIEN } from "@/lib/supabase";
 
+// SRS-5.1zzzzzzz543 (audit ECC P2-11): bản trước một lần / 60 giây cho CẢ máy chủ — admin gỡ tin thứ hai trong cùng phút thì tin đó nằm lì
+// trên danh sách tới hết hạn bộ đệm (3 giờ), kể cả trang /nha-dat của chính nó. Nay: mỗi mã chỉ làm mới một lần / 10 phút, cả máy chủ tối
+// đa 6 lần / 60 giây — vẫn chặn gọi dồn (route đã tự kiểm tin gỡ thật trong DB nên chỉ mã tin đã gỡ mới tốn lượt).
 const GIAN_CACH_MS = 60_000;
-let lanCuoi = 0;
+const TOI_DA_MOI_CUA_SO = 6;
+const GIAN_CACH_MOI_MA_MS = 10 * 60_000;
+let lanGanDay: number[] = [];
+const maVuaLam = new Map<string, number>();
 
 export async function POST(req: NextRequest) {
   let code = "";
@@ -24,8 +30,14 @@ export async function POST(req: NextRequest) {
   if (data?.length) return NextResponse.json({ conHien: true });
 
   const bayGio = Date.now();
-  if (bayGio - lanCuoi < GIAN_CACH_MS) return NextResponse.json({ conHien: false, lamMoi: false });
-  lanCuoi = bayGio;
+  const khoa = code.toUpperCase();
+  lanGanDay = lanGanDay.filter((t) => bayGio - t < GIAN_CACH_MS);
+  for (const [ma, t] of maVuaLam) if (bayGio - t >= GIAN_CACH_MOI_MA_MS) maVuaLam.delete(ma);
+  if (maVuaLam.has(khoa) || lanGanDay.length >= TOI_DA_MOI_CUA_SO) {
+    return NextResponse.json({ conHien: false, lamMoi: false });
+  }
+  lanGanDay = [...lanGanDay, bayGio];
+  maVuaLam.set(khoa, bayGio);
   revalidateTag("listings"); // /mua-ban, /cho-thue, /api/tin, trang tag (lib/duyet-tin, lib/tin-tag)
   revalidatePath("/"); // feed trang chủ (ISR 3 giờ)
   revalidatePath("/[tag]", "page");

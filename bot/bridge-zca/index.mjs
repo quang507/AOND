@@ -128,12 +128,25 @@ async function imageMetadataGetter(filePath) {
 }
 const zalo = new Zalo({ imageMetadataGetter });
 let api;
+// SRS-5.1zzzzzzz543 (audit ECC P2-3): khởi động lúc mạng chưa lên (máy vừa reboot, DNS chưa chạy) thì `zalo.login` ném lỗi MẠNG — bản trước
+// coi mọi lỗi là "session hết hạn" và vào luồng QR chờ người quét, dù phiên vẫn sống. Nay lỗi mạng / Zalo trả HTTP lỗi lúc lấy thông tin
+// đăng nhập → thoát mã 1, vòng `svc_nhadat_bridge.cmd` bật lại sau 10 s với phiên cũ. Lỗi khác (phiên chết thật: Zalo trả dữ liệu rỗng →
+// "Đăng nhập thất bại") vẫn vào QR như cũ — không nhận ra lỗi thì rơi về hành vi cũ, không kẹt vòng khởi động lại.
+const laLoiMangKhiDangNhap = (e) => {
+  const ma = String(e?.cause?.code ?? e?.code ?? "");
+  return /^(ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|UND_ERR_)/.test(ma)
+    || e?.name === "TimeoutError" || /fetch failed|Failed to fetch login info:/i.test(String(e?.message ?? ""));
+};
 if (fs.existsSync(SESSION_FILE)) {
   try {
     api = await zalo.login(JSON.parse(fs.readFileSync(SESSION_FILE, "utf8")));
     console.log("Đăng nhập lại bằng session đã lưu.");
-  } catch {
-    console.log("Session cũ hết hạn — quét QR lại.");
+  } catch (e) {
+    if (laLoiMangKhiDangNhap(e)) {
+      console.log(`Đăng nhập lỗi mạng (${e?.cause?.code ?? e?.message ?? e}) — phiên vẫn giữ, thoát để vòng khởi động thử lại.`);
+      process.exit(1);
+    }
+    console.log(`Session cũ hết hạn (${e?.message ?? e}) — quét QR lại.`);
   }
 }
 if (!api) {
@@ -328,6 +341,12 @@ async function postJson(url, headers, payload, hanCho = 20_000) {
       if (String(url).endsWith("/chat-reply") &&(res.status === 401 || res.status === 503)) {
         throw new Error(`Lõi từ chối ${res.status} — kiểm AIOI_NOI_BO_KEY hai .env có trùng không`);
       }
+      // SRS-5.1zzzzzzz543 (audit ECC P2-1): lõi trả 500 / 422 (hỏng ngoài engine) thì bản trước đọc `{"detail": …}` như một câu trả lời rỗng →
+      // khách im, sổ lỗi trống. Nay ném: thử lại một lần như lỗi mạng, hụt nữa thì nơi gọi ghi sổ ("xử lý tin gom", "mark_sent"…).
+      if (String(url).endsWith("/chat-reply") && !res.ok) {
+        const than = await res.text().catch(() => "");
+        throw new Error(`Lõi trả ${res.status}: ${than.slice(0, 200)}`);
+      }
       return await res.json();
     } catch (e) {
       last = e;
@@ -402,6 +421,21 @@ async function thaTim(threadId, dich) {
     if (daGhiLoiThaTim) return;
     daGhiLoiThaTim = true;
     await ghiLoi("thả tim", errDetail(e));
+  }
+}
+
+// SRS-5.1zzzzzzz543 (audit ECC P2-2): một bong bóng gửi hụt (Zalo nghẽn một nhịp) thì bản trước ném luôn — các bong bóng sau và ảnh mất,
+// khách cầm nửa câu trả lời. Nay thử lại MỘT lần sau 1,5 s; phiên chết (`zpw_sek`) thì ném ngay để `phienChet` lo. Lần thử lại có thể làm
+// khách nhận trùng một bong bóng nếu lần đầu thật ra đã tới — chấp nhận, nhẹ hơn mất nửa lời.
+const CHO_GUI_LAI_BONG_BONG_MS = 1500;
+async function guiBongBong(bubble, threadId) {
+  try {
+    await api.sendMessage(bubble, String(threadId), ThreadType.User);
+  } catch (e) {
+    if (laPhienChet(e)) throw e;
+    console.warn(`[Bridge] gửi bong bóng hụt (${errDetail(e)}) — thử lại một lần`);
+    await new Promise((r) => setTimeout(r, CHO_GUI_LAI_BONG_BONG_MS));
+    await api.sendMessage(bubble, String(threadId), ThreadType.User);
   }
 }
 
@@ -491,7 +525,7 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cl
     for (const [i, bubble] of bubbles.entries()) {
       if (i > 0) await new Promise((r) => setTimeout(r, nhipGo[i] ?? 300));
       rememberSent(bubble);
-      await api.sendMessage(bubble, String(threadId), ThreadType.User);
+      await guiBongBong(bubble, threadId);
       daGui = i + 1;
       console.log(`→ ${bubble.slice(0, 80)}…`);
     }

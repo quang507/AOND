@@ -16,6 +16,7 @@ download endpoint first. Google Photos has no such direct path — those stay at
 """
 from __future__ import annotations
 
+import http.client
 import ipaddress
 import re
 import socket
@@ -178,7 +179,7 @@ def fetch_raw(url: str, *, max_bytes: int = 10 * 1024 * 1024, timeout: float = D
     fetch_media but WITHOUT the image/PDF allowlist — for data files (CSV/Excel/Sheets) and web pages."""
     url = normalize_media_url(url)
     assert_public_url(url)
-    opener = urllib.request.build_opener(_ValidatingRedirect)
+    opener = _mo_an_toan()
     req = urllib.request.Request(url, headers={"User-Agent": user_agent, "Accept-Language": "vi-VN,vi;q=0.9"})
     try:
         with opener.open(req, timeout=timeout) as resp:
@@ -201,6 +202,63 @@ class _ValidatingRedirect(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+# SRS-5.1zzzzzzz543 (audit ECC P2-15): `assert_public_url` phân giải tên miền MỘT lần để kiểm, rồi urllib phân giải LẦN HAI lúc kết nối — tên
+# miền TTL 0 đổi IP giữa hai lần (DNS rebinding) là lọt vào 127.0.0.1 / mạng nội bộ. Nay kết nối đi qua `_tao_ket_noi_cong_khai`: phân giải,
+# kiểm MỌI địa chỉ, rồi nối thẳng tới chính địa chỉ đã kiểm (TLS vẫn dùng tên miền cho SNI / kiểm chứng thư). `assert_public_url` giữ làm
+# lớp chặn sớm (lời lỗi rõ hơn, kiểm cả từng bước chuyển hướng).
+def _tao_ket_noi_cong_khai(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, source_address=None, **_kw):
+    host, port = address
+    try:
+        infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    except socket.gaierror as e:
+        raise FetchError(f"Không phân giải được tên miền: {host}") from e
+    for info in infos:
+        if _is_blocked_ip(info[4][0]):
+            raise FetchError(f"Địa chỉ nội bộ bị chặn ({info[4][0]}).")
+    loi: OSError | None = None
+    for fam, kieu, proto, _ten, dia_chi in infos:
+        s = socket.socket(fam, kieu, proto)
+        try:
+            if timeout is not socket._GLOBAL_DEFAULT_TIMEOUT:
+                s.settimeout(timeout)
+            if source_address:
+                s.bind(source_address)
+            s.connect(dia_chi)
+            return s
+        except OSError as e:
+            loi = e
+            s.close()
+    raise loi or OSError(f"không kết nối được {host}")
+
+
+class _KetNoiHTTP(http.client.HTTPConnection):
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self._create_connection = _tao_ket_noi_cong_khai
+
+
+class _KetNoiHTTPS(http.client.HTTPSConnection):
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self._create_connection = _tao_ket_noi_cong_khai
+
+
+class _HTTPCongKhai(urllib.request.HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(_KetNoiHTTP, req)
+
+
+class _HTTPSCongKhai(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_KetNoiHTTPS, req, context=self._context)
+
+
+def _mo_an_toan() -> urllib.request.OpenerDirector:
+    """Opener chung: chỉ nối tới địa chỉ công khai đã kiểm + kiểm lại mỗi bước chuyển hướng. Không dùng proxy môi trường (proxy nội bộ sẽ
+    bị chặn và lại là một lần phân giải khác)."""
+    return urllib.request.build_opener(urllib.request.ProxyHandler({}), _HTTPCongKhai, _HTTPSCongKhai, _ValidatingRedirect)
+
+
 def fetch_media(
     url: str, *, max_bytes: int = DEFAULT_MAX_BYTES, timeout: float = DEFAULT_TIMEOUT
 ) -> FetchedMedia:
@@ -212,7 +270,7 @@ def fetch_media(
         )
     url = normalize_media_url(url)
     assert_public_url(url)
-    opener = urllib.request.build_opener(_ValidatingRedirect)
+    opener = _mo_an_toan()
     req = urllib.request.Request(url, headers={"User-Agent": "AOND/1.0"})
     try:
         with opener.open(req, timeout=timeout) as resp:

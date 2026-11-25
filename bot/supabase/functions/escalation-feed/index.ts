@@ -100,15 +100,25 @@ Deno.serve(async (req) => {
   if (action === "hut") {
     const id = String(body.id ?? "");
     const loi = String(body.loi ?? "").slice(0, 300);
-    const { data: r } = await client.from("reminders").select("attempts, status").eq("id", id).maybeSingle();
+    // SRS-5.1zzzzzzz543 (audit ECC P2-6): đọc lỗi — bản trước nuốt: đọc hụt thì trả ok như "việc không còn pending", ghi hụt thì việc
+    // không lùi hẹn, phút sau bridge gửi lại đúng việc kẹt. Bridge bỏ qua kết quả `hut` nên ghi sổ ngay tại đây.
+    const { data: r, error: rErr } = await client.from("reminders").select("attempts, status").eq("id", id).maybeSingle();
+    if (rErr) {
+      await ghiLoi(client, "escalation-feed hut", `${id}: đọc việc lỗi — ${rErr.message}`);
+      return jsonResponse({ ok: false, error: rErr.message }, 500);
+    }
     if (!r || r.status !== "pending") return jsonResponse({ ok: true });
     const lan = (r.attempts ?? 0) + 1;
     const bo = lan >= HUT_TOI_DA;
-    await client.from("reminders").update(
+    const { error: hErr } = await client.from("reminders").update(
       bo
         ? { status: "dead", attempts: lan, last_error: `hụt ${lan} lần: ${loi}` }
         : { attempts: lan, next_retry_at: new Date(Date.now() + 5 * 60_000 * lan).toISOString(), last_error: loi },
     ).eq("id", id).eq("status", "pending");
+    if (hErr) {
+      await ghiLoi(client, "escalation-feed hut", `${id}: ghi lần hụt lỗi — ${hErr.message}`);
+      return jsonResponse({ ok: false, error: hErr.message }, 500);
+    }
     if (bo) await ghiLoi(client, "escalation-feed bỏ việc", `${id}: hụt ${lan} lần — ${loi}`);
     return jsonResponse({ ok: true, dead: bo });
   }
@@ -183,7 +193,7 @@ Deno.serve(async (req) => {
 
   // pull: việc pending tới hạn + đích liên lạc theo vai:
   // seller (FR-144 — chủ động hỏi chính chủ) → admin. CTV bỏ hẳn 28/10/2026 (SRS-5.1zzzzzzz238).
-  const { data: due } = await client
+  const { data: due, error: dueErr } = await client
     .from("reminders")
     .select("id, kind, note, seller_id, sellers(name, zalo_user_id, phone)")
     .eq("status", "pending").in("kind", KINDS)
@@ -193,14 +203,18 @@ Deno.serve(async (req) => {
     // việc mới (lịch xem, câu hỏi chủ nhà) không bao giờ được kéo. Việc kẹt nay bị bridge báo `hut` → lùi hẹn, quá trần thì `dead`.
     .order("due_at", { ascending: true })
     .limit(10);
+  // SRS-5.1zzzzzzz543 (audit ECC P2-6): truy vấn lỗi thì bản trước trả `items: []` với 200 — trông y như "không có việc", nhịp vẫn sống, hàng
+  // việc đứng mà không ai thấy. Nay trả `error` (500): bridge ghi sổ "escalation-feed" mỗi lượt kéo hỏng (`index.mjs`, nhánh `if (error)`).
+  if (dueErr) return jsonResponse({ error: `pull: đọc reminders lỗi — ${dueErr.message}` }, 500);
   // Đích admin chỉ cần khi có việc — 99% lượt kéo là rỗng, đọc `admins` ở đó
   // là một truy vấn thừa mỗi phút (FR-171 c).
   // Chỉ dòng admin CÓ đích Zalo (21/10/2026, SRS-5.1zzzzzzz113): bảng có thêm admin chỉ đăng nhập CRM (email, không Zalo) thì
   // `limit(1)` không thứ tự có thể bốc trúng dòng đó và tin nội bộ ⭐ 🩺 mất đích.
-  const { data: adm } = due?.length
+  const { data: adm, error: admErr } = due?.length
     ? await client.from("admins").select("zalo_user_id, zalo_phone")
       .or("zalo_user_id.not.is.null,zalo_phone.not.is.null").order("zalo_user_id", { nullsFirst: false }).limit(1).maybeSingle()
-    : { data: null };
+    : { data: null, error: null };
+  if (admErr) return jsonResponse({ error: `pull: đọc admins lỗi — ${admErr.message}` }, 500);
 
   type Target = { name?: string | null; zalo_user_id?: string | null; phone?: string | null } | null;
   const items = (due ?? []).map((r) => {

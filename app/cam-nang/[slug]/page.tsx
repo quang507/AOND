@@ -45,7 +45,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   return (
     <article className="mx-auto max-w-3xl px-4 py-10">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
       <nav className="text-sm text-mute">
         <Link href="/" className="hover:text-brand">Trang chủ</Link>
         <span className="px-2">–</span>
