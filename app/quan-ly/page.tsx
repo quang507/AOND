@@ -3,6 +3,8 @@
 // Đăng tin vẫn theo tinh thần INS-05: MỘT câu rao + phường + giá, AI bóc tách
 // chi tiết sau (lõi Python hỏi bổ sung qua Zalo). Tin mới vào `cho_thong_tin`,
 // đủ giá + diện tích + phường thì trigger FR-139 tự đẩy lên web.
+// SRS-5.1zzzzzzz539 (audit ECC P1-1 / P1-4): hồ sơ và tin chỉ ghi qua rpc `ho_so_web` / `dang_tin_web` (web hết quyền INSERT
+// thẳng) — hồ sơ tạo ở loại `unknown`, không lấy email làm tên; tài khoản chưa kích hoạt mã môi giới thì tin chờ admin duyệt.
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase, type Listing } from "@/lib/supabase";
@@ -45,18 +47,12 @@ export default function Page() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return setEmail(null);
       setEmail(user.email ?? "");
-      // Seller gắn với tài khoản; chưa có thì tạo
-      const { data: existing } = await supabase
-        .from("sellers").select("id").eq("auth_user_id", user.id).maybeSingle();
-      let sid = existing?.id as string | undefined;
-      if (!sid) {
-        const { data: created } = await supabase
-          .from("sellers")
-          .insert({ auth_user_id: user.id, name: user.email?.split("@")[0], seller_type: "nmg" })
-          .select("id").single();
-        sid = created?.id;
+      // Seller gắn với tài khoản; chưa có thì DB tạo (rpc chỉ ghi auth_user_id)
+      const { data: sid, error: eHoSo } = await supabase.rpc("ho_so_web");
+      if (eHoSo || typeof sid !== "string") {
+        setMsg("Chưa mở được hồ sơ: " + (eHoSo?.message ?? "không rõ lý do") + " - tải lại trang giúp em.");
+        return;
       }
-      if (!sid) return;
       setSellerId(sid);
       const { data: ls } = await supabase
         .from("listings").select(COT_TIN_CUA_TOI).eq("seller_id", sid)
@@ -73,24 +69,22 @@ export default function Page() {
       return;
     }
     setMsg("Đang đăng…");
-    const code = `NMG-${Date.now().toString(36).toUpperCase()}`;
-    const { data, error } = await supabase
-      .from("listings")
-      .insert({
-        code,
-        seller_id: sellerId,
-        deal: "ban",
-        district: quan.trim() || null,
-        ward,
-        description: rao.trim(),
-        price_raw: priceRaw.trim() || null,
-        status: "cho_thong_tin",
-      })
-      .select(COT_TIN_CUA_TOI).single();
-    if (error) return setMsg("Đăng không được: " + error.message);
-    setMine((m) => [data as Listing, ...m]);
+    // Mã tin do DB cấp (trigger) — web không tự đặt mã (audit ECC P1-2).
+    const { data, error } = await supabase.rpc("dang_tin_web", {
+      p_mo_ta: rao.trim(),
+      p_phuong: ward,
+      p_quan: quan.trim(),
+      p_gia: priceRaw.trim(),
+    });
+    if (error || !data) return setMsg("Đăng không được: " + (error?.message ?? "không rõ lý do"));
+    const tin = data as Listing & { can_chu_duyet?: boolean };
+    setMine((m) => [tin, ...m]);
     setRao(""); setPriceRaw(""); setQuan("Quận 5");
-    setMsg(`Đã nhận tin #${code} - tụi em bóc tách chi tiết, đủ thông tin là tin tự lên web.`);
+    setMsg(tin.status === "dang_ban"
+      ? `Tin #${tin.code} đã lên web.`
+      : tin.can_chu_duyet
+        ? `Đã nhận tin #${tin.code} - tụi em bóc tách chi tiết, admin duyệt xong là tin lên web.`
+        : `Đã nhận tin #${tin.code} - tụi em bóc tách chi tiết, đủ thông tin là tin tự lên web.`);
   };
 
   if (email === undefined) {
