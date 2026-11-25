@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-23 08:36 (giờ VN)
+-- Sinh lúc: 2026-11-25 12:45 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -954,6 +954,9 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listing_media add constraint listing_media_bucket_check CHECK ((bucket = ANY (ARRAY['listing-public'::text, 'listing-private'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.listing_media add constraint listing_media_duong_dan_ky_tu CHECK ((storage_path ~ '^[A-Za-z0-9._/-]+$'::text));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listing_media add constraint listing_media_duong_dan_sach CHECK ((storage_path !~ '(^/)|(\.\.)|(//)'::text));
@@ -3619,6 +3622,18 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.duong_dan_media_hop_le(p_listing_id uuid, p_duong text)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+  select coalesce(starts_with(p_duong, p_listing_id::text || '/')
+                  and p_duong ~ '^[A-Za-z0-9._/-]+$'
+                  and p_duong !~ '(\.\.)|(//)', false)
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.email_admin(p_loai text, p_zalo_uid text, p_body text, p_listing_id uuid DEFAULT NULL::uuid)
  RETURNS bigint
  LANGUAGE plpgsql
@@ -4276,6 +4291,30 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.listing_media_kiem_variants()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v record;
+begin
+  if jsonb_typeof(new.variants) is distinct from 'object' then
+    raise exception 'listing_media: variants phai la object {ten: "<uuid tin>/..."}' using errcode = 'check_violation';
+  end if;
+  for v in select e.key, e.value from jsonb_each(new.variants) e loop
+    if jsonb_typeof(v.value) <> 'string' then
+      raise exception 'listing_media: variants.% phai la chuoi', v.key using errcode = 'check_violation';
+    end if;
+    if v.value #>> '{}' <> '' and not duong_dan_media_hop_le(new.listing_id, v.value #>> '{}') then
+      raise exception 'listing_media: variants.% tro ra ngoai thu muc %/', v.key, new.listing_id using errcode = 'check_violation';
+    end if;
+  end loop;
+  return new;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.listing_media_xep_hang_don()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -4283,20 +4322,24 @@ CREATE OR REPLACE FUNCTION public.listing_media_xep_hang_don()
  SET search_path TO 'public'
 AS $function$
 begin
+  -- Chi xep khoa nam trong thu muc tin cua chinh dong nay (SRS-5.1zzzzzzz538): dong do nguoi dung web chen
+  -- khong duoc nham tep cua tin khac.
   if tg_op = 'DELETE' then
     insert into media_cleanup_queue (bucket, storage_path)
-    values (old.bucket, old.storage_path);
+    select old.bucket, old.storage_path where duong_dan_media_hop_le(old.listing_id, old.storage_path);
     insert into media_cleanup_queue (bucket, storage_path)
-    select old.bucket, v.value from jsonb_each_text(coalesce(old.variants, '{}'::jsonb)) v where v.value <> '';
+    select old.bucket, v.value from jsonb_each_text(coalesce(old.variants, '{}'::jsonb)) v
+     where v.value <> '' and duong_dan_media_hop_le(old.listing_id, v.value);
     return old;
   end if;
   if old.bucket is distinct from new.bucket
      or old.storage_path is distinct from new.storage_path then
     insert into media_cleanup_queue (bucket, storage_path)
-    values (old.bucket, old.storage_path);
+    select old.bucket, old.storage_path where duong_dan_media_hop_le(old.listing_id, old.storage_path);
     insert into media_cleanup_queue (bucket, storage_path)
     select old.bucket, v.value from jsonb_each_text(coalesce(old.variants, '{}'::jsonb)) v
-     where v.value <> '' and not (coalesce(new.variants, '{}'::jsonb) ? v.key and new.variants ->> v.key = v.value);
+     where v.value <> '' and duong_dan_media_hop_le(old.listing_id, v.value)
+       and not (coalesce(new.variants, '{}'::jsonb) ? v.key and new.variants ->> v.key = v.value);
   end if;
   return new;
 end $function$
@@ -7755,6 +7798,8 @@ drop trigger if exists trg_listing_media_bia on public.listing_media;
 CREATE TRIGGER trg_listing_media_bia AFTER INSERT OR DELETE OR UPDATE OF is_cover, bucket, sort_order, an_khoi_web ON public.listing_media FOR EACH ROW EXECUTE FUNCTION listing_media_giu_bia();
 drop trigger if exists trg_listing_media_don_file on public.listing_media;
 CREATE TRIGGER trg_listing_media_don_file AFTER DELETE OR UPDATE OF bucket, storage_path ON public.listing_media FOR EACH ROW EXECUTE FUNCTION listing_media_xep_hang_don();
+drop trigger if exists trg_listing_media_kiem_variants on public.listing_media;
+CREATE TRIGGER trg_listing_media_kiem_variants BEFORE INSERT OR UPDATE OF listing_id, variants ON public.listing_media FOR EACH ROW EXECUTE FUNCTION listing_media_kiem_variants();
 drop trigger if exists trg_pe_listing_views on public.listing_views;
 CREATE TRIGGER trg_pe_listing_views AFTER INSERT ON public.listing_views FOR EACH ROW EXECUTE FUNCTION trg_property_event();
 drop trigger if exists trg_listings_bao_can_da_chot on public.listings;
@@ -8344,6 +8389,8 @@ revoke all on function public.du_an_can_geocode(p_limit integer) from public, an
 grant execute on function public.du_an_can_geocode(p_limit integer) to service_role;
 revoke all on function public.du_an_co_phap_ly(p_project_id uuid) from public, anon, authenticated;
 grant execute on function public.du_an_co_phap_ly(p_project_id uuid) to service_role;
+revoke all on function public.duong_dan_media_hop_le(p_listing_id uuid, p_duong text) from public, anon, authenticated;
+grant execute on function public.duong_dan_media_hop_le(p_listing_id uuid, p_duong text) to service_role;
 revoke all on function public.email_admin(p_loai text, p_zalo_uid text, p_body text, p_listing_id uuid) from public, anon, authenticated;
 grant execute on function public.email_admin(p_loai text, p_zalo_uid text, p_body text, p_listing_id uuid) to service_role;
 revoke all on function public.geocode_tick() from public, anon, authenticated;
@@ -8427,6 +8474,8 @@ revoke all on function public.listing_media_chon_bia(p_listing_id uuid) from pub
 grant execute on function public.listing_media_chon_bia(p_listing_id uuid) to service_role;
 revoke all on function public.listing_media_giu_bia() from public, anon, authenticated;
 grant execute on function public.listing_media_giu_bia() to service_role;
+revoke all on function public.listing_media_kiem_variants() from public, anon, authenticated;
+grant execute on function public.listing_media_kiem_variants() to service_role;
 revoke all on function public.listing_media_xep_hang_don() from public, anon, authenticated;
 grant execute on function public.listing_media_xep_hang_don() to service_role;
 revoke all on function public.listings_bao_can_da_chot() from public, anon, authenticated;

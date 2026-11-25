@@ -22,6 +22,20 @@ type Viec = {
   attempts: number;
 };
 
+// Việc trong hàng có thể sinh từ dòng `listing_media` do người dùng web tự chèn (audit ECC P0-1, SRS-5.1zzzzzzz538):
+// chỉ xoá khoá đúng khuôn `<uuid tin>/<đoạn>/…`, mỗi đoạn mã hoá riêng — `..` hay `%2e%2e` không còn được URL chuẩn
+// hoá thành bước lùi thư mục sang tin khác / bucket riêng. DB (`duong_dan_media_hop_le`) đã chặn lúc ghi; đây là lớp sau.
+const BUCKET_HOP_LE = new Set(["listing-public", "listing-private"]);
+const KHUON_KHOA =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/[A-Za-z0-9._-]+)+$/;
+
+function duongXoa(v: Viec): string | null {
+  if (!BUCKET_HOP_LE.has(v.bucket) || !KHUON_KHOA.test(v.storage_path)) return null;
+  const doan = v.storage_path.split("/");
+  if (doan.some((d) => d === "." || d === "..")) return null;
+  return `${v.bucket}/${doan.map(encodeURIComponent).join("/")}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("POST only", { status: 405 });
 
@@ -46,11 +60,21 @@ Deno.serve(async (req) => {
   let loi = 0;
 
   for (const v of (viecs ?? []) as Viec[]) {
+    const duong = duongXoa(v);
+    if (!duong) {
+      // Khoá lệch khuôn = dấu hiệu nhắm tệp ngoài thư mục tin: không xoá, `chet` để không nhặt lại, vào sổ để còi kêu.
+      const chiTiet = `tu choi: khoa lech khuon ${v.bucket}/${v.storage_path}`.slice(0, 200);
+      await client.from("media_cleanup_queue")
+        .update({ trang_thai: "chet", last_error: chiTiet }).eq("id", v.id);
+      await ghiLoi(client, "media-cleanup khoa lech khuon", chiTiet);
+      loi++;
+      continue;
+    }
     try {
       // Storage API là cửa DUY NHẤT xoá được object. Không đụng
       // `storage.objects` bằng SQL — Postgres chặn sẵn, và đúng ra là vậy.
       const r = await fetch(
-        `${url}/storage/v1/object/${v.bucket}/${v.storage_path}`,
+        `${url}/storage/v1/object/${duong}`,
         {
           method: "DELETE",
           headers: { apikey: key, Authorization: `Bearer ${key}` },
