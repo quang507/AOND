@@ -12,12 +12,15 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 import urllib.request
 from typing import Any, Callable
 
 log = logging.getLogger("aioi.han_muc")
 
 TRAN_NGAY_MAC_DINH = 1000   # đúng con số bot TS và quota_tieu_hao() dùng khi Vault không có DAILY_MODEL_CALL_CAP
+# SRS-5.1zzzzzzz541 (audit ECC P1-11): người chạm trần → một dòng sổ lỗi mỗi người tối đa mỗi giờ (còi sức khoẻ báo admin), không mỗi tin.
+BAO_TRAN_NGUOI_GIAY = 3600
 
 
 class HanMuc:
@@ -26,6 +29,7 @@ class HanMuc:
     def __init__(self, rpc: Callable[[str, dict[str, Any]], Any] | None, tran_ngay: int = TRAN_NGAY_MAC_DINH):
         self._rpc = rpc
         self.tran_ngay = tran_ngay
+        self._bao_luc: dict[str, float] = {}   # uid → lần ghi sổ "chạm trần" gần nhất
 
     @classmethod
     def tu_cau_hinh(cls, supabase_url: str | None, service_key: str | None) -> "HanMuc":
@@ -56,7 +60,10 @@ class HanMuc:
             return True
         try:
             if self._rpc("bump_user_quota", {"p_uid": uid}) is False:
-                log.info("han muc nguoi: %s vuot tran, bot im", uid[-4:])
+                # SRS-5.1zzzzzzz541 (audit ECC P1-11): bản trước `log.info` — lõi không cấu hình logging nên không ra tệp, bot im mà
+                # không dấu vết. Nay cảnh báo + sổ lỗi (che id, tiết chế mỗi giờ); tin khách vẫn ghi CRM ở server.py.
+                log.warning("han muc nguoi: ...%s vuot tran, bot im", uid[-4:])
+                self._bao_cham_tran(uid)
                 return False
             if self._rpc("bump_model_quota", {"p_limit": self.tran_ngay}) is False:
                 log.warning("han muc ngay: cham tran %s luot, bot im", self.tran_ngay)
@@ -64,3 +71,14 @@ class HanMuc:
         except Exception as e:  # noqa: BLE001
             log.warning("han muc: khong goi duoc DB (%s) — cho qua", type(e).__name__)
         return True
+
+    def _bao_cham_tran(self, uid: str) -> None:
+        bay_gio = time.time()
+        if bay_gio - self._bao_luc.get(uid, 0.0) < BAO_TRAN_NGUOI_GIAY or self._rpc is None:
+            return
+        self._bao_luc[uid] = bay_gio
+        try:
+            self._rpc("log_loi", {"p_source": "han muc nguoi",
+                                  "p_detail": f"người ...{uid[-4:]} chạm trần lượt (bump_user_quota) — bot im, tin khách vẫn ghi CRM"})
+        except Exception as e:  # noqa: BLE001 — sổ lỗi hỏng không được làm hỏng lượt
+            log.warning("han muc: ghi so loi hut (%s)", type(e).__name__)

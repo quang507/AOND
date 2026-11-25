@@ -453,6 +453,17 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cl
   } finally {
     tatDangSoan();
   }
+  // SRS-5.1zzzzzzz541 (audit ECC P1-8): hết 12 × 5 s mà lõi vẫn chạy lượt này — bản trước bỏ đi im lặng (`bubbles = []`, không ghi sổ):
+  // khách không nhận gì, lời lõi viết xong nằm trong sổ msg_id không ai lấy. Nay ghi sổ rồi chờ tiếp (tắt "đang soạn") tới 5 phút, mỗi
+  // 15 s hỏi lại — lõi xong là phát lại lời đã lưu (`replayed`), khách nhận lời muộn thay vì mất hẳn.
+  if (out?.in_flight) {
+    await ghiLoi("chat-reply chậm", `${msgId}: lượt quá ~150 s, lõi vẫn chạy — chờ thêm tới 5 phút`);
+    for (let i = 0; i < 20 && out?.in_flight; i++) {
+      await new Promise((r) => setTimeout(r, 15_000));
+      out = await postJson(CHAT_REPLY_URL, brainHeaders, payload, HAN_CHO_NGAN).catch(() => out);
+    }
+    if (out?.in_flight) return await ghiLoi("chat-reply chậm", `${msgId}: quá ~7 phút vẫn chưa có lời — bỏ lượt này`);
+  }
   const { reply, replies, photos, error, replayed, already_sent } = out ?? {};
   if (error) return await ghiLoi("chat-reply", error);
 

@@ -18,6 +18,11 @@ from .base import KHONG_NGHI_LUOT, MODEL_CHAT_LUOT, LLMProvider, Message, ToolCa
 
 log = logging.getLogger(__name__)
 
+# SRS-5.1zzzzzzz541 (audit ECC P1-8): hạn chờ theo loại lượt gọi. Client chung 120 s × 1 lần thử lại (cho đọc ảnh / tài liệu dài) làm lượt
+# chat treo tới 240 s mới lỗi — quá 90 s bridge đã gửi lại, quá ~150 s khách mất lời. Lượt chữ hạn ngắn, KHÔNG tự thử lại: quá hạn là
+# `APITimeoutError` → `du_phong.nen_doi_sang` đổi sang Gemini / Groq ngay trong ngân sách của lượt.
+HAN_CLAUDE_GIAY = {"chat": 30.0, "agent": 30.0, "extract": 60.0}
+
 
 def _doc_mang_chiu_loi(s: str) -> list[Any]:
     """Đọc mảng JSON mà Haiku đóng ngoặc lệch: thừa `}` trước `]` (log khung bắn thử: `…}}}]`, lỗi ở 2 ký tự cuối, gọi lại ra y
@@ -86,6 +91,9 @@ class ClaudeProvider(LLMProvider):
             timeout=120.0,
             max_retries=1,
         )
+        # Bản sao chung kết nối, khác hạn chờ (SRS-5.1zzzzzzz541) — `_tao` chọn theo nhãn lượt gọi.
+        self._client_theo_viec = {nhan: self._client.with_options(timeout=han, max_retries=0)
+                                  for nhan, han in HAN_CLAUDE_GIAY.items()}
         self._chat_model = settings.chat_model
         self._extract_model = settings.extract_model  # cheap model for structured extraction/ops
         self._vision_model = settings.vision_model  # Opus 4.8 for vision/OCR-grade reads
@@ -117,7 +125,7 @@ class ClaudeProvider(LLMProvider):
         if tat_nghi:
             kw = {**kw, "thinking": {"type": "between_tools"}}
         try:
-            return self._client.messages.create(**kw)
+            return self._client_theo_viec.get(nhan, self._client).messages.create(**kw)
         except Exception as e:
             if tat_nghi and "thinking" in str(e):
                 self._khong_tat_nghi.add(str(kw.get("model")))

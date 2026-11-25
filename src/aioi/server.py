@@ -834,13 +834,18 @@ def _chat_reply_that(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
             completeness=0.0,
         )
 
-    # Vượt trần người / ngày → bot im (bridge không gửi gì khi replies rỗng), không gọi model lẫn Whisper.
-    if not _han_muc.cho_phep(payload.external_user_id):
-        return ZaloBridgeResponse(reply="", replies=[], nhip_go=[], assistant_name="", captured=[], next_field=None,
-                                  property_score=0.0, user_score=0.0, tier="", completeness=0.0)
-
     nhan_luc = datetime.now(timezone.utc).isoformat()   # giờ lõi nhận tin — CRM đo thời gian bot trả lời (SRS-5.1zzzzzzz82)
     zalo_name = payload.sender_name or payload.user_name
+
+    # Vượt trần người / ngày → bot im (bridge không gửi gì khi replies rỗng), không gọi model lẫn Whisper.
+    # SRS-5.1zzzzzzz541 (audit ECC P1-11): vẫn ghi tin khách vào CRM (như nhánh admin giữ hội thoại) — bản trước trả rỗng TRƯỚC khi đồng
+    # bộ, admin không đọc được khách nói gì; `han_muc` ghi sổ lỗi để còi báo admin.
+    if not _han_muc.cho_phep(payload.external_user_id):
+        sync_to_supabase_async(external_user_id=payload.external_user_id, incoming_text=(payload.text or "").strip()
+                               or "[Khách gửi tin nhắn]", bot_reply="", zalo_msg_id=payload.msg_id, user_name=zalo_name,
+                               nhan_luc=nhan_luc)
+        return ZaloBridgeResponse(reply="", replies=[], nhip_go=[], assistant_name="", captured=[], next_field=None,
+                                  property_score=0.0, user_score=0.0, tier="", completeness=0.0)
 
     # Admin đang giữ hội thoại (nút "giữ" trên /admin/tin-nhan) → bot im, chỉ ghi lời khách vào CRM cho admin đọc (SRS-5.1zzzzzzz82).
     # SRS-5.1zzzzzzz216 (chủ dự án 27/10: "làm 4 đi"): admin gõ tay trên acc clone → bridge gửi `human_note` (từ FR-141) mà lõi bỏ qua

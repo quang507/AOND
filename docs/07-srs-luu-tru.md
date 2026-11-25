@@ -76,6 +76,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz531 · Nhân vật + giọng MỘT bản dùng chung, gỡ phiếu lượt cũ; xoá sạch số Zalo tư vấn (20/11/2026)
+Chủ dự án 20/11: "gọn thì dùng 1 bản thôi chứ ko phải là có cả Khối GIỌNG lẫn Prompt gọn (LEAN)"; "zalo bán xóa rồi mà xóa sạch đi ko cần tạo qr nữa".
+- **Soát:** GIONG nằm TRONG LEAN (không chép đôi lúc chạy), nhưng có ba bản tính cách song song: đoạn NHÂN VẬT tự viết của LEAN, đoạn "Tính cách" của `khoi_nhan_vat` (DAP_TRUOC / NOI_NHE lặp ý đoạn "Nghe khách trước" của GIONG), và phiếu lượt cũ (`phieu_co_dinh` / `build_phieu_luot` + công tắc `AIOI_PROMPT_GON`) — lượt sau ảnh sổ vẫn chạy phiếu cũ.
+- **Sửa:** `khoi_nhan_vat` là nguồn DUY NHẤT (vai + hiểu khách + GIONG; prompt không mang trọn GIONG thì lấy hai đoạn đầu của chính GIONG); LEAN dựng từ nó + phần việc lượt hỏi thông tin; gỡ phiếu lượt cũ và công tắc (lượt sau ảnh sổ dùng prompt gọn); `do-prompt.py` báo một con số nhân vật + giọng (3.853 / trần 4.500) và phần riêng lượt hỏi (2.500 / 3.500). Bắn thử 146: bản tin vẫn 5 gạch đầu dòng, lượt hỏi / duyệt / phí như cũ.
+- **Số tư vấn:** gỡ thẻ "Zalo tư vấn" và vòng đọc QR id 2 ở `/admin`; xoá dòng `bridge_dang_nhap` id 2 (migration `20261120e`); trên 146 xoá task "AOND Zalo Bridge Tu Van", `svc_nhadat_bridge_tu_van.cmd`, file service và log. **Còn:** lõi vẫn gửi tin chủ động của hội thoại cũ `so_nhan=tu_van` tới cổng 5006 (không ai nghe) — chưa đổi vì gửi từ số ký gửi là người lạ với khách đó.
+- **Thấy kèm:** Groq dự phòng trả HTTP 403 (khoá bị từ chối) — Gemini hụt một nhịp là lượt ra câu giữ chỗ, không còn đường cuối.
+
 ### SRS-5.1zzzzzzz530 · Luồng rao bán Đợt 1: tin duyệt rồi phải lên web, dữ liệu tin đúng (20/11/2026)
 Audit luồng rao bán 20/11 (8 kịch bản chạy thật + bản đồ luồng từ code): 5 tin chủ duyệt chỉ 2 lên web; "4x16" thành 4 m²; "sổ hồng" thành sổ riêng, "Nguyễn Trãi Q5" thành mặt tiền; vai môi giới không lưu; câu gõ kèm ảnh bị bỏ. Chủ dự án: "có quận và đường thì gắn vào map ra phường"; giữ $$$$$ (chưa có khách thật); bản tin gửi lại cả bản.
 - **Lớp lỗi:** (1) "đủ để soạn nháp" (loại, vị trí, giá) khác "đủ để đăng" (giá số, diện tích số, phường) mà không bước nào thu phần chênh; (2) cổng cụm trích kiểm NGUỒN (cụm có trong lời khách) không kiểm NGHĨA (cụm nói điều được ghi).

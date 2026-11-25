@@ -1338,6 +1338,9 @@ _DAU_HIEU_PHAP_LY = re.compile(r"so|so hong|so do|giay|hdmb|hop dong|vi bang|h
 
 # Hàm AI xác nhận nghĩa của lượt đang chạy (Engine._ai_xac_nhan_nghia) — đặt ở đầu `_handle`, mỗi lượt một luồng.
 _XAC_NHAN_NGHIA: contextvars.ContextVar = contextvars.ContextVar("xac_nhan_nghia", default=None)
+# SRS-5.1zzzzzzz541 (audit ECC P1-10): số tệp lưu kho hụt trong lượt ảnh đang chạy — `_upload_media` cộng, `_cap_note` báo khách rồi xoá;
+# đặt lại 0 ở đầu `handle_media_batch` (luồng của threadpool dùng lại giữa các khách).
+_ANH_HUT_LUOT: contextvars.ContextVar[int] = contextvars.ContextVar("anh_hut_luot", default=0)
 
 
 def _ai_dong_y(cau_hoi: str, trich: str | None, conv: "Conversation") -> bool | None:
@@ -4254,6 +4257,7 @@ class Engine:
         list — e.g. only the 2 căn the seller rao, not the whole project inventory)."""
         now = now if now is not None else time.time()
         conv = self.conversation(user_key)
+        _ANH_HUT_LUOT.set(0)   # SRS-5.1zzzzzzz541: bộ đếm tệp lưu hụt là của lượt này
 
         # Expand each link first: a Drive folder becomes its many child files (with the
         # API's clean names); a plain file or non-Drive link stays as one source.
@@ -4756,6 +4760,8 @@ class Engine:
             return [], 0
         refs: list[dict[str, str]] = []
         n_capped = 0
+        n_hut = 0
+        loai_loi = ""
         for m in items:
             if m.kind == "image":
                 if image_slots is not None:
@@ -4779,19 +4785,36 @@ class Engine:
                 filename = f"{m.display_name}_{hashlib.sha1(data).hexdigest()[:8]}{ext}"
             try:
                 ref = self._media_store.upload(folder, filename, data, media_type, rieng=rieng)
-            except KhoTepError:
+            except KhoTepError as e:
+                # SRS-5.1zzzzzzz541 (audit ECC P1-10): bản trước `continue` trần — Storage chớp (5xx, quá hạn) là ảnh nhà / sổ đỏ mất hẳn,
+                # lời bot vẫn dựng như đã nhận đủ, web không có ảnh, admin không thấy giấy tờ, không một dòng log.
+                n_hut += 1
+                loai_loi = type(e).__name__
+                log.warning("Lưu tệp vào kho hụt (%s, kho %s)", loai_loi, "riêng" if rieng else "công khai")
                 continue
             refs.append(ref.to_dict())
+        if n_hut:
+            _ANH_HUT_LUOT.set(_ANH_HUT_LUOT.get() + n_hut)
+            ghi = getattr(self._convstore, "_ghi_so_loi", None)
+            if ghi is not None:   # không kèm tên tệp / nội dung khách
+                ghi("luu anh", f"lưu hụt {n_hut}/{len(items)} tệp vào kho {'riêng' if rieng else 'công khai'} ({loai_loi}) — đã báo khách gửi lại")
         return refs, n_capped
 
     def _cap_note(self, n_capped: int, conv: Conversation | None = None) -> str:
         """A friendly line telling the seller the photo limit and how many weren't kept.
         Honest about the behavior: we keep the FIRST `max_photos` and skip the rest (no
         swap mechanism yet), so it suggests sending the best shots first."""
-        if n_capped <= 0:
+        hut = _ANH_HUT_LUOT.get()
+        _ANH_HUT_LUOT.set(0)
+        cau = ""
+        if n_capped > 0:
+            cau += (f"\n\n(Mỗi căn em chỉ lưu tối đa {self._max_photos} ảnh cho tin gọn, tải nhanh nha — nên {n_capped} tấm sau em CHƯA lưu ạ. "
+                    f"Lần sau anh/chị gửi trước {self._max_photos} tấm ĐẸP NHẤT là đủ đó!)")
+        if hut > 0:   # SRS-5.1zzzzzzz541 (audit ECC P1-10): lưu kho hụt thì nói thật, nhờ gửi lại
+            cau += (f"\n\n(Có {hut} tệp em lưu chưa được vì kho ảnh đang trục trặc — anh/chị gửi lại giúp em "
+                    f"{'tệp đó' if hut == 1 else 'mấy tệp đó'} nha.)")
+        if not cau:
             return ""
-        cau = (f"\n\n(Mỗi căn em chỉ lưu tối đa {self._max_photos} ảnh cho tin gọn, tải nhanh nha — nên {n_capped} tấm sau em CHƯA lưu ạ. "
-               f"Lần sau anh/chị gửi trước {self._max_photos} tấm ĐẸP NHẤT là đủ đó!)")
         return _xung_ho_cau(cau, *self._goi_toi(conv)) if conv is not None else cau
 
     def _apply_text_to_listing(self, listing: Listing, text: str) -> list[str]:
