@@ -758,18 +758,39 @@ const NHIP_NHANH = 60_000;
 const NHIP_TRAN = 5 * 60_000;
 let nhipKeo = NHIP_NHANH;
 
+// SRS-5.1zzzzzzz540 (audit ECC P1-7): việc ĐÃ GỬI mà ack hụt (mạng rớt sau khi gửi, cổng trả 503, server ghi hụt) — giữ ở đây,
+// lượt sau chỉ ack lại, KHÔNG gửi lại và KHÔNG báo `hut` (báo hụt = server hẹn gửi lại = người nhận nhận đúp). Bản trước gửi + ack
+// chung một try: ack ném lỗi → báo hụt → 5 phút sau gửi lại, tối đa 5 lần; ack bị cổng trả 503 thì `postJson` vẫn coi là xong.
+// Nằm trong bộ nhớ tiến trình: khởi động lại giữa lúc gửi và ack thì vẫn có thể đúp một lần — hiếm hơn hẳn bản cũ.
+const daGuiChuaAck = new Map(); // id việc → payload ack
+
+async function ackViec(payload) {
+  try {
+    const r = await postJson(FEED_URL, feedHeaders, payload, HAN_CHO_NGAN);
+    return r?.ok === true;
+  } catch {
+    return false;
+  }
+}
+
 async function pumpEscalations() {
   if (dangKeoViec) return;
   dangKeoViec = true;
   try {
+    // P1-7: ack lại các việc đã gửi lượt trước mà ack hụt — TRƯỚC khi kéo, để việc ack xong không quay lại danh sách.
+    for (const [id, payload] of daGuiChuaAck) {
+      if (await ackViec(payload)) daGuiChuaAck.delete(id);
+    }
     const { items, error, quet_lai } = await postJson(FEED_URL, feedHeaders, { action: "pull", so_nhan: SO_NHAN });
     if (error) return await ghiLoi("escalation-feed", error);
     // FR-203: admin bấm "Đăng nhập lại" ở /admin.
     if (quet_lai) return await phienChet("admin yêu cầu đăng nhập lại từ /admin");
     nhipKeo = items?.length ? NHIP_NHANH : Math.min(nhipKeo * 2, NHIP_TRAN);
     for (const it of items ?? []) {
+      if (daGuiChuaAck.has(it.id)) continue; // đã gửi, ack vẫn hụt — không gửi lại
+      let uid = it.zalo_user_id;
+      let uidTuSdt = false;
       try {
-        let uid = it.zalo_user_id;
         if (!uid && it.phone) {
           // CHỈ NHỚ KHI TÌM RA. Bản trước nhớ cả kết quả thất bại: `findUser`
           // hụt một lần vì mạng chớp hay Zalo chặn tần suất là số đó bị ghim
@@ -784,25 +805,36 @@ async function pumpEscalations() {
             uid = u?.uid ?? u?.userId ?? null;
             if (uid) uidCache.set(it.phone, uid);
           }
+          uidTuSdt = !!uid;
         }
-        if (!uid) { await ghiLoi("escalation", `${it.id}: không resolve được ${it.name}`); continue; }
+        if (!uid) {
+          // SRS-5.1zzzzzzz540 (audit ECC P1-6): báo hụt để server lùi hẹn (5 phút × lần) rồi bỏ sau 5 lần. Bản trước chỉ ghi sổ rồi
+          // `continue` — việc nằm `pending` mãi, mỗi phút một dòng lỗi, 10 việc như thế chiếm hết chỗ của lượt kéo.
+          await ghiLoi("escalation", `${it.id}: không resolve được ${it.name}`);
+          await postJson(FEED_URL, feedHeaders, { action: "hut", id: it.id, loi: `không tìm ra Zalo của ${it.name}` }, HAN_CHO_NGAN)
+            .catch(() => {});
+          continue;
+        }
         // SRS-5.1zzzzzzz134 (22/10/2026): tin NỘI BỘ (admin: 🙋 khách cần người thật, ⭐ chấm sao thấp, 🩺 sức khoẻ, 📊 báo cáo)
         // mở bằng "$$$$$ " như tin phụ chế độ test — chủ dự án: "tin nào là tin debug tin nào là tin cho khách thật phải phân tách rõ".
         // Tin cho khách thật (chủ nhà / người mua) không có tiền tố. Cờ do escalation-feed quyết theo đích (`noi_bo`).
         const msg = (it.noi_bo ? "$$$$$ " : "") + (it.text ?? `🔔 nhadat.cc: ${it.note}. Anh/chị check giúp rồi trả lời khách sớm nha.`);
         rememberSent(msg);
         await api.sendMessage(msg, String(uid), ThreadType.User);
-        // Gửi kèm uid vừa resolve từ SĐT: server ghi ngược vào sellers/admins
-        // để lần sau bot nhận ra người này ngay từ tin đầu (khỏi điền tay).
-        await postJson(FEED_URL, feedHeaders, {
-          action: "ack", id: it.id, zalo_user_id: String(uid),
-        });
-        console.log(`🔔 đã nhắn ${it.name}: ${String(it.note).slice(0, 70)}…`);
       } catch (e) {
         if (laPhienChet(e)) return await phienChet(errDetail(e));
         await ghiLoi("escalation", `${it.id}: ${errDetail(e)}`);
         // SRS-5.1zzzzzzz276: báo hụt → server hẹn thử lại (5 phút × số lần), quá 5 lần thì bỏ việc — trước đây giữ pending, mỗi phút gửi lại mãi.
         await postJson(FEED_URL, feedHeaders, { action: "hut", id: it.id, loi: errDetail(e) }).catch(() => {});
+        continue;
+      }
+      // ĐÃ GỬI. Từ đây không báo hụt nữa (P1-7). Uid chỉ kèm theo khi vừa tra từ SĐT của CHỦ NHÀ (P1-5): tin nội bộ đi admin,
+      // uid đó là uid admin — gửi kèm là server ghi uid admin vào hồ sơ chủ nhà. Server cũng tự kiểm lại.
+      const ack = { action: "ack", id: it.id, ...(uidTuSdt && !it.noi_bo ? { zalo_user_id: String(uid) } : {}) };
+      console.log(`🔔 đã nhắn ${it.name}: ${String(it.note).slice(0, 70)}…`);
+      if (!(await ackViec(ack))) {
+        daGuiChuaAck.set(it.id, ack);
+        await ghiLoi("escalation ack", `${it.id}: đã gửi nhưng ack hụt — giữ lại để ack lượt sau, không gửi lại`);
       }
     }
   } catch (e) {

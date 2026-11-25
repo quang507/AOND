@@ -121,12 +121,23 @@ Deno.serve(async (req) => {
     // uid đó vào đúng người — lần sau chat-reply nhận ra vai NGƯỜI BÁN ngay từ
     // tin đầu, khỏi chờ ai điền tay. Chỉ ghi khi ô đang trống, không đè.
     const learned = body.zalo_user_id ? String(body.zalo_user_id).trim().slice(0, 128) : "";
+    let daHoc = false;
     if (learned) {
       const { data: r } = await client.from("reminders")
-        .select("seller_id, buyer_id").eq("id", id).maybeSingle();
+        .select("seller_id, buyer_id, note, sellers(zalo_user_id, phone)").eq("id", id).maybeSingle();
       if (r?.seller_id) {
-        await client.from("sellers").update({ zalo_user_id: learned })
-          .eq("id", r.seller_id).is("zalo_user_id", null);
+        // SRS-5.1zzzzzzz540 (audit ECC P1-5): chỉ học khi tin THẬT SỰ đi tới chủ nhà qua SĐT của chính họ — không phải tin nội bộ
+        // (tin đó đi admin, uid kèm theo là uid admin), hồ sơ có SĐT mà chưa có uid (cùng luật chọn đích ở `pull`), và uid không
+        // trùng uid admin nào. Bản trước học mọi ack có seller_id → hồ sơ chủ nhà mang uid admin, tin sau cho chủ nhà về máy admin.
+        const s = r.sellers as { zalo_user_id?: string | null; phone?: string | null } | null;
+        const { count: trungAdmin } = await client.from("admins")
+          .select("*", { count: "exact", head: true }).eq("zalo_user_id", learned);
+        if (!laTinNoiBo(r.note) && s?.phone && !s?.zalo_user_id && !trungAdmin) {
+          const { error: hErr } = await client.from("sellers").update({ zalo_user_id: learned })
+            .eq("id", r.seller_id).is("zalo_user_id", null);
+          if (hErr) await ghiLoi(client, "escalation-feed học uid", hErr.message);
+          else daHoc = true;
+        }
       } else if (!r?.buyer_id) {
         // (Lời nhắc NGƯỜI MUA — FR-202 — vốn có sẵn uid, không có gì để học, và
         //  cũng không phải việc của admin nên không rơi xuống nhánh này.)
@@ -157,11 +168,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    await client.from("reminders")
+    // SRS-5.1zzzzzzz540 (audit ECC P1-7): đọc lỗi — ghi hụt mà vẫn trả ok thì việc còn `pending`, phút sau bridge gửi lại (khách nhận
+    // đúp). Trả ok:false để bridge giữ việc ở hàng "đã gửi, chờ ack" và chỉ ack lại, không gửi lại.
+    const { error: uErr } = await client.from("reminders")
       .update({ status: "sent", sent_at: new Date().toISOString() })
       .eq("id", id)
       .in("kind", KINDS);
-    return jsonResponse({ ok: true, learned_zalo_id: !!learned });
+    if (uErr) {
+      await ghiLoi(client, "escalation-feed ack", `${id}: ${uErr.message}`);
+      return jsonResponse({ ok: false, error: uErr.message }, 500);
+    }
+    return jsonResponse({ ok: true, learned_zalo_id: daHoc });
   }
 
   // pull: việc pending tới hạn + đích liên lạc theo vai:
@@ -172,6 +189,9 @@ Deno.serve(async (req) => {
     .eq("status", "pending").in("kind", KINDS)
     .lte("due_at", new Date().toISOString())
     .or(`next_retry_at.is.null,next_retry_at.lte.${new Date().toISOString()}`)
+    // SRS-5.1zzzzzzz540 (audit ECC P1-6): có thứ tự — `limit(10)` không `order` thì 10 việc kẹt (không ra Zalo) chiếm chỗ mãi,
+    // việc mới (lịch xem, câu hỏi chủ nhà) không bao giờ được kéo. Việc kẹt nay bị bridge báo `hut` → lùi hẹn, quá trần thì `dead`.
+    .order("due_at", { ascending: true })
     .limit(10);
   // Đích admin chỉ cần khi có việc — 99% lượt kéo là rỗng, đọc `admins` ở đó
   // là một truy vấn thừa mỗi phút (FR-171 c).
@@ -186,9 +206,12 @@ Deno.serve(async (req) => {
   const items = (due ?? []).map((r) => {
     const seller = r.sellers as Target;
     // Tin nội bộ (❓ 😟 🩺…) KHÔNG BAO GIỜ đi tới chủ nhà dù dòng việc gắn `seller_id` (`laTinNoiBo`, 01/10/2026).
-    const chuNha = laTinNoiBo(r.note) ? null : seller;
-    const uid = chuNha?.zalo_user_id ?? adm?.zalo_user_id ?? null;
-    const sdt = chuNha?.phone ?? adm?.zalo_phone ?? null;
+    // SRS-5.1zzzzzzz540 (audit ECC P1-5): đích chọn MỘT lần — chủ nhà có uid hoặc SĐT thì gửi chủ nhà (SĐT → bridge `findUser`),
+    // không thì admin. Bản trước `chuNha?.zalo_user_id ?? adm?.zalo_user_id`: chủ nhà chỉ có SĐT thì uid rơi sang uid ADMIN — tin
+    // cho chủ nhà về máy admin (không mang `$$$$$`), rồi ack học uid admin vào hồ sơ chủ nhà.
+    const chuNha = !laTinNoiBo(r.note) && seller && (seller.zalo_user_id || seller.phone) ? seller : null;
+    const uid = chuNha ? (chuNha.zalo_user_id ?? null) : (adm?.zalo_user_id ?? null);
+    const sdt = chuNha ? (chuNha.phone ?? null) : (adm?.zalo_phone ?? null);
     return {
       id: r.id,
       note: r.note,
