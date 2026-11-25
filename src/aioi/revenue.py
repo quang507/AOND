@@ -37,3 +37,15 @@ SALE_FEE_RATE: dict[SellerRole, float] = {
 }
 # Rental fee = 3/4 of one month's rent, for any non-special role.
 RENTAL_FEE_MONTHS: float = 0.75
+
+
+def ti_le_phi_chot(role: SellerRole | str | None, thue: bool) -> float | None:
+    """Tỷ lệ phí ghi vào `deals.fee_pct` (× 100, tính trên `price_vnd`) lúc chốt kèo — SRS-5.1zzzzzzz542 (audit ECC P1-9).
+    Căn THUÊ: `price_vnd` là tiền thuê một tháng → phí 0,75 tháng = 0,75 (fee_pct 75), mọi vai trừ chủ đầu tư. Bản trước lấy `SALE_FEE_RATE`
+    theo vai cho cả căn thuê → 1 % / 0,5 % tiền thuê tháng. Căn BÁN: theo vai; chưa rõ vai → None (fee_pct null, OPEN-28); chủ đầu tư → None
+    (phí thoả thuận riêng)."""
+    if role == SellerRole.CHU_DAU_TU:
+        return None
+    if thue:
+        return RENTAL_FEE_MONTHS
+    return SALE_FEE_RATE.get(role) if role is not None else None

@@ -26,7 +26,7 @@ from typing import Callable, Any, TYPE_CHECKING
 
 from .kho_anh import BUCKET_CONG_KHAI, BUCKET_RIENG, la_uuid
 from .mua import KhoNguoiMua
-from .revenue import SALE_FEE_RATE
+from .revenue import ti_le_phi_chot
 from .sdt import che_so_ca_nhan
 from .prompts import FIELD_LABELS, nhan_o_ngan
 from .diem_boa import KHOA_LUU, chuoi_luu
@@ -1067,6 +1067,7 @@ class SupabaseConversationStore(KhoNguoiMua):
 
         if not self.is_configured:
             return
+        self.ghi_deal_con_treo()   # SRS-5.1zzzzzzz542 (audit ECC P1-9): dòng deals lần trước ghi hụt → thử lại
 
         # SRS-5.1zzzzzzz149: khách đang ở vai MUA không có tin rao — không tạo dòng `sellers` + hội thoại bán rỗng cho họ (đó là chỗ
         # một người bị tách làm hai trên CRM). Hội thoại và tin nhắn của họ ghi ở `ghi_luot_chat` (cùng một hội thoại chung).
@@ -1177,7 +1178,9 @@ class SupabaseConversationStore(KhoNguoiMua):
                     self._patch(f"listings?id=eq.{lid}", listing_payload)
                     gia_chot = (li.prop.fields.get("gia_chot") or "").strip()   # SRS-5.1zzzzzzz456: giá chốt chủ báo trong chat
                     if ma == "da_chot":   # chốt kèo → dòng deals (SRS-5.1zzzzzzz70); báo khách quan tâm do trigger DB lo
-                        self.ghi_deal(lid, SALE_FEE_RATE.get(getattr(conv, "vai_phi", None) or getattr(conv, "user_type", None)), gia_chot)
+                        # SRS-5.1zzzzzzz542 (audit ECC P1-9): căn thuê tính 0,75 tháng tiền thuê, không lấy tỷ lệ bán theo vai.
+                        vai = getattr(conv, "vai_phi", None) or getattr(conv, "user_type", None)
+                        self.ghi_deal(lid, ti_le_phi_chot(vai, bool(li.prop.is_rental)), gia_chot)
                     elif gia_chot and existing[0].get("status") == "da_chot":
                         self.cap_nhat_gia_chot(lid, gia_chot)
                 elif ngoai_vung:

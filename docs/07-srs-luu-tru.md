@@ -76,6 +76,16 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz532 · Bảng Rổ hàng: độ rộng cột cố định theo nội dung, bỏ nút JSON từng dòng (20/11/2026)
+
+Chủ dự án 20/11/2026: "cái nào dài thì ko dài, cái ko cần dài thì dài", rồi "vị trí vẫn bị chắp vá, xóa cái nút json đi". Bảng để trình
+duyệt tự chia cột: mã cũ dạng #BDS-NP-TPVUNGTAU-0005 (~22 ký tự) làm cột Mã tin phình, Vị trí bị bóp còn một chữ một dòng, tên người
+bán và đuôi Vị trí bị cột Thao tác dính phải đè. Nay `table-fixed` + `colgroup`: Mã tin 200 (dài hơn thì xuống dòng, căn trái), Loại 96,
+Trạng thái 144, Bán/thuê 80, Giá 104, Diện tích 88, Vị trí 376, Người bán 176, SĐT 136, Ảnh 64, Ngày 112, Thao tác 128; Mô tả nhận phần
+còn lại (tối thiểu 360). Lề ô 8px (trước 12px). Các cột tới hết Vị trí ≈ 1.090px, địa chỉ một dòng không rớt chữ cuối (thêm text-wrap: pretty), vừa màn 1.536px trừ sidebar và cột Thao tác. Loại, Người bán xuống dòng; cột
+ngắn khác cắt "…" kèm title. Tiêu đề cột bỏ chữ hoa, không xuống dòng. Bỏ nút JSON (bóc tách chia nhóm) ở từng dòng — Thao tác còn Sửa,
+Xem; JSON cả rổ vẫn ở nút "{ } JSON" đầu trang. Theo thang chữ / khoảng cách skill landing-page-design (elayadesign); giữ Nunito, màu King.
+
 ### SRS-5.1zzzzzzz531 · Nhân vật + giọng MỘT bản dùng chung, gỡ phiếu lượt cũ; xoá sạch số Zalo tư vấn (20/11/2026)
 Chủ dự án 20/11: "gọn thì dùng 1 bản thôi chứ ko phải là có cả Khối GIỌNG lẫn Prompt gọn (LEAN)"; "zalo bán xóa rồi mà xóa sạch đi ko cần tạo qr nữa".
 - **Soát:** GIONG nằm TRONG LEAN (không chép đôi lúc chạy), nhưng có ba bản tính cách song song: đoạn NHÂN VẬT tự viết của LEAN, đoạn "Tính cách" của `khoi_nhan_vat` (DAP_TRUOC / NOI_NHE lặp ý đoạn "Nghe khách trước" của GIONG), và phiếu lượt cũ (`phieu_co_dinh` / `build_phieu_luot` + công tắc `AIOI_PROMPT_GON`) — lượt sau ảnh sổ vẫn chạy phiếu cũ.

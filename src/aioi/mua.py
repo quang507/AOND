@@ -881,15 +881,25 @@ class KhoNguoiMua:
         return rows[0].get("question") or ""
 
     # --- Chốt kèo ------------------------------------------------------------------------------------------------
-    def ghi_deal(self, listing_id: str, ti_le_phi: float | None, gia_chot: str | None = None) -> None:
+    def ghi_deal(self, listing_id: str, ti_le_phi: float | None, gia_chot: str | None = None) -> bool:
         """Tin vừa chuyển `da_chot` → một dòng `deals`. Chỉ gọi lúc ĐỔI trạng thái sang `da_chot` (`ma_trang_thai` trả None khi không đổi), nên
         một lần chốt một dòng. SRS-5.1zzzzzzz285: bỏ khoá duy nhất (listing_id, buyer_id) nulls not distinct — căn cho thuê chốt lại năm sau
         (khách ngoài hệ thống, buyer_id rỗng) trước đây không ghi được giao dịch thứ hai. `price_vnd` = giá RAO lúc chốt; SRS-5.1zzzzzzz456: chủ
         đã báo giá chốt (ô riêng `gia_chot`, hỏi từ lúc đã cọc) thì ghi luôn `gia_chot_vnd` (đổi bằng `parse_vnd` — luật tiền một nguồn)."""
+        # SRS-5.1zzzzzzz542 (audit ECC P1-9): bản trước nuốt mọi lỗi (`log.warning`), mà hàm chỉ được gọi ĐÚNG lượt đổi sang `da_chot` — lượt
+        # lưu sau trạng thái không đổi nên không gọi lại: một lần Supabase chớp là mất dòng `deals` (căn cứ phí) vĩnh viễn, không ai biết.
+        # Nay: hụt thì giữ ở `_deal_cho_ghi` (giữ nguyên giờ chốt), mỗi lượt lưu sau thử lại (`ghi_deal_con_treo`), lần hụt đầu ghi sổ lỗi.
+        # Lần thử lại kiểm trước dòng cùng giờ chốt đã có chưa — POST tới nơi mà mất câu trả lời thì không ghi đúp.
+        from datetime import datetime, timezone
+        cho = self.__dict__.setdefault("_deal_cho_ghi", {})
+        treo = cho.get(listing_id)
+        closed_at = treo["closed_at"] if treo else datetime.now(timezone.utc).isoformat()
         try:
+            if treo and self._get(f"deals?listing_id=eq.{listing_id}&closed_at=eq.{urllib.parse.quote(closed_at)}&select=id&limit=1"):
+                cho.pop(listing_id, None)
+                return True
             tin = self._get(f"listings?id=eq.{listing_id}&select=price_vnd")
-            from datetime import datetime, timezone
-            dong: dict[str, Any] = {"listing_id": listing_id, "closed_at": datetime.now(timezone.utc).isoformat()}
+            dong: dict[str, Any] = {"listing_id": listing_id, "closed_at": closed_at}
             if tin and tin[0].get("price_vnd"):
                 dong["price_vnd"] = tin[0]["price_vnd"]
             if ti_le_phi is not None:
@@ -900,8 +910,20 @@ class KhoNguoiMua:
             self._request("POST", "deals", data=dong, prefer="return=minimal")
             if chot:
                 self.__dict__.setdefault("_gia_chot_da_ghi", {})[listing_id] = chot
-        except Exception as e:  # noqa: BLE001
-            log.warning("ghi_deal lỗi: %s", e)
+            cho.pop(listing_id, None)
+            return True
+        except Exception as e:  # noqa: BLE001 — lỗi không chặn lượt lưu; giữ lại để thử lại
+            cho[listing_id] = {"ti_le_phi": ti_le_phi, "gia_chot": gia_chot, "closed_at": closed_at}
+            log.warning("ghi_deal lỗi (%s) — giữ để thử lại lượt lưu sau", type(e).__name__)
+            ghi = getattr(self, "_ghi_so_loi", None)
+            if treo is None and ghi is not None:
+                ghi("ghi deal", f"tin {listing_id}: ghi dòng deals hụt ({type(e).__name__}) — giữ để thử lại lượt lưu sau")
+            return False
+
+    def ghi_deal_con_treo(self) -> None:
+        """Thử lại các dòng `deals` lần trước ghi hụt (SRS-5.1zzzzzzz542). Gọi đầu mỗi lượt lưu; thường rỗng, không tốn truy vấn nào."""
+        for lid, v in list(self.__dict__.get("_deal_cho_ghi", {}).items()):
+            self.ghi_deal(lid, v["ti_le_phi"], v["gia_chot"])
 
     def cap_nhat_gia_chot(self, listing_id: str, gia_chot: str) -> None:
         """SRS-5.1zzzzzzz456: chủ báo giá chốt SAU lượt đổi sang `da_chot` (bot hỏi ở lượt kế) → điền `gia_chot_vnd` cho dòng `deals` mới nhất
