@@ -76,6 +76,14 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz529 · Sáu lỗi P0 từ audit sâu 20/11: lộ cột tin, gửi lặp lượt, tự gán mã môi giới, /quit mở cho khách, phiên Zalo chưa gitignore, Claude hết tiền (20/11/2026)
+Chủ dự án 20/11: "audit sâu toàn bộ dự án" rồi "sửa P0". Lớp lỗi chung: kiểm ở tầng hiển thị / quy ước thay vì ở tầng dữ liệu / giao thức.
+- **Lộ cột:** anon đọc mọi cột `listings` (description nguyên bản, location_raw có số nhà, lat/lng chính xác, seller_id, boc_tach) — che chỉ lúc dựng trang. Sửa: view `tin_cong_khai` (tin đang hiện, `che_sdt(description)`, `an_so_nha(location_raw)`, toạ độ 3 số lẻ, boc_tach theo danh sách trắng O_XAC_MINH, không seller_id); `ban_do_khung` / `doc_danh_sach` che như view; 12 file web công khai đọc view; `revoke select on listings from anon` (migration `20261120a`). Còn: authenticated không phải admin vẫn đọc listings đủ cột qua policy anon_read.
+- **Gửi lặp:** bridge gửi lại /chat-reply khi quá 90 s và chờ `in_flight` / `replayed` / `already_sent` mà lõi Python chưa từng trả → lượt hai chạy trên tin nhân đôi, lượt đầu bị bỏ lời. Sửa: sổ msg_id ở `server.py` (đang chạy → in_flight; xong trong 15 phút → phát lại, `mark_sent` → already_sent); bridge chờ in_flight 12 × 5 s (trước 3 × 5 s). Thử trên 146: lần gửi lại nhận in_flight ngay, không gọi model lần hai; sau mark_sent → replayed + already_sent.
+- **Mã môi giới:** `sellers_self_insert` chỉ kiểm auth_user_id → tự chèn ma_moi_gioi tuỳ ý rồi gửi khách giới thiệu đòi hoa hồng. Sửa: policy bắt ma_moi_gioi / zalo_user_id trống, điểm 0 (migration `20261120b`); thử trong giao dịch huỷ: có mã → 42501, không mã → qua RLS.
+- **Lệnh Zalo:** /quit (xoá mọi tin kể cả đã đăng), /import, /project, /state… mở cho mọi khách. Nay chỉ ID thử, admin có Zalo ID, hoặc env `AIOI_LENH_ZALO_CHO`; /link giữ cho mọi người. **Phiên Zalo:** `zalo-session*.json`, `qr*.png` vào `.gitignore` (repo public).
+- **Claude hết tiền:** `du_phong.claude_het_tien()` — Claude nghỉ vì hết số dư thì Gemini dùng hạn / ngân sách / nghỉ của đường chính như công tắc AIOI_CHI_GEMINI_DEN, để 29/11 không lặp sự cố 16/11.
+
 ### SRS-5.1zzzzzzz528 · Gộp luật prompt bản tin / bối cảnh / xưng hô, đổi cấm thành nên; bỏ canh số tư vấn; bridge nối lại trong tiến trình (19/11/2026)
 Chủ dự án 19/11: lời bot "không tự nhiên", "cái nào ko merge dc mới phải cấm, càng ít càng tốt". Đo `scripts/do-prompt.py`: 108 mã SRS trong `prompts.py` là chú thích (model không đọc); chỗ nặng là prompt bản tin — chống bịa nhắc ba lần (cuối `AD_FORMAT`, "QUY TẮC BẮT BUỘC" bản nháp, khối SỰ THẬT), 66 chữ KHÔNG / CẤM / TUYỆT ĐỐI / BẮT BUỘC, gọi model là "bạn".
 - **Lớp lỗi:** mỗi ca sửa thêm một câu cấm vào prompt, không gộp câu cũ — prompt phình, model viết theo công thức cho khỏi phạm luật.

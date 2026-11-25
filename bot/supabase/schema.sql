@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-25 12:45 (giờ VN)
+-- Sinh lúc: 2026-11-25 13:37 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -1970,6 +1970,9 @@ declare
   d   jsonb;
 begin
   if l.id is null then return null; end if;
+  -- SRS-5.1zzzzzzz539 (audit ECC P1-3): view boc_tach_v goi ham nay cho moi tin user web doc duoc -- nguoi dung web
+  -- khong phai admin khong duoc thay ten nguoi rao, toa do, duong dan tep giay to.
+  if coalesce(auth.role(), '') in ('anon', 'authenticated') and not public.la_admin() then return null; end if;
   f := public.o_boc_tach(bt);
   bs := '[]'::jsonb;
   url_chat := '[]'::jsonb;
@@ -3095,6 +3098,48 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.dang_tin_web(p_mo_ta text, p_phuong text, p_quan text, p_gia text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_uid uuid := auth.uid();
+  v_mo_ta text := btrim(coalesce(p_mo_ta, ''));
+  v_seller uuid;
+  v_ma text;
+  v_hom_nay int;
+  l listings;
+begin
+  if v_uid is null then
+    raise exception 'Chưa đăng nhập.' using errcode = '42501';
+  end if;
+  select id, ma_moi_gioi into v_seller, v_ma from sellers where auth_user_id = v_uid;
+  if v_seller is null then
+    raise exception 'Tài khoản chưa có hồ sơ người bán — tải lại trang giúp em.' using errcode = 'P0002';
+  end if;
+  if length(v_mo_ta) < 15 or length(v_mo_ta) > 3000 then
+    raise exception 'Câu rao cần từ 15 đến 3000 ký tự.' using errcode = '22023';
+  end if;
+  if length(coalesce(p_phuong, '')) > 100 or length(coalesce(p_quan, '')) > 100 or length(coalesce(p_gia, '')) > 100 then
+    raise exception 'Phường, quận, giá mỗi ô tối đa 100 ký tự.' using errcode = '22023';
+  end if;
+  select count(*) into v_hom_nay from listings where seller_id = v_seller and created_at > now() - interval '1 day';
+  if v_hom_nay >= 20 then
+    raise exception 'Mỗi tài khoản đăng tối đa 20 tin một ngày.' using errcode = '53400';
+  end if;
+  insert into listings (seller_id, deal, district, ward, description, price_raw, status, source, can_chu_duyet)
+  values (v_seller, 'ban', nullif(btrim(p_quan), ''), nullif(btrim(p_phuong), ''), v_mo_ta, nullif(btrim(p_gia), ''),
+          'cho_thong_tin', 'web', v_ma is null)
+  returning * into l;
+  return jsonb_build_object(
+    'id', l.id, 'code', l.code, 'deal', l.deal, 'district', l.district, 'ward', l.ward, 'location_raw', l.location_raw,
+    'price_raw', l.price_raw, 'price_vnd', l.price_vnd, 'description', l.description, 'status', l.status,
+    'can_chu_duyet', l.can_chu_duyet, 'created_at', l.created_at);
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.dat_anh_bia(p_listing_id uuid, p_storage_path text)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -3913,6 +3958,32 @@ CREATE OR REPLACE FUNCTION public.hang_theo_diem(p_diem integer)
 AS $function$
   select case when coalesce(p_diem, 0) >= 80 then 'vang' when coalesce(p_diem, 0) >= 50 then 'bac' else 'dong' end;
 $function$
+;
+
+CREATE OR REPLACE FUNCTION public.ho_so_web()
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_uid uuid := auth.uid();
+  v_id uuid;
+begin
+  if v_uid is null then
+    raise exception 'Chưa đăng nhập.' using errcode = '42501';
+  end if;
+  select id into v_id from sellers where auth_user_id = v_uid;
+  if v_id is null then
+    insert into sellers (auth_user_id) values (v_uid)
+    on conflict (auth_user_id) do nothing
+    returning id into v_id;
+    if v_id is null then
+      select id into v_id from sellers where auth_user_id = v_uid;
+    end if;
+  end if;
+  return v_id;
+end $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.huy_nhac_khi_da_tra_loi()
@@ -4888,11 +4959,11 @@ begin
   perform pg_advisory_xact_lock(hashtext('listing_code'));
 
   select 'BDS-Q5-' || lpad(
-           (coalesce(max((regexp_match(code, '^BDS-Q5-([0-9]+)$'))[1]::int), 0) + 1)::text,
+           (coalesce(max((regexp_match(code, '^BDS-Q5-([0-9]{1,9})$'))[1]::int), 0) + 1)::text,
            4, '0')
     into v_code
     from listings
-   where code ~ '^BDS-Q5-[0-9]+$';
+   where code ~ '^BDS-Q5-[0-9]{1,9}$';
 
   return v_code;
 end $function$
@@ -4948,10 +5019,10 @@ begin
 
   v_prefix := 'BDS-' || v_type || '-' || v_loc || '-';
 
-  select coalesce(max((regexp_match(code, '^' || v_prefix || '([0-9]+)$'))[1]::int), 0) + 1
+  select coalesce(max((regexp_match(code, '^' || v_prefix || '([0-9]{1,9})$'))[1]::int), 0) + 1
     into v_num
     from listings
-   where code ~ ('^' || v_prefix || '[0-9]+$');
+   where code ~ ('^' || v_prefix || '[0-9]{1,9}$');
 
   return v_prefix || lpad(v_num::text, 4, '0');
 end;
@@ -7549,7 +7620,7 @@ create or replace view public.agents_public with (security_invoker=false) as
             count(*) AS total
            FROM listings l
           WHERE l.seller_id = s.id) c ON true
-  WHERE s.seller_type = 'nmg'::seller_type;
+  WHERE s.seller_type = 'nmg'::seller_type AND s.ma_moi_gioi IS NOT NULL;
 
 create or replace view public.nmg_hoat_dong as
  SELECT s.id,
@@ -8026,10 +8097,6 @@ drop policy if exists listings_admin_update on public.listings;
 create policy listings_admin_update on public.listings as permissive for UPDATE to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
   WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text))))) with check (true);
-drop policy if exists listings_own_insert on public.listings;
-create policy listings_own_insert on public.listings as permissive for INSERT to authenticated with check (((status = 'cho_thong_tin'::text) AND (seller_id IN ( SELECT sellers.id
-   FROM sellers
-  WHERE (sellers.auth_user_id = ( SELECT auth.uid() AS uid))))));
 drop policy if exists listings_own_read on public.listings;
 create policy listings_own_read on public.listings as permissive for SELECT to authenticated using ((seller_id IN ( SELECT sellers.id
    FROM sellers
@@ -8066,8 +8133,6 @@ create policy sellers_admin_update on public.sellers as permissive for UPDATE to
   WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text))))) with check ((EXISTS ( SELECT 1
    FROM admins a
   WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text)))));
-drop policy if exists sellers_self_insert on public.sellers;
-create policy sellers_self_insert on public.sellers as permissive for INSERT to authenticated with check (((auth_user_id = ( SELECT auth.uid() AS uid)) AND (ma_moi_gioi IS NULL) AND (zalo_user_id IS NULL) AND (COALESCE(rating_sum, 0) = 0) AND (COALESCE(rating_count, 0) = 0)));
 drop policy if exists sellers_self_read on public.sellers;
 create policy sellers_self_read on public.sellers as permissive for SELECT to authenticated using ((auth_user_id = ( SELECT auth.uid() AS uid)));
 drop policy if exists tien_ich_admin_read on public.tien_ich;
@@ -8155,14 +8220,14 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.deals to aut
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.info_requests to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.interests to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.listing_views to authenticated;
-grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.listings to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.messages to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.projects to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.reminders to authenticated;
-grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.sellers to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.viewings to authenticated;
 grant DELETE, INSERT, SELECT on public.listing_media to authenticated;
 grant DELETE, INSERT, SELECT, UPDATE on public.cau_chuan to authenticated;
+grant DELETE, REFERENCES, SELECT, TRIGGER, UPDATE on public.listings to authenticated;
+grant DELETE, REFERENCES, SELECT, TRIGGER, UPDATE on public.sellers to authenticated;
 grant REFERENCES, SELECT, TRIGGER on public.admins to anon;
 grant REFERENCES, SELECT, TRIGGER on public.agents_public to anon;
 grant REFERENCES, SELECT, TRIGGER on public.agents_public to authenticated;
@@ -8350,6 +8415,9 @@ grant execute on function public.cung_quan_cu(a text, b text) to authenticated;
 grant execute on function public.cung_quan_cu(a text, b text) to service_role;
 revoke all on function public.dang_ky_moi_gioi_cap_ma() from public, anon, authenticated;
 grant execute on function public.dang_ky_moi_gioi_cap_ma() to service_role;
+revoke all on function public.dang_tin_web(p_mo_ta text, p_phuong text, p_quan text, p_gia text) from public, anon, authenticated;
+grant execute on function public.dang_tin_web(p_mo_ta text, p_phuong text, p_quan text, p_gia text) to authenticated;
+grant execute on function public.dang_tin_web(p_mo_ta text, p_phuong text, p_quan text, p_gia text) to service_role;
 revoke all on function public.dat_anh_bia(p_listing_id uuid, p_storage_path text) from public, anon, authenticated;
 grant execute on function public.dat_anh_bia(p_listing_id uuid, p_storage_path text) to service_role;
 revoke all on function public.day_ro_ccrb_toi_nmg(p_listing_id uuid) from public, anon, authenticated;
@@ -8424,6 +8492,9 @@ revoke all on function public.hang_theo_diem(p_diem integer) from public, anon, 
 grant execute on function public.hang_theo_diem(p_diem integer) to anon;
 grant execute on function public.hang_theo_diem(p_diem integer) to authenticated;
 grant execute on function public.hang_theo_diem(p_diem integer) to service_role;
+revoke all on function public.ho_so_web() from public, anon, authenticated;
+grant execute on function public.ho_so_web() to authenticated;
+grant execute on function public.ho_so_web() to service_role;
 revoke all on function public.huy_nhac_khi_da_tra_loi() from public, anon, authenticated;
 grant execute on function public.huy_nhac_khi_da_tra_loi() to service_role;
 revoke all on function public.info_request_bao_lai_khach() from public, anon, authenticated;
