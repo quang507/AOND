@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-25 17:51 (giờ VN)
+-- Sinh lúc: 2026-11-26 00:07 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -2478,7 +2478,6 @@ CREATE OR REPLACE FUNCTION public.bump_user_quota(p_uid text, p_gio_limit intege
 AS $function$
 declare
   v_gio   timestamptz := date_trunc('hour', now());
-  v_quen  boolean;
   v_he    integer;
   v_trong_gio integer;
   v_trong_ngay integer;
@@ -2487,12 +2486,22 @@ begin
     return true;
   end if;
 
-  select exists (
-    select 1 from sellers s where s.zalo_user_id = p_uid
-    union all
-    select 1 from admins a where a.zalo_user_id = p_uid
-  ) into v_quen;
-  v_he := case when v_quen then 4 else 1 end;
+  -- 20261125e (SRS-5.1zzzzzzz544, audit ECC chat Zalo P1-2): ban truoc moi nguoi co dong `sellers` (lo tao cho bat ky ai nhan so ky gui)
+  -- deu x4 = 480 luot/ngay — ba tai khoan la dot het tran chung cua ca he thong. Nay: admin / moi gioi da duyet / nguoi co tin dang
+  -- hien x4; nguoi co dong sellers khac x2; con lai x1.
+  if exists (select 1 from admins a where a.zalo_user_id = p_uid)
+     or exists (select 1 from sellers s
+                 where s.zalo_user_id = p_uid
+                   and (s.ma_moi_gioi is not null
+                        or exists (select 1 from listings l
+                                    where l.seller_id = s.id
+                                      and l.status in ('dang_ban', 'dang_quan_tam', 'da_coc', 'da_chot')))) then
+    v_he := 4;
+  elsif exists (select 1 from sellers s where s.zalo_user_id = p_uid) then
+    v_he := 2;
+  else
+    v_he := 1;
+  end if;
 
   insert into chat_quota (zalo_user_id, gio, calls)
   values (p_uid, v_gio, 1)
@@ -5849,6 +5858,8 @@ begin
   t := regexp_replace(t, '([0-9])\s*t\M(?!\s*[0-9]+\s*(l|lầu|lau)\M)', '\1 _ty ', 'g');
 
   -- Phan le sau don vi: "5 ty 5" = 5,5 ty | "3 ty 200" = 3,2 ty.
+  -- 20261125e (SRS-5.1zzzzzzz544, audit ECC chat Zalo P1-7): phan le lap nhom ba chu so TU TRAI — "3 ty 85" = 3,85 ty (ban truoc
+  -- 3,085 ty: hai chu so nhan 1e6). Nhanh trieu cung luat ("3 trieu 85" = 3,85 trieu). luat-tien.ts docTien cung luat.
   -- Chan hai kieu bat nham: "5 ty 50m2" (dien tich) va viec cat bot chu so
   -- ("50" bi lui ve "5" cho khop) — nen cam ca chu so lan m dung ngay sau.
   -- 20261125c (SRS-5.1zzzzzzz543, audit ECC P2-9): so sau ty ma la so LUONG ("nha 5 ty 2 phong ngu", "4 ty 3 tang")
@@ -5856,9 +5867,7 @@ begin
   m := regexp_match(t, '([0-9]+)\s*_ty\s*([0-9]{1,3})(?![0-9.,]|\s*(m|phòng|phong|pn|lầu|lau|tầng|tang|tấm|tam|wc|tháng|thang|năm|nam|người|nguoi|căn|can))');
   if m is not null then
     return (m[1]::numeric * 1e9
-            + case when length(m[2]) = 1
-                   then m[2]::numeric * 1e8
-                   else m[2]::numeric * 1e6 end)::bigint;
+            + m[2]::numeric * power(10::numeric, 9 - length(m[2])))::bigint;
   end if;
 
   m := regexp_match(t, '([0-9]+[.,]?[0-9]*)\s*_ty');
@@ -5873,9 +5882,7 @@ begin
   m := regexp_match(t, '([0-9]+)\s*_trieu\s*([0-9]{1,3})(?![0-9.,]|\s*(m2|m²|mét|met|m\M|phòng|phong|pn|lầu|lau|tầng|tang|tấm|tam|wc|tháng|thang|năm|nam|người|nguoi|căn|can))');
   if m is not null then
     return (m[1]::numeric * 1e6
-            + case when length(m[2]) = 1
-                   then m[2]::numeric * 1e5
-                   else m[2]::numeric * 1e3 end)::bigint;
+            + m[2]::numeric * power(10::numeric, 6 - length(m[2])))::bigint;
   end if;
 
   m := regexp_match(t, '([0-9]+[.,]?[0-9]*)\s*_trieu');
