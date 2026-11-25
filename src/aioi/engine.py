@@ -2035,11 +2035,48 @@ def _ke_hoach_doi_can(plan: dict | None) -> bool:
                for op in ((plan or {}).get("operations") or []))
 
 
+def _khoa_su_that_truoc_can_khac(plan: dict, loi_cuoi: str) -> set[str]:
+    """Mã sự thật khách nói TRƯỚC cụm "căn khác" của thao tác `add` trong cùng tin ("sổ hồng riêng nha, à anh còn căn nữa…") — thuộc căn đang nói
+    trước thao tác (SRS-5.1zzzzzzz545). Chỉ so vị trí các cụm AI trích trong tin khách, không đọc ý bằng từ khoá."""
+    gon = lambda x: re.sub(r"\s+", " ", bo_dau(str(x or "")).lower()).strip()
+    tin = gon(loi_cuoi)
+    can_khac = next((gon(op.get("can_khac_trich")) for op in (plan.get("operations") or [])
+                     if isinstance(op, dict) and op.get("op") == "add" and op.get("can_khac_trich")), "")
+    moc = tin.find(can_khac) if can_khac else -1
+    if moc < 0:
+        return set()
+    ra = set()
+    for khoa in [k for k, _, _ in SU_THAT_CAN] + ["tien_ich_gan"]:
+        trich = gon(plan.get(f"{khoa}_trich_dan"))
+        if trich and 0 <= tin.find(trich) < moc:
+            ra.add(khoa)
+    return ra
+
+
+def _ke_hoach_theo_khoa(plan: dict, khoa: set[str], giu: bool) -> dict:
+    """Bản sao kế hoạch chỉ giữ (giu=True) hoặc bỏ (giu=False) các mã sự thật `khoa` cùng cụm trích của chúng."""
+    ten = {x for k in khoa for x in (k, f"{k}_trich_dan")}
+    return {k: v for k, v in plan.items() if (k in ten) == giu}
+
+
 def ghi_su_that_cho(conv: "Conversation", plan: dict) -> None:
-    """Ghi mã sự thật đã hoãn (nếu có) vào căn đang nói — gọi sau khi áp thao tác, hoặc ở nhánh không áp thao tác (SRS-5.1zzzzzzz544)."""
-    gan_khach = plan.pop(_SU_THAT_CHO, None)
-    if gan_khach is not None:
-        _ghi_su_that_can(conv, plan, gan_khach)
+    """Ghi mã sự thật đã hoãn (nếu có) — gọi sau khi áp thao tác, hoặc ở nhánh không áp thao tác (SRS-5.1zzzzzzz544). Mặc định vào căn đang nói
+    sau thao tác; mã khách nói trước cụm "căn khác" thì vào căn đang nói trước thao tác (SRS-5.1zzzzzzz545)."""
+    cho = plan.pop(_SU_THAT_CHO, None)
+    if cho is None:
+        return
+    gan_khach, id_truoc = cho
+    truoc = next((li for li in conv.listings if li.listing_id == id_truoc), None)
+    cu = (_khoa_su_that_truoc_can_khac(plan, gan_khach[-1] if gan_khach else "")
+          if truoc is not None and truoc is not conv.active else set())
+    if cu:
+        id_sau = conv.active_listing_id
+        conv.active_listing_id = truoc.listing_id
+        try:
+            _ghi_su_that_can(conv, _ke_hoach_theo_khoa(plan, cu, giu=True), gan_khach)
+        finally:
+            conv.active_listing_id = id_sau
+    _ghi_su_that_can(conv, _ke_hoach_theo_khoa(plan, cu, giu=False), gan_khach)
 
 
 def _ke_hoach_ghi_o(plan: dict | None) -> bool:
@@ -3111,6 +3148,7 @@ class Engine:
         if conv.pending_destructive:
             if conv.y_luot.get("xac_nhan_xoa") == "dong_y":
                 _changed, receipts = self._apply_pending_destructive(conv)
+                ghi_su_that_cho(conv, ke_hoach)   # SRS-5.1zzzzzzz545: nhánh rẽ sớm không áp kế hoạch — mã sự thật hoãn (nếu có) vào căn đang nói
                 reply = self._receipt_reply(conv, receipts) or self._cau_khach(conv, "da_cap_nhat_ro")
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
@@ -3118,6 +3156,7 @@ class Engine:
             chi_an_anh = all(op.get("op") == "an_anh" for op in conv.pending_destructive)
             conv.pending_destructive = []  # not a clear yes → keep the basket intact
             if conv.y_luot.get("xac_nhan_xoa") == "tu_choi":
+                ghi_su_that_cho(conv, ke_hoach)
                 reply = self._cau_khach(conv, "giu_anh" if chi_an_anh else "giu_nguyen_ro")
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
@@ -3138,6 +3177,7 @@ class Engine:
         agent_project = q_project is not None and bool(q_project.units)
         if (q_project is not None and not agent_project
                 and (q_project.docs_cho(conv.user_key) or conv.price_book) and factual_q):
+            ghi_su_that_cho(conv, ke_hoach)
             reply = self._answer_from_docs(conv, q_project, text)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
@@ -3151,6 +3191,7 @@ class Engine:
         # (ô nhận theo ý AI từ Q5) → lượt bị cắt ở đây, TRƯỚC bước ghi ô, mất giá / loại nhà. Cùng lượt AI lập thao tác ghi ô (update / add có
         # fields) thì tin là KỂ CĂN, không phải xin bản vẽ thuần — đi đường thường. Kiểm cấu trúc đầu ra AI, không đọc chữ khách.
         if conv.y_luot.get("xin_xem_ban_ve") and not _ke_hoach_ghi_o(ke_hoach):
+            ghi_su_that_cho(conv, ke_hoach)
             reply = self._media_request_reply(conv, q_project, text)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
@@ -4956,10 +4997,10 @@ class Engine:
             ))
             # SRS-5.1zzzzzzz544 (audit ECC chat Zalo P0-1): album gom ra MỘT nhóm từng cất vào kho CÔNG KHAI bất kể cờ giấy tờ — hai trang sổ
             # gửi cùng lúc lên `listing-public`, hiện web + gửi khách mua. Cùng luật nhánh nhiều nhóm: không chắc là ảnh chụp thật (thiếu cờ
-            # cũng vậy) thì cất RIÊNG (§5). Tài liệu chung dự án / mẫu nhà (`pham_vi`) đi đường kho dự án như nhánh nhiều nhóm.
-            tai_lieu_du_an = bool(groups) and groups[0].get("pham_vi") in ("chung", "mau_nha")
+            # cũng vậy) thì cất RIÊNG (§5) — kể cả nhóm AI xếp `pham_vi` chung / mẫu nhà (SRS-5.1zzzzzzz545: tài liệu dự án không mang cờ giấy tờ
+            # thì AI đánh `giay_to: false`, vẫn vào kho dự án như cũ).
             captured, capped = self._route_readout_media(
-                conv, description, fetched, user_key, store=not data_only, rieng=not anh_chup and not tai_lieu_du_an)
+                conv, description, fetched, user_key, store=not data_only, rieng=not anh_chup)
             tail = _xung_ho_cau("\n\n(Em đã lấy thông tin từ tài liệu, không cần lưu ảnh bảng dữ liệu nha.)", *self._goi_toi(conv)) if data_only else ""
             return (self._hoi_trung_ten(conv, f"{description}{tail}") + self._cap_note(capped, conv), captured)
 
@@ -5524,7 +5565,7 @@ class Engine:
         # NGAY vào căn đang nói thì "căn 2 hẻm xe hơi, sổ hồng riêng" đè lên căn cũ đang hiện web. Kế hoạch có thao tác đổi căn (mở căn mới / nhắm
         # căn khác) → hoãn tới `_ap_dung_ke_hoach`, ghi vào căn của thao tác sau khi áp.
         if _ke_hoach_doi_can(plan):
-            plan[_SU_THAT_CHO] = gan_khach
+            plan[_SU_THAT_CHO] = (gan_khach, conv.active.listing_id)
         else:
             _ghi_su_that_can(conv, plan, gan_khach)
         if conv.role != "buyer":

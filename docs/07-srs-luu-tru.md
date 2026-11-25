@@ -76,6 +76,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz535 · Docs giọng về một mục tiêu "rep như người thật"; 06 §6.8 gọn, luật cũ ra lưu trữ (23/11/2026)
+Chủ dự án 23/11: "làm sạch lại docs srs mục tiêu là giọng tự nhiên rep giống người". Soát: luật giọng rải năm nơi — `06 §6.8` (59 nghìn ký tự: Bảy quy tắc, Cấm, thư viện câu mẫu, bảng bỏ / giữ của bot TS đã gỡ), `07` §5.1 (còn tả `AIOI_PROMPT_GON`, phiếu lượt, đọc nhanh SRS-406), CLAUDE.md, `luat-dang-ap.md` (trần cũ 4.000 / 8.000), `10` (bài "đếm từ cấm"). **Lớp lỗi:** phiên agent đọc các chỗ đó rồi chép lại thành dòng cấm trong prompt, nên lời bot cứng lên lại sau mỗi lần dọn prompt.
+- **Sửa:** `06 §6.8` còn mục tiêu + năm câu soát chat thật + bảng quyết định cứng của chủ dự án + nhân xưng / danh tính / bố cục tin / phí; bản cũ đã xoá ở SRS-536 (tra vết: lịch sử git). `07` thêm SRS-5.6 (dựng ở đâu, lưới soát còn gì, sửa giọng theo thứ tự nào, không làm gì) và sửa §5.1 theo code. CLAUDE.md §6.2, `luat-dang-ap.md`, `03`, `08`, `10` trỏ về hai chỗ đó; lưu trữ `07` có dòng chặn ở đầu.
+- **Đo:** nhân vật + giọng ≈ 1.140 token, cả `LEAN_SYSTEM_PROMPT` ≈ 1.990 token (Gemini countTokens). Không đổi code; `soat-truy-vet.sh` sạch.
+
 ### SRS-5.1zzzzzzz534 · Groq dự phòng bị Cloudflare chặn vì User-Agent mặc định (23/11/2026)
 Chủ dự án 23/11: "kiểm tra groq còn cho api free ko". Khoá vẫn tốt, vẫn gói miễn phí (gpt-oss-120b: 1.000 lượt / ngày, 8.000 token / phút; qwen3.8-27b: 7.000 token vào / phút). Lỗi 403 từ ≥ 18/11 là Cloudflare "error code: 1010": `du_phong._http` gọi bằng urllib không đặt User-Agent ("Python-urllib" bị chặn) → mọi lượt Groq 403, Gemini hụt một nhịp là khách nhận câu giữ chỗ.
 - **Sửa:** `_http` gửi `User-Agent: aond-core/1.0`. Chép giọng nói (httpx, UA "python-httpx") không bị chặn. Thử: urllib không UA → 403 1010; có UA → 200; hàm `_http` của lõi gọi Groq → trả lời.

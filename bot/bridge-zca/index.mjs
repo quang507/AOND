@@ -587,14 +587,20 @@ const CUA_SO_LUOT_MS = 10 * 60 * 1000;
 const TRAN_LUOT_CUA_SO = 20;
 const TRAN_LAP_CUNG_CAU = 5;
 const NGHI_KHI_VUOT_MS = 30 * 60 * 1000;
+// SRS-5.1zzzzzzz545 (rà lại 544): chỉ đếm lặp với CHỮ khách gõ — chuỗi giữ chỗ của bridge ("[Khách gửi tin nhắn thoại/ghi âm]", "[khách gửi
+// sticker]") giống nhau dù là tin khác nhau, câu ngắn ("ok", "dạ", "vâng") người thật hay lặp; lượt kèm ảnh / tệp / sticker cũng không đếm lặp.
+const LAP_TOI_THIEU_KY_TU = 15;
+// Tid miễn trần (admin / máy thử), phẩy ngăn cách — đặt trong .env của bridge.
+const MIEN_TRAN = new Set(String(process.env.BRIDGE_MIEN_TRAN || "").split(",").map((x) => x.trim()).filter(Boolean));
 const nhipKhach = new Map();   // tid → { moc: number[], cau: Map<câu chuẩn hoá, number[]>, nghiDen: number }
 
 function chuanCau(t) {
   return String(t || "").normalize("NFC").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
-// Trả lý do khi phải chặn ("đang nghỉ" cho các lượt sau lần chặn đầu), null khi được chuyển.
-function vuotTranLuot(tid, textGom, bayGio = Date.now()) {
+// Trả lý do khi phải chặn ("đang nghỉ" cho các lượt sau lần chặn đầu), null khi được chuyển. `coTep`: lượt kèm ảnh / tệp / sticker.
+function vuotTranLuot(tid, textGom, bayGio = Date.now(), coTep = false) {
+  if (MIEN_TRAN.has(tid)) return null;
   if (nhipKhach.size > 5000) {
     for (const [k, v] of nhipKhach) {
       if (v.nghiDen < bayGio && !v.moc.some((t) => t > bayGio - CUA_SO_LUOT_MS)) nhipKhach.delete(k);
@@ -615,7 +621,7 @@ function vuotTranLuot(tid, textGom, bayGio = Date.now()) {
   }
   let lap = 0;
   const c = chuanCau(textGom);
-  if (c) {
+  if (c && !coTep && !c.startsWith("[") && c.length >= LAP_TOI_THIEU_KY_TU) {
     const ds = n.cau.get(c) || [];
     ds.push(bayGio);
     n.cau.set(c, ds);
@@ -660,11 +666,25 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId, 
     bufferTin.delete(tid);
     const textGom = hienTai.texts.filter(Boolean).join("\n");
     if (!textGom && !hienTai.imageUrls.length && !hienTai.tep) return;
-    const vuot = vuotTranLuot(tid, textGom);
+    const coTep = Boolean(hienTai.imageUrls.length || hienTai.tep || hienTai.sticker?.url);
+    const vuot = vuotTranLuot(tid, textGom, Date.now(), coTep);
     if (vuot) {
-      console.log(`⏸️ khách [...${tid.slice(-4)}] ${vuot} — không chuyển lõi`);
+      console.log(`⏸️ khách [...${tid.slice(-4)}] ${vuot} — không cho bot trả lời, chỉ ghi CRM`);
       if (vuot !== "đang nghỉ") {
-        await ghiLoi("tran luot khach", `khách ...${tid.slice(-4)}: ${vuot} — bridge ngừng chuyển tin của khách này ${NGHI_KHI_VUOT_MS / 60000} phút (xem tin trên Zalo)`);
+        await ghiLoi("tran luot khach", `khách ...${tid.slice(-4)}: ${vuot} — bot ngừng trả lời khách này ${NGHI_KHI_VUOT_MS / 60000} phút, tin vẫn ghi CRM`);
+      }
+      // SRS-5.1zzzzzzz545: tin lúc nghỉ vẫn sang lõi với cờ `chi_ghi_crm` — lõi chỉ ghi CRM, không gọi model (bản 544 bỏ hẳn, admin không đọc được).
+      try {
+        await postJson(CHAT_REPLY_URL, brainHeaders, {
+          external_user_id: tid,
+          text: textGom || (hienTai.tep ? "[Khách gửi tệp]" : hienTai.imageUrls.length ? `[Khách gửi ${hienTai.imageUrls.length} ảnh]` : "[Khách gửi tin nhắn]"),
+          msg_id: hienTai.lastMsgId || undefined,
+          channel: "zalo_personal_test",
+          so_nhan: SO_NHAN,
+          chi_ghi_crm: true,
+        }, HAN_CHO_NGAN);
+      } catch (e) {
+        await ghiLoi("tran luot khach ghi crm", errDetail(e));
       }
       return;
     }

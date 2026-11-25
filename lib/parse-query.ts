@@ -159,10 +159,17 @@ function bocGia(t: string, goc?: string): GiaKQ | null {
   // 5,2 / 4,3 tỷ. Cùng danh sách đơn vị chặn với `docTien` (luat-tien.ts) và SQL `parse_vnd`; `t` đã bỏ dấu nên chỉ cần dạng không dấu.
   // SRS-5.1zzzzzzz544 (audit ECC chat Zalo P1-7): nhận 1–3 chữ số sau tỷ, lấp nhóm ba chữ số từ trái như `docTien` ("3 ty 85" = 3,85 tỉ;
   // bản trước chỉ nhận một chữ số, "3 ty 85" rơi xuống nhánh dưới thành "khoảng 3 tỉ").
-  let m = new RegExp(`(^|[^a-z0-9])${SO}\\s*(ty|ti)\\s*(\\d{1,3})(?![a-z0-9])(?!\\s*(?:m|phong|pn|lau|tang|tam|wc|thang|nam|nguoi|can))`).exec(t);
+  // SRS-5.1zzzzzzz545 (rà lại 544): có chữ triệu theo sau ("2 ty 50 trieu") thì số đó là triệu (2,05 tỉ), không phải phần lẻ; chữ "dưới / trên /
+  // khoảng…" đứng trước được giữ như nhánh dưới (bản trước "duoi 5 ty 500" thành "khoảng 5,5 tỉ", mất "dưới").
+  let m = new RegExp(`(^|[^a-z0-9])(?:(duoi|toi da|max|tren|tu|it nhat|khoang|tam|co|gia|chung)\\s*)?${SO}\\s*(ty|ti)\\s*(\\d{1,3})` +
+    `(?:\\s*(tr|trieu|cu)(?![a-z])|(?![a-z0-9])(?!\\s*(?:(?:tr|trieu|cu)(?![a-z])|m|phong|pn|lau|tang|tam|wc|thang|nam|nguoi|can)))`).exec(t);
   if (m) {
-    const v = (so(m[2]) + Number(m[4]) / 10 ** m[4].length) * TY;
-    return { approx: v, min: v * 0.85, max: v * 1.15, conf: 0.85, raw: rawCua(m) };
+    const tuKhoa = m[2] ?? "";
+    const v = (so(m[3]) + (m[6] ? Number(m[5]) / 1000 : Number(m[5]) / 10 ** m[5].length)) * TY;
+    const raw = rawCua(m);
+    if (/^(duoi|toi da|max)$/.test(tuKhoa)) return { max: v, conf: 0.95, raw };
+    if (/^(tren|tu|it nhat)$/.test(tuKhoa)) return { min: v, conf: 0.95, raw };
+    return { approx: v, min: v * 0.85, max: v * 1.15, conf: 0.85, raw };
   }
   // "5-8 ty", "5 den 8 ty", "tu 5 den 8 ty", "5 toi 8 ty"
   m = new RegExp(`(^|[^a-z0-9])${SO}\\s*(?:-|–|den|toi|to)\\s*${SO}\\s*${DV}(?![a-z])`).exec(t);

@@ -172,6 +172,7 @@ class ZaloBridgePayload(BaseModel):
     done: bool | None = None
     human_note: bool | None = None      # bridge: tin ĐI RA từ acc clone không phải bot gửi = admin gõ tay → bot nhường sân (SRS-5.1zzzzzzz216)
     su_kien: str | None = None          # loại sự kiện Zalo: "reaction" = khách thả cảm xúc lên một tin (SRS-5.1zzzzzzz364); trống = tin nhắn
+    chi_ghi_crm: bool | None = None     # bridge: khách đang bị trần lượt (bot↔bot) — chỉ ghi CRM, không trả lời (SRS-5.1zzzzzzz545)
 
 
 class ZaloBridgeResponse(BaseModel):
@@ -843,6 +844,11 @@ def _chat_reply_that(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     # NHUONG_SAN_GIAY, không gọi model.
     if payload.human_note:
         _nguoi_that_noi(payload.external_user_id, (payload.text or "").strip(), zalo_name)
+        return _dap_rong()
+    if payload.chi_ghi_crm:   # SRS-5.1zzzzzzz545: bridge đang cho khách này nghỉ (trần lượt) — tin vẫn vào CRM cho admin đọc, không gọi model
+        sync_to_supabase_async(external_user_id=payload.external_user_id, incoming_text=(payload.text or "").strip()
+                               or "[Khách gửi tin nhắn]", bot_reply="", zalo_msg_id=payload.msg_id, user_name=zalo_name,
+                               nhan_luc=nhan_luc)
         return _dap_rong()
     giu = getattr(_engine._convstore, "dang_giu_hoi_thoai", None)
     if (giu is not None and giu(payload.external_user_id)) or _dang_nhuong_san(payload.external_user_id):

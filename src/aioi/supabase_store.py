@@ -264,11 +264,16 @@ def so_m2(fields: dict[str, str], thue: bool = False) -> float | None:
         # SRS-5.1zzzzzzz544 (audit ECC chat Zalo P1-8): ô không có m² cũng không có "x" mà mang HAI số trở lên ("ngang 4 dài 16") thì số đầu
         # là bề ngang, không phải diện tích — bản trước lên web 4 m². Chỉ nhận số trơn khi ô có ĐÚNG một số; không thì sang ô kế / tính từ
         # số AI bóc (`dien_tich_tu_kich_thuoc`).
+        # SRS-5.1zzzzzzz545 (rà lại 544): ô hai số mà số đầu đúng là diện tích ("80 (công nhận 75)") vẫn lấy số đầu — chỉ bỏ khi số đầu nhỏ hơn
+        # 10 (không thể là diện tích một căn) hoặc trùng bề ngang / dài / hậu AI đã bóc (là kích thước).
         so = re.findall(r"\d+(?:[.,]\d+)?", s)
+        kich_thuoc = {x for x in (so_met(fields.get(k)) for k in ("mat_tien", "dai_m", "hau_m")) if x}
         if m2:
             v = float(m2.group(1).replace(",", "."))
-        elif len(so) == 1:
+        elif so:
             v = float(so[0].replace(",", "."))
+            if len(so) >= 2 and (v < 10 or v in kich_thuoc):
+                continue
         else:
             continue
         if v > 0:

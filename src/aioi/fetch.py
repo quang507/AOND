@@ -53,6 +53,13 @@ DEFAULT_TIMEOUT = 20.0
 # mãi (`resp.read(n)` không có hạn tổng), mà lượt chat giữ khoá khách + một trong 40 luồng của lõi. Nay đọc theo khối, quá hạn tổng thì bỏ.
 HAN_TONG_GIAY = 30.0
 _KHOI_DOC = 64 * 1024
+# SRS-5.1zzzzzzz545 (rà lại 544): hạn tổng cố định 30 s làm hỏng tệp lớn hợp lệ (PDF 20 MB, tin thoại 25 MB) trên mạng chậm hơn ~0,7 MB/s — hạn tổng
+# nay tăng theo trần byte của lần tải, tính với tốc độ tối thiểu chấp nhận được.
+TOC_DO_TOI_THIEU = 512 * 1024   # byte / giây
+
+
+def _han_tong(timeout: float, max_bytes: int) -> float:
+    return max(timeout, HAN_TONG_GIAY, max_bytes / TOC_DO_TOI_THIEU)
 
 
 class FetchError(Exception):
@@ -204,7 +211,7 @@ def fetch_raw(url: str, *, max_bytes: int = 10 * 1024 * 1024, timeout: float = D
     assert_public_url(url)
     opener = _mo_an_toan()
     req = urllib.request.Request(url, headers={"User-Agent": user_agent, "Accept-Language": "vi-VN,vi;q=0.9"})
-    het_han = time.monotonic() + max(timeout, HAN_TONG_GIAY)
+    het_han = time.monotonic() + _han_tong(timeout, max_bytes)
     try:
         with opener.open(req, timeout=timeout) as resp:
             media_type = (resp.headers.get_content_type() or "").lower()
@@ -296,7 +303,7 @@ def fetch_media(
     assert_public_url(url)
     opener = _mo_an_toan()
     req = urllib.request.Request(url, headers={"User-Agent": "AOND/1.0"})
-    het_han = time.monotonic() + max(timeout, HAN_TONG_GIAY)
+    het_han = time.monotonic() + _han_tong(timeout, max_bytes)
     try:
         with opener.open(req, timeout=timeout) as resp:
             declared = (resp.headers.get_content_type() or "").lower()

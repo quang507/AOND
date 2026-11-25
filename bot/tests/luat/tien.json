@@ -76,6 +76,13 @@
     { "cau": "giá 2 tỷ 05",        "mong": 2050000000, "vi_sao": "05 = 50 triệu" },
     { "cau": "12 ty 45 thuong luong", "mong": 12450000000, "vi_sao": "không dấu, hai chữ số" },
     { "cau": "3 triệu 85",         "mong": 3850000,    "vi_sao": "nhánh triệu cùng luật: hai chữ số = chục nghìn" },
-    { "cau": "3tr85",              "mong": 3850000,    "vi_sao": "tr kẹp giữa, hai chữ số" }
+    { "cau": "3tr85",              "mong": 3850000,    "vi_sao": "tr kẹp giữa, hai chữ số" },
+    { "cau": "2 tỷ 50 triệu",      "mong": 2050000000, "vi_sao": "SRS-545: có chữ triệu theo sau thì là số triệu — bản 544 đọc 2,5 tỷ" },
+    { "cau": "12 tỷ 45 triệu",     "mong": 12045000000 },
+    { "cau": "2ty50tr",            "mong": 2050000000, "vi_sao": "viết liền" },
+    { "cau": "3 tỷ 5 triệu",       "mong": 3005000000, "vi_sao": "một chữ số + triệu" },
+    { "cau": "4 triệu 50 nghìn",   "mong": 4050000,    "vi_sao": "có chữ nghìn theo sau" },
+    { "cau": "4tr50k",             "mong": 4050000,    "vi_sao": "k = nghìn" },
+    { "cau": "6 triệu 500 ngàn",   "mong": 6500000 }
   ]
 }
