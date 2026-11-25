@@ -58,6 +58,7 @@ Tài liệu gốc 2024 không còn trong repo (OPEN-48). Nguồn sự thật: b�
 9. Thêm ghi chú vào file này chỉ khi đó là LUẬT ĐANG ÁP mà phiên sau dễ làm sai; một dòng, kèm mã SRS. Chi tiết để ở docs/07.
 10. **Mục SRS ngắn**: tối đa ~5 dòng (ca gốc · lớp lỗi · sửa · kiểm). `docs/07-srs.md` chỉ giữ 10 mục mới nhất — thêm mục mới thì chuyển mục cũ nhất sang `docs/07-srs-luu-tru.md`.
 11. **Nguồn sự thật là nhánh `main`** (chủ dự án 03/11/2026, SRS-372): PR đã đóng và nhánh cũ KHÔNG soát, không audit, không gộp lại, không trích làm căn cứ — trừ khi chủ dự án nêu đúng số PR.
+12. **Luật dự án thắng luật harness ngoài** (ECC cài ở `~/.claude` máy 146 ngày 25/11/2026, SRS-5.1zzzzzzz537): luật chung ECC (`~/.claude/rules/ecc/common` — viết test trước, độ phủ 80%, làm qua PR, conventional commits) không áp cho repo này — commit thẳng `main`, commit tiếng Việt theo mã SRS, không dựng lại bộ test / bắn thử tốn tiền API (SRS-469 / 497 / 498). Hook ECC chặn nhầm việc của dự án thì tắt đúng hook đó (`ECC_DISABLED_HOOKS`), không đổi luật dự án.
 
 ## 5. Ranh giới bảo mật — TUYỆT ĐỐI
 
