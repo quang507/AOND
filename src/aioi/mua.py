@@ -26,7 +26,8 @@ from .prompts import nhan_o_ngan
 from .schema import FACETS, O_NOI_BO, nhan_phap_ly
 from .xung_ho import goi_toi as _goi_toi
 from . import cau_mau
-from .sdt import GIONG_SDT, SDT_DOC
+from .dia_danh import SO_NHA_DAU
+from .sdt import GIONG_SDT, SDT_DOC, che_so_ca_nhan
 
 log = logging.getLogger("aioi.mua")
 
@@ -47,14 +48,17 @@ _LOAI_MUA_SANG_DB = {"nha_pho": "nha_pho", "nha_cap_4": "nha_cap4", "biet_thu": 
                      "phong_tro": "phong_tro", "mat_bang": "mat_bang", "toa_nha": "toa_nha", "chdv": "toa_nha",
                      "kho_xuong": "kho_xuong", "dat_nong_nghiep": "dat_nong_nghiep", "dat_kinh_doanh": "dat_kinh_doanh"}
 # Lệnh admin trả lời câu khách hỏi: "#<mã tin>: <câu trả lời>" — cú pháp do hệ thống đặt trong tin nhắc
-# (`notify_info_request_escalation`), không phải đoán ý khách.
-_LENH_TRA_LOI = re.compile(r"^\s*#\s*([A-Za-z0-9][A-Za-z0-9-]{3,})\s*:\s*(.+)$", re.S)
+# (`notify_info_request_escalation`), không phải đoán ý khách. SRS-5.1zzzzzzz552 (audit 25/11 P0): tin có hơn một câu khách chờ thì bot hỏi lại,
+# admin nhắn kèm mã câu "#<mã tin>/<4 ký tự>: …" (mã tin có gạch — "BDS-NP-Q7-0039" — nên mã câu đi sau "/").
+_LENH_TRA_LOI = re.compile(r"^\s*#\s*([A-Za-z0-9][A-Za-z0-9-]{3,})(?:\s*/\s*([A-Za-z0-9]{4}))?\s*:\s*(.+)$", re.S)
 
 
-def lenh_tra_loi(text: str) -> tuple[str, str] | None:
-    """`"#ABCD1234: sổ riêng"` → `("ABCD1234", "sổ riêng")`; không đúng cú pháp → None."""
+def lenh_tra_loi(text: str) -> tuple[str, str | None, str] | None:
+    """`"#ABCD1234: sổ riêng"` → `("ABCD1234", None, "sổ riêng")`; `"#ABCD1234/7f3a: ok"` → `("ABCD1234", "7F3A", "ok")`; sai cú pháp → None."""
     m = _LENH_TRA_LOI.match(text or "")
-    return (m.group(1).upper(), m.group(2).strip()) if m and m.group(2).strip() else None
+    if not (m and m.group(3).strip()):
+        return None
+    return m.group(1).upper(), (m.group(2) or "").upper() or None, m.group(3).strip()
 
 
 # Mẫu đọc / nhận dãy giống SĐT dựng từ cùng mẫu gốc với bộ che (`sdt.py`, SRS-5.1zzzzzzz317) — đây là NHẬN DIỆN, không phải che.
@@ -73,6 +77,33 @@ def giong_sdt_sai(text: str) -> bool:
     """Khách gõ một dãy số GIỐNG số điện thoại (đầu 0 / +84, 7–13 số) nhưng `tim_sdt` không nhận — thiếu hoặc thừa chữ số, hoặc sai đầu số
     (SRS-5.1zzzzzzz161, chat chị Ngân 23/10: gõ thiếu một số "070772473", bot vẫn "cảm ơn chị đã gửi số" mà DB không ghi gì)."""
     return tim_sdt(text) is None and bool(GIONG_SDT.search(text or ""))
+
+
+# SRS-5.1zzzzzzz552 (audit 25/11 P0 phía mua): lời chuyển giữa khách mua và chủ nhà qua bot (câu hỏi → chủ nhà, câu trả lời → khách) che SĐT /
+# giấy tờ, email, link và số nhà — hai bên không đổi số để giao dịch ngoài, người lạ không nhờ bot gửi link tới chủ nhà.
+_AN = "[đã ẩn]"
+_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+_LINK = re.compile(r"(?i)(?:https?://|www\.)\S+|(?<![\w@.-])(?:[a-z0-9-]+\.)+(?:com|vn|net|org|info|biz|asia|xyz|me|io|ly|link|site|online|"
+                   r"shop|store|top|cc|co|app|page|to)(?:/\S*)?(?![\w-])")
+_SO_NHA_CHU = re.compile(r"(?i)(?<!\w)(số\s*nhà|nhà\s*số|địa\s*chỉ|đ/c)(\s*[:：]?\s*(?:số\s*)?)\d+[a-z]?(?:\s*/\s*\d+[a-z]?)*(?![\w/])")
+_SO_NHA_HEM = re.compile(r"(?i)(?<!\w)(hẻm|hẽm|kiệt|ngõ|ngách|hxh|số)(\s+)\d+[a-z]?(?:/\d+[a-z]?)+(?![\w/])")
+# Sau số nhà của căn mà là đơn vị (giá, diện tích, tầng, giờ…) thì không phải số nhà — "12 tỷ" khi căn ở số 12 không bị che.
+_DON_VI_SAU = r"(?!\s*(?:tỷ|ty|tr\b|triệu|trieu|nghìn|ngàn|k\b|m\b|m2|m²|mét|phòng|pn\b|wc\b|tầng|lầu|h\b|giờ|g\b|%|năm|tháng|ngày|x\b))"
+
+
+def che_loi_chuyen(text: str | None, so_nha: str | None = None) -> str:
+    """Che lời chuyển giữa khách mua và chủ nhà. `so_nha` = địa chỉ gốc của căn (`location_raw`): số nhà đứng đầu nó bị che ở mọi chỗ trong lời
+    (trừ khi theo sau là đơn vị — giá, diện tích, tầng giữ nguyên). Số nhà khác chỉ che khi có chữ dẫn ("số nhà", "địa chỉ", "hẻm 12/3")."""
+    if not text:
+        return text or ""
+    s = che_so_ca_nhan(text, _AN)
+    s = _LINK.sub(_AN, _EMAIL.sub(_AN, s))
+    s = _SO_NHA_CHU.sub(lambda m: m.group(1) + m.group(2) + _AN, s)
+    s = _SO_NHA_HEM.sub(lambda m: m.group(1) + m.group(2) + _AN, s)
+    m = SO_NHA_DAU.match(so_nha or "")
+    if m and (len(m.group(1)) >= 2 or "/" in m.group(1)):
+        s = re.sub(rf"(?<![\w/.,×]){re.escape(m.group(1))}(?![\w/.,]){_DON_VI_SAU}", _AN, s, flags=re.I)
+    return s
 
 
 def _q(s: str) -> str:
@@ -234,6 +265,7 @@ def _chu_nhu_cau(lead: Any) -> str:
 # nhà đi đường `info_requests` sẵn có (chủ nhà 12 giờ, quá hạn admin; chủ nhà được nhắn qua `notify_info_request_escalation`). Chủ nhà gửi ảnh
 # vào chat → lõi đặt câu này `answered` (`tra_loi_xin_anh`) → trigger `info_request_bao_lai_khach` đẻ nhắc `followup` → `gui_nhac` báo khách.
 XIN_THEM_ANH = "Khách xin thêm ảnh thực tế của căn"
+TRAN_CAU_HOI_NGAY = 10   # SRS-5.1zzzzzzz552: câu một khách mua gửi chủ nhà trong 24 giờ — chặn người lạ nhờ bot rải tin tới mọi chủ nhà
 
 
 class KhoNguoiMua:
@@ -759,13 +791,20 @@ class KhoNguoiMua:
             return False
 
     def ghi_hoi_chu_nha(self, buyer_id: str, can: dict, cau_hoi: str) -> bool:
-        """Câu khách hỏi → `info_requests` (DB tự giao chủ nhà / admin). Cùng câu đang chờ thì không tạo thêm."""
-        cau_hoi = cau_hoi.strip()[:500]
+        """Câu khách hỏi → `info_requests` (DB tự giao chủ nhà / admin). Cùng câu đang chờ thì không tạo thêm. SRS-5.1zzzzzzz552: câu đã che
+        SĐT / link / số nhà (`che_loi_chuyen`); khách đã gửi `TRAN_CAU_HOI_NGAY` câu trong 24 giờ thì không ghi thêm."""
+        cau_hoi = che_loi_chuyen(cau_hoi.strip())[:500]
         try:
             co = self._get(f"info_requests?buyer_id=eq.{buyer_id}&listing_id=eq.{can['id']}&status=eq.pending"
                            f"&question=eq.{_q(cau_hoi)}&select=id")
             if co:
                 return True
+            tu = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 86400))
+            dem = self._get(f"info_requests?buyer_id=eq.{buyer_id}&source=eq.buyer_ask&created_at=gte.{_q(tu)}&select=id"
+                            f"&limit={TRAN_CAU_HOI_NGAY}")
+            if len(dem or []) >= TRAN_CAU_HOI_NGAY:
+                log.warning("ghi_hoi_chu_nha: khách đã gửi %d câu trong 24 giờ — không ghi thêm", len(dem))
+                return False
             self._post("info_requests", {"listing_id": can["id"], "buyer_id": buyer_id, "question": cau_hoi,
                                          "status": "pending", "source": "buyer_ask"}, prefer="return=minimal")
             return True
@@ -842,12 +881,19 @@ class KhoNguoiMua:
             return []
 
     def tra_loi_cau_hoi(self, ir_id: str, tra_loi: str) -> bool:
-        """Đặt câu trả lời → trigger `info_request_bao_lai_khach` nhắn lại khách."""
+        """Đặt câu trả lời → trigger `info_request_bao_lai_khach` nhắn lại khách. SRS-5.1zzzzzzz552: lời đã che SĐT / link / số nhà của căn
+        (`che_loi_chuyen`) — chủ nhà hay admin gõ gì thì khách cũng không nhận số / link để giao dịch ngoài."""
         self.__dict__.setdefault("_cau_hoi_nho", {}).clear()
+        try:
+            dc = self._get(f"info_requests?id=eq.{_q(ir_id)}&select=listings(location_raw)") or [{}]
+            so_nha = ((dc[0] or {}).get("listings") or {}).get("location_raw")
+        except Exception as e:  # noqa: BLE001 — không đọc được địa chỉ thì vẫn che SĐT / link / số nhà có chữ dẫn
+            log.warning("tra_loi_cau_hoi: đọc địa chỉ căn lỗi (%s)", type(e).__name__)
+            so_nha = None
         try:
             from datetime import datetime, timezone
             self._patch(f"info_requests?id=eq.{_q(ir_id)}&status=eq.pending",
-                        {"status": "answered", "answer": tra_loi.strip()[:1000],
+                        {"status": "answered", "answer": che_loi_chuyen(tra_loi.strip(), so_nha)[:1000],
                          "answered_at": datetime.now(timezone.utc).isoformat()})
             return True
         except Exception as e:  # noqa: BLE001
@@ -865,20 +911,38 @@ class KhoNguoiMua:
             log.warning("la_nhan_vien lỗi: %s", e)
             return False
 
-    def tra_loi_theo_ma(self, ma: str, tra_loi: str) -> str | None:
-        """Lệnh nhân viên: trả lời câu đang chờ MỚI NHẤT của tin `ma`. Trả câu hỏi đã trả lời, hoặc None nếu không có câu chờ."""
+    def cau_cho_theo_ma(self, ma: str) -> list[dict] | None:
+        """Câu khách mua đang chờ trả lời của tin `ma` (lệnh admin "#mã: …"), cũ trước: id, ma_ngan (4 ký tự đầu id = mã câu), question,
+        ten_khach, viewing_id / gio (câu xác nhận lịch). None = không thấy tin; lỗi kho thì ném ra cho engine báo admin. SRS-5.1zzzzzzz552
+        (audit 25/11 P0): bản cũ trả lời câu MỚI NHẤT của căn bất kể khách nào / loại nào — admin trả lời lịch của khách A thì khách B nhận."""
         can = self.can_theo_ma([ma]) or self._get(f"listings?code=eq.{_q(ma)}&select=id,code")
         if not can:
             return None
+        lid = can[0]["id"]
+        rows = self._get(f"info_requests?listing_id=eq.{lid}&status=eq.pending&source=eq.buyer_ask&buyer_id=not.is.null"
+                         "&select=id,question,buyer_id,buyers(name)&order=created_at.asc&limit=20") or []
+        lich = (self._get(f"viewings?listing_id=eq.{lid}&status=in.(proposed,pending,confirmed)&select=id,buyer_id,time_text"
+                          "&order=created_at.desc") or []) if any(r.get("question") == "xac_nhan_lich" for r in rows) else []
+        vw: dict[str, dict] = {}
+        for v in lich:
+            vw.setdefault(v.get("buyer_id"), v)   # lịch mới nhất của từng khách ở căn này
+        ra = []
+        for r in rows:
+            v = (vw.get(r.get("buyer_id")) or {}) if r.get("question") == "xac_nhan_lich" else {}
+            ra.append({"id": r["id"], "ma_ngan": str(r["id"]).replace("-", "")[:4].upper(), "question": r.get("question") or "",
+                       "ten_khach": ((r.get("buyers") or {}).get("name") or "").strip(), "viewing_id": v.get("id"),
+                       "gio": (v.get("time_text") or "").strip()})
+        return ra
+
+    def chot_lich(self, viewing_id: str) -> bool:
+        """Admin đồng ý đúng giờ khách hẹn (AI đọc, `Engine._doc_y_chot_lich`) → lịch `confirmed`. SRS-5.1zzzzzzz552: trigger DB không tự chốt
+        nữa (bản cũ chốt mọi câu admin trả lời, kể cả "chủ bận thứ 7")."""
         try:
-            rows = self._get(f"info_requests?listing_id=eq.{can[0]['id']}&status=eq.pending&order=created_at.desc&limit=1"
-                             "&select=id,question")
+            self._patch(f"viewings?id=eq.{_q(viewing_id)}&status=in.(proposed,pending)", {"status": "confirmed"})
+            return True
         except Exception as e:  # noqa: BLE001
-            log.warning("tra_loi_theo_ma lỗi: %s", e)
-            return None
-        if not rows or not self.tra_loi_cau_hoi(rows[0]["id"], tra_loi):
-            return None
-        return rows[0].get("question") or ""
+            log.warning("chot_lich lỗi: %s", e)
+            return False
 
     # --- Chốt kèo ------------------------------------------------------------------------------------------------
     def ghi_deal(self, listing_id: str, ti_le_phi: float | None, gia_chot: str | None = None) -> bool:

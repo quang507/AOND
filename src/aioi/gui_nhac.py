@@ -23,7 +23,7 @@ from typing import Any, Callable
 
 from . import cau_mau
 from .bao_can_moi import trong_khung_gio
-from .mua import TRANG_THAI_HIEN, XIN_THEM_ANH
+from .mua import TRANG_THAI_HIEN, XIN_THEM_ANH, che_loi_chuyen
 from .web import link_tin
 from .xung_ho import goi_toi
 
@@ -78,6 +78,15 @@ def _ma_can(kho: Any, listing_id: str | None, viewing: dict | None = None) -> st
     return str(rows[0].get("code") or "?") if rows else "?"
 
 
+def _cau_da_tra(kho: Any, r: dict, loc: str) -> dict | None:
+    """Câu khách hỏi của (khách, căn) vừa được trả lời gần nhất, lọc theo `loc` (câu xác nhận lịch / câu thường); None = không có lời."""
+    if not (r.get("buyer_id") and r.get("listing_id")):
+        return None
+    ir = kho._get(f"info_requests?buyer_id=eq.{_q(r['buyer_id'])}&listing_id=eq.{_q(r['listing_id'])}&status=eq.answered{loc}"
+                  "&select=question,answer&order=answered_at.desc.nullslast&limit=1")
+    return ir[0] if ir and (ir[0].get("answer") or "").strip() else None
+
+
 def soan_tin(kho: Any, r: dict, goi: str, toi: str) -> str | None:
     """Chữ gửi khách cho một dòng nhắc; None = không có gì để gửi (dòng chuyển `dead`). Chỉ điền từ cột thật."""
     kind = r.get("kind")
@@ -86,20 +95,23 @@ def soan_tin(kho: Any, r: dict, goi: str, toi: str) -> str | None:
         return chu or None
     if kind == "followup":
         if r.get("viewing_id"):
-            v = kho._get(f"viewings?id=eq.{_q(r['viewing_id'])}&select=time_text,slot,listing_code")
+            v = kho._get(f"viewings?id=eq.{_q(r['viewing_id'])}&select=time_text,slot,listing_code,status")
             v0 = v[0] if v else None
-            return cau_mau.cau("bao_lich_da_chot", goi, toi=toi, ma=_ma_can(kho, r.get("listing_id"), v0), gio=_gio_hen(v0))
-        if not (r.get("buyer_id") and r.get("listing_id")):
+            ma = _ma_can(kho, r.get("listing_id"), v0)
+            if v0 and v0.get("status") == "confirmed":
+                return cau_mau.cau("bao_lich_da_chot", goi, toi=toi, ma=ma, gio=_gio_hen(v0))
+            # SRS-5.1zzzzzzz552 (audit 25/11 P0): admin trả lời mà chưa đồng ý đúng giờ khách hẹn → khách nhận NGUYÊN lời (đã che), không
+            # báo "đã chốt" đúng giờ khách tự đề nghị.
+            ir = _cau_da_tra(kho, r, "&question=eq.xac_nhan_lich")
+            return cau_mau.cau("bao_lich_chu_tra_loi", goi, toi=toi, ma=ma, tra_loi=che_loi_chuyen(ir["answer"].strip())[:600]) if ir else None
+        ir = _cau_da_tra(kho, r, "&question=neq.xac_nhan_lich")
+        if not ir:
             return None
-        ir = kho._get(f"info_requests?buyer_id=eq.{_q(r['buyer_id'])}&listing_id=eq.{_q(r['listing_id'])}&status=eq.answered"
-                      "&select=question,answer&order=answered_at.desc.nullslast&limit=1")
-        if not ir or not (ir[0].get("answer") or "").strip():
-            return None
-        if (ir[0].get("question") or "").strip() == XIN_THEM_ANH:   # SRS-5.1zzzzzzz254: chủ nhà gửi thêm ảnh khách xin
+        if (ir.get("question") or "").strip() == XIN_THEM_ANH:   # SRS-5.1zzzzzzz254: chủ nhà gửi thêm ảnh khách xin
             ma = _ma_can(kho, r.get("listing_id"))
             return cau_mau.cau("bao_them_anh", goi, toi=toi, ma=ma, url=link_tin(ma if ma != "?" else None))
-        return cau_mau.cau("bao_tra_loi_chu_nha", goi, toi=toi, ma=_ma_can(kho, r.get("listing_id")),
-                           cau_hoi=(ir[0].get("question") or "").strip()[:200], tra_loi=ir[0]["answer"].strip()[:600])
+        return cau_mau.cau("bao_tra_loi_chu_nha", goi, toi=toi, ma=_ma_can(kho, r.get("listing_id")),   # SRS-5.1zzzzzzz552: che lần nữa khi soạn
+                           cau_hoi=che_loi_chuyen((ir.get("question") or "").strip())[:200], tra_loi=che_loi_chuyen(ir["answer"].strip())[:600])
     if kind == "sold":
         return cau_mau.cau("bao_can_da_ban", goi, toi=toi, ma=_ma_can(kho, r.get("listing_id")))
     if kind == "feedback":

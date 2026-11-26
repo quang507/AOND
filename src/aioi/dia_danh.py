@@ -442,7 +442,7 @@ class TraDiaDanh:
     @staticmethod
     def co_so_nha(dia_chi: str | None) -> bool:
         """Địa chỉ AI bóc đã có số nhà ở đầu chưa — cùng khuôn `phuong_theo_so_nha` dùng để tra (SRS-5.1zzzzzzz411)."""
-        return bool(_SO_NHA_DAU.match(dia_chi or ""))
+        return bool(SO_NHA_DAU.match(dia_chi or ""))
 
     def phuong_theo_so_nha(self, dia_chi: str | None, ten_duong: str | None, quan: str | None = None) -> str | None:
         """Phường mới của nhà khi bản đồ OSM có ĐÚNG số nhà đó (SRS-5.1zzzzzzz236, chủ dự án 28/10: "đưa địa chỉ cụ thể hoặc hẻm cụ thể thì nó
@@ -451,7 +451,7 @@ class TraDiaDanh:
         số nhà + đúng tên đường, phường ra phải là MỘT phường trong kho, nằm trong các phường con đường đi qua (và của hẻm, nếu kho hẻm có).
         Không chắc / lỗi mạng → None (bước tra kế của `Engine._phuong_tu_dia_chi`; SRS-5.1zzzzzzz359: không hỏi khách). Nhớ theo (số, đường,
         quận); lỗi mạng không nhớ."""
-        m = _SO_NHA_DAU.match(dia_chi or "")
+        m = SO_NHA_DAU.match(dia_chi or "")
         if not m or not ten_duong:
             return None
         so = m.group(1).upper()
@@ -511,7 +511,7 @@ class TraDiaDanh:
             except Exception as e:  # noqa: BLE001 — tra bản đồ là phần thêm
                 log.warning("phường theo toạ độ: đọc điểm hẻm lỗi %s", e)
         if not diem:
-            m = _SO_NHA_DAU.match(dia_chi or "")
+            m = SO_NHA_DAU.match(dia_chi or "")
             q = f"{m.group(1) + ' ' if m else ''}{ten_duong}, {quan + ', ' if quan else ''}Thành phố Hồ Chí Minh"
             try:
                 ds = self._rpc("tra_nominatim", {"p_q": q, "p_limit": 3, "p_chi_tiet": True, "p_cho_giay": 4})
@@ -563,7 +563,7 @@ class TraDiaDanh:
 
 # Số nhà / số hẻm trong địa chỉ: "137/28", "387/12A", "hẻm 965", "hxh 12/3". Đây là đọc KHUÔN SỐ của địa chỉ (không đoán ý khách):
 # ô dia_chi đã do AI ghi và qua cổng bằng chứng. So trên chữ bỏ dấu, đã gỡ tên đường ("Đường số 59" không cho số 59).
-_SO_NHA_DAU = re.compile(r"\s*(?:số\s*)?(\d+[a-zA-Z]?(?:/\d+[a-zA-Z]?)*)\b", re.I)   # số nhà đứng đầu ô dia_chi ("125", "12/3", "156B")
+SO_NHA_DAU = re.compile(r"\s*(?:số\s*)?(\d+[a-zA-Z]?(?:/\d+[a-zA-Z]?)*)\b", re.I)   # số nhà đứng đầu ô dia_chi ("125", "12/3", "156B")
 _SO_DIA_CHI = re.compile(r"(?:\b(hem|hxh|kiet|ngo)\s*)?\b(\d+[a-z]?(?:/\d+[a-z]?)*)\b")
 
 

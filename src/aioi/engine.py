@@ -2981,9 +2981,7 @@ class Engine:
         la_nhan_vien = getattr(self._convstore, "la_nhan_vien", None)
         if lenh and la_nhan_vien is not None and la_nhan_vien(user_key):
             conv.history.append(Turn("user", text, now))
-            cau = self._convstore.tra_loi_theo_ma(*lenh)
-            reply = (f"Em đã chuyển câu trả lời về #{lenh[0]} cho khách rồi ạ." if cau is not None
-                     else f"Tin #{lenh[0]} hiện không có câu khách hỏi nào đang chờ ạ.")
+            reply = self._lenh_tra_loi_khach(*lenh)   # SRS-5.1zzzzzzz552: rõ một câu mới chuyển; câu lịch thì AI đọc có đồng ý không
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured=[], now=now)
@@ -5968,6 +5966,53 @@ class Engine:
         kho = self._convstore
         lay = getattr(kho, "can_khong_hop", None)
         return kho.can_phu_hop(conv.buyer_lead, loai_tru=lay(conv.user_key) if lay is not None else None)
+
+    def _lenh_tra_loi_khach(self, ma: str, ma_cau: str | None, tra_loi: str) -> str:
+        """Lệnh admin "#mã[/mã câu]: câu trả lời" (SRS-5.1zzzzzzz70) → lời đáp cho admin. SRS-5.1zzzzzzz552 (audit 25/11 P0): chỉ chuyển khi rõ
+        MỘT câu (tin chỉ có một câu chờ, hoặc admin ghi mã câu); nhiều câu thì liệt kê cho admin chọn — không đoán khách. Câu xác nhận lịch: AI
+        đọc lời admin, chỉ chốt lịch khi đồng ý đúng giờ khách hẹn; còn lại khách nhận nguyên lời (đã che số / link)."""
+        kho = self._convstore
+        try:
+            ds = kho.cau_cho_theo_ma(ma)
+        except Exception as e:  # noqa: BLE001
+            log.warning("Lệnh trả lời: đọc câu chờ lỗi (%s)", type(e).__name__)
+            return f"Em chưa đọc được câu chờ của #{ma}, nhắn lại giúp em sau ít phút nha."
+        if ds is None:
+            return f"Em không thấy tin #{ma} ạ."
+        if ma_cau:
+            ds = [c for c in ds if c["ma_ngan"] == ma_cau]
+        if not ds:
+            return f"Tin #{ma} hiện không có câu khách hỏi nào đang chờ" + (f" với mã /{ma_cau}" if ma_cau else "") + " ạ."
+        if len(ds) > 1:
+            dong = "\n".join(f"- #{ma}/{c['ma_ngan']} · khách {c['ten_khach'] or '(chưa biết tên)'} · "
+                             + (f"xác nhận lịch xem {c['gio']}".rstrip() if c["question"] == "xac_nhan_lich" else f"hỏi “{c['question'][:120]}”")
+                             for c in ds)
+            return (f"Tin #{ma} đang có {len(ds)} câu khách chờ, em chưa chuyển để khỏi nhầm khách:\n{dong}\n"
+                    f"Nhắn lại kèm mã câu giúp em, ví dụ “#{ma}/{ds[0]['ma_ngan']}: {tra_loi[:40]}”.")
+        c = ds[0]
+        lich = c["question"] == "xac_nhan_lich"
+        chot = bool(lich and c.get("viewing_id") and self._doc_y_chot_lich(c.get("gio") or "", tra_loi) and kho.chot_lich(c["viewing_id"]))
+        if not kho.tra_loi_cau_hoi(c["id"], tra_loi):
+            return f"Em chưa chuyển được câu trả lời về #{ma} (lỗi kho), nhắn lại giúp em nha."
+        ten = c["ten_khach"] or "khách"
+        if lich:
+            return (f"Em đã báo {ten}: lịch xem #{ma} đã chốt." if chot
+                    else f"Em đã chuyển nguyên lời cho {ten}; lịch xem #{ma} chưa chốt (lời này chưa phải đồng ý đúng giờ khách hẹn).")
+        return f"Em đã chuyển câu trả lời về #{ma} cho {ten} rồi ạ."
+
+    def _doc_y_chot_lich(self, gio: str, loi: str) -> bool:
+        """AI đọc lời admin về lịch xem (SRS-5.1zzzzzzz552): True CHỈ KHI đồng ý cho xem đúng giờ khách hẹn, không đổi, không kèm điều kiện.
+        Lỗi / không chắc → False: khách nhận nguyên lời, lịch chưa chốt — không báo "đã chốt" sai."""
+        schema = {"type": "object", "properties": {"dong_y": {"type": "boolean"}}, "required": ["dong_y"]}
+        he = ("Khách mua hẹn đi xem nhà lúc: " + (gio or "(không rõ giờ)") + ". Tin dưới là lời admin nhắn sau khi hỏi chủ nhà về lịch đó. "
+              "dong_y = true CHỈ KHI lời đó đồng ý cho xem đúng giờ khách hẹn (\"ok\", \"được em\", \"chủ ok 15h thứ 7\" khi khách hẹn 15h thứ 7). "
+              "Đổi giờ / ngày, hỏi lại, kèm điều kiện, từ chối hoặc không rõ → false.")
+        try:
+            kq = self._provider.extract(he, [Message("user", (loi or "")[:500])], schema)
+        except Exception as e:  # noqa: BLE001
+            log.warning("Đọc lời chốt lịch lỗi (%s) — không chốt", type(e).__name__)
+            return False
+        return isinstance(kq, dict) and kq.get("dong_y") is True
 
     def _viec_mua(self, conv: Conversation, text: str) -> tuple[list[str], list[dict]]:
         """Ghi việc khách mua vừa nói (quan tâm / hẹn xem / hỏi chủ nhà) lên DB — chỉ khi mã căn có thật và đang hiện; ý việc do AI đọc

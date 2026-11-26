@@ -168,6 +168,10 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "bao_lich_da_chot": ("Lịch xem căn {ma} của {goi} đã được chốt: {gio}. Tới giờ {goi} ghé xem nhé, có gì thay đổi thì nhắn {toi}.",
                          "Admin chốt lịch xem (`#mã: ok giờ`) → báo khách mua (nhắc `followup` có viewing_id). {ma} = mã căn, {gio} = giờ đã chốt, "
                          "{toi} = bot tự xưng — câu sửa phải giữ {gio}", "SRS-5.1zzzzzzz216"),
+    "bao_lich_chu_tra_loi": ("Về lịch xem căn {ma}, chủ nhà nhắn lại: “{tra_loi}”\nLịch này chưa chốt, {goi} xem rồi nhắn {toi} để {toi} sắp xếp tiếp nha.",
+                             "Admin trả lời câu xác nhận lịch xem mà chưa đồng ý đúng giờ khách hẹn (AI đọc) → báo khách mua NGUYÊN lời (đã che số / "
+                             "link), nhắc `followup` có viewing_id. {ma} = mã căn, {tra_loi} = lời admin, {toi} = bot tự xưng — câu sửa phải giữ {tra_loi}",
+                             "SRS-5.1zzzzzzz552"),
     "bao_can_da_ban": ("Căn {ma} {goi} quan tâm vừa có người chốt mất rồi. {Goi} muốn {toi} tìm căn khác tương tự không?",
                        "Căn khách mua đã quan tâm chuyển sang đã chốt (nhắc `sold`). {ma} = mã căn, {toi} = bot tự xưng", "SRS-5.1zzzzzzz216"),
     "bao_them_anh": ("Chủ nhà căn {ma} vừa gửi thêm ảnh rồi {goi} ạ. {Goi} xem ở đây nhé: {url}",
@@ -213,7 +217,7 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
 # Khung bắt buộc của vài câu — code dựa vào khung đó (dòng mở bản nháp: tìm tiêu đề, cắt câu dẫn). Câu sửa sai khung → mặc định.
 # Chỗ giữ chữ câu sửa tay BẮT BUỘC giữ (thiếu thì bot nói câu không có con số) — kiểm trên câu sửa, trước khi điền.
 _BAT_BUOC = {"bao_phi": ("{phi}",), "xac_nhan_lich": ("{gio}", "{can}"), "bao_tra_loi_chu_nha": ("{tra_loi}",),
-             "bao_lich_da_chot": ("{gio}",), "web_da_luu": ("{tom_tat}", "{url}"), "web_hoi_du_an": ("{tom_tat}",),
+             "bao_lich_da_chot": ("{gio}",), "bao_lich_chu_tra_loi": ("{tra_loi}",), "web_da_luu": ("{tom_tat}", "{url}"), "web_hoi_du_an": ("{tom_tat}",),
              "ban_ve_pdf": ("{link}",), "bao_them_anh": ("{url}",), "bao_tin_len_web": ("{url}",),
              "hoi_con_ban": ("{can}", "{con}")}
 
