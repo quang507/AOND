@@ -140,7 +140,7 @@ from .revenue import SellerRole
 from .schema import ANH_TIN_DEP, CAU_MO_MUA, CUM_XIN_ANH, FACETS, HOUSE_TYPES, KHOA_PHAP_LY, loai_phap_ly, O_COC, O_GIA_CHOT, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .prompts import Y_MO_DAU
 from .dia_danh import TraDiaDanh, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
-from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
+from .xung_ho import goi_toi as goi_toi_khach, tre as _xung_tre
 # SRS-5.1zzzzzzz546: giọng ở MỘT chỗ — khối xưng hô + làm sạch hình thức lời gửi khách nằm ở giong.py (tên cũ giữ cho các chỗ gọi).
 from .giong import (bo_da_dau as _bo_da_dau, bo_gach_cheo as _bo_gach_cheo, bo_markdown as _bo_markdown, khoi_xung_ho,  # noqa: F401
                     mo_dau_da as _mo_dau_da)
@@ -1576,16 +1576,6 @@ def _ban_tin_da_trinh(conv: "Conversation", can: "Listing | None" = None) -> tup
     return None
 
 
-def _goi_khach_la_minh(reply: str, pronoun: str) -> bool:
-    """Lời bot gọi khách là "mình" như đại từ — SRS-5.1zzzzzzz171 / 214. Luật một nguồn ở `xung_ho.goi_khach_la_minh` (câu mẫu cố định
-    cũng qua đó, SRS-5.1zzzzzzz226). Kiểm HÌNH THỨC lời của chính bot, không đoán ý khách."""
-    return goi_khach_la_minh(reply)
-
-
-
-
-
-
 _BOT_GUI_ANH_RE = re.compile(r"(?i)(?<![\wà-ỹđ])em\s+(?:sẽ\s+)?(?:gửi|chụp)\s+(?:thêm\s+)?(?:(?:vài|mấy|một|ít)\s+)?(?:tấm\s+)?(?:ảnh|hình)")
 
 
@@ -1703,14 +1693,6 @@ def _soat_tu_noi_bo(eng, conv, reply, nc) -> list[str]:
 
 def _soat_da(eng, conv, reply, nc) -> list[str]:
     return ["Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\"."] if _mo_dau_da(reply) else []
-
-
-def _soat_goi_minh(eng, conv, reply, nc) -> list[str]:
-    if not _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
-        return []
-    return ["Lời vừa viết gọi khách là \"mình\" (\"em xin lỗi mình\", \"Mình đang cần…\") — KHÔNG dùng \"mình\" gọi khách hay tự xưng: "
-            "gọi đúng cách khách xưng (em / cháu / anh / chị), chưa rõ thì \"anh/chị\"; tự xưng đúng QUY TẮC XƯNG HÔ ở trên. "
-            "Chỉ \"nhà mình / căn mình\" khi nói về căn của khách."]
 
 
 def _soat_phi_vai(eng, conv, reply, nc) -> list[str]:
@@ -2040,7 +2022,6 @@ LUAT_SOAT: tuple[tuple[str, str, Callable[..., list[str]]], ...] = (
     ("ten_khoi", "ly_do", _soat_ten_khoi),
     ("tu_noi_bo", "ly_do", _soat_tu_noi_bo),   # SRS-5.1zzzzzzz343
     ("da_mo_dau", "ly_do", _soat_da),
-    ("goi_minh", "ly_do", _soat_goi_minh),
     ("phi_vai", "ly_do", _soat_phi_vai),
     ("tin_dang_hien", "ly_do", _soat_tin_dang_hien),
     ("mot_cau_hoi", "ly_do", _soat_mot_cau_hoi),
@@ -2057,7 +2038,7 @@ LUAT_SOAT: tuple[tuple[str, str, Callable[..., list[str]]], ...] = (
     ("yeu_cau_viet", "ly_do", _soat_yeu_cau_viet),
 )
 # SRS-5.1zzzzzzz352: luật giữ SỰ THẬT / TIỀN / RIÊNG TƯ — khi phải chọn giữa bản đầu và bản viết lại (cả hai còn lệch), lệch nhóm này nặng hơn lệch
-# hình thức (gọi "mình", hai câu hỏi, tên khối…). Ca `cao_lo`: bản đầu chỉ lệch `goi_minh` (bắt oan), bản viết lại thêm "4 tầng" bịa.
+# hình thức (hai câu hỏi, tên khối…). Ca `cao_lo`: bản đầu chỉ lệch một luật hình thức (bắt oan), bản viết lại thêm "4 tầng" bịa.
 LUAT_SU_THAT = frozenset({"lo_rieng", "khang_dinh", "phi_vai", "tin_dang_hien", "binh_luan_gia", "so_can_mua", "so_trong_tin"})
 
 
@@ -3715,7 +3696,7 @@ class Engine:
         reply = _gan_dau_ban_tin(reply)
         ly_do: list[str] = []
         # SRS-5.1zzzzzzz298 (B2 bước 1): luật GIỌNG / LẶP (không đổi sự thật, tiền, quyền riêng) vào `mem` — chế độ gọn chỉ ghi log, không gọi
-        # lại model; luật giữ sự thật / tiền / riêng tư / bản tin / luật cứng chủ dự án (một câu hỏi, không gọi "mình") vẫn vào `ly_do`.
+        # lại model; luật giữ sự thật / tiền / riêng tư / bản tin / luật cứng chủ dự án (một câu hỏi) vẫn vào `ly_do`; lưới "mình" gỡ 26/11/2026 (SRS-546).
         mem: list[str] = []
         # Chế độ gọn là đường duy nhất (Đợt 8, SRS-5.1zzzzzzz319): luật mềm chỉ ghi log, tối đa MỘT lần gọi lại.
         if _mo_dau_da(reply):

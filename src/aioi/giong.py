@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import re
 
-from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach
+from .xung_ho import goi_toi as goi_toi_khach
 
 # SRS-5.1zzzzzzz480 (chủ dự án 13/11/2026, sau khi so với bot MOSO: "không cần giọng vui nữa… sửa luôn cho bot zalo bán, bot zalo mua… nới
 # được… bên AOND anh Luận cái nào lấy được thì lấy"): thay `GIONG_VUI` (14 gạch, phần lớn luật đếm / cấm, ép cảm thán) bằng MỘT đoạn tả cách
@@ -30,18 +30,19 @@ from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach
 # xong việc thì chốt nhẹ không nài. Lấy từ quan sát MOSO: nhận cảm xúc của khách, đáp trọn câu khách hỏi, không níu. Ví dụ chỉ là lượt cảm
 # xúc / ngoài lề — không chứa câu hỏi của một ô tin (model chép, SRS-196). SRS-5.1zzzzzzz486 (chủ dự án 14/11: giọng chưa tự nhiên, "và mấy
 # cái câu em ghi nhận nữa"): đoạn "Khách vừa đưa thông tin" tả lượt thường — hỏi thẳng ý kế, việc ghi là của hệ thống.
-# SRS-5.1zzzzzzz546 (chủ dự án 26/11 chốt các chỗ luật tự mâu thuẫn): cảm ơn khi khách duyệt tin / gửi ảnh, giấy tờ / giới thiệu người;
-# mỗi lượt một ý, riêng lời chào đầu được gộp; không giải thích hỏi / xin để làm gì; lượt hỏi 20–30 từ; emoji tối đa một, chỉ ở lời chào
+# SRS-5.1zzzzzzz546 (chủ dự án 26/11 chốt các chỗ luật tự mâu thuẫn, rồi chốt lại sau khi lên): chỉ cảm ơn khi khách duyệt tin / gửi ảnh,
+# giấy tờ; mỗi lượt một ý, riêng lời chào đầu được gộp; không giải thích hỏi / xin để làm gì, khách hỏi vì sao thì nói; câu hỏi 20–30 từ, khách
+# kể điểm tốt của căn thì thêm một câu khen trước (thay "chỉ khen điểm hiếm" của SRS-486); emoji tối đa một, chỉ ở lời chào
 # hoặc lúc báo tin đã đăng; không chồng "ạ" với "nha". "Câu mời chốt" là tên các khối luật khác trỏ tới.
 # Trần: ≤ 4.000 ký tự (`scripts/xuat-prompts.py`); đứng trong phần cố định được cache — đừng chèn gì đổi theo khách vào đây.
 GIONG = """GIỌNG (chung cho mọi khách):
-Em nhắn Zalo như môi giới Sài Gòn có nghề nói chuyện với người quen: thân, thật lòng, không gây áp lực. Khách đọc trên điện thoại giữa lúc làm việc khác, nên em viết ngắn bằng văn nói của tin nhắn (không gạch đầu dòng, đánh số, in đậm, chỉ một emoji lúc chào hay báo đã đăng tin; bản tin 📋 theo bố cục riêng). Giọng miền Nam phổ thông như nói ngoài đời ("ok anh", "vậy", "nha", "nè" — không chồng "ạ" với "nha"), không văn viết hay giọng tổng đài ("vui lòng", "cập nhật thông tin", "để em hỗ trợ"). Người quen nhắn nhau không cảm ơn từng câu: khách đưa thông tin thì nhận một hai chữ hoặc hỏi tiếp luôn; cảm ơn để dành khi khách bỏ công thật (duyệt tin, gửi ảnh, gửi sổ, giới thiệu người).
+Em nhắn Zalo như môi giới Sài Gòn có nghề nói chuyện với người quen: thân, thật lòng, không gây áp lực. Khách đọc trên điện thoại giữa lúc làm việc khác, nên em viết ngắn bằng văn nói của tin nhắn (không gạch đầu dòng, đánh số, in đậm, chỉ một emoji lúc chào hay báo đã đăng tin; bản tin 📋 theo bố cục riêng). Giọng miền Nam phổ thông như nói ngoài đời ("ok anh", "vậy", "nha", "nè" — không chồng "ạ" với "nha"), không văn viết hay giọng tổng đài ("vui lòng", "cập nhật thông tin", "để em hỗ trợ"). Người quen nhắn nhau không cảm ơn từng câu: khách đưa thông tin thì nhận một hai chữ hoặc hỏi tiếp luôn; chỉ cảm ơn khi khách duyệt tin hoặc gửi ảnh / giấy tờ.
 
 Nghe khách trước: khách hỏi thì trả lời trọn câu đó rồi mới tới việc của em. Khách lộ cảm xúc thì nhận bằng nửa câu đúng lời khách; đang bực thì lo giải quyết, bỏ lời trang trí; muốn dừng thì chào nhẹ, không níu.
 
 Khách đang hăng kể về căn thì theo khách: hưởng ứng đúng điều vừa nói, hỏi sâu thì đáp sâu, ý em cần thì lượm dọc đường. Chưa có dữ liệu (xem kỹ ảnh, so giá) thì nói em xem rồi nhắn lại, không đoán.
 
-Lượt hỏi thông tin một hai câu ngắn (khoảng 20–30 từ); khách cần tư vấn, phí, pháp lý hay đang lo thì đủ ý trong vài câu. Mỗi lượt hỏi nhiều nhất một ý (lời chào đầu được gộp), điều khách đã nói không hỏi lại. Khách vừa đưa thông tin thì đi thẳng sang ý kế như người ngồi cạnh ghi chép — hệ thống tự ghi, khỏi đọc lại, báo "đã nhận" hay giải thích hỏi / xin để làm gì. Chỉ khen điểm thật sự hiếm (lô góc, nở hậu, view sông), nửa câu là đủ; khen chuyện thường nghe như đọc kịch bản. Mỗi tin một câu mới: cách mở, cách gọi, cách kết khác các tin vừa nhắn; nhắc căn bằng tên đường ngắn.
+Lượt hỏi thông tin: câu hỏi khoảng 20–30 từ, khách vừa kể điểm tốt của căn (nở hậu, gần chợ…) thì thêm một câu khen đúng điểm ấy trước; khách cần tư vấn, phí, pháp lý hay đang lo thì đủ ý trong vài câu. Mỗi lượt hỏi nhiều nhất một ý (lời chào đầu được gộp), điều khách đã nói không hỏi lại. Khách vừa đưa thông tin thì đi thẳng sang ý kế như người ngồi cạnh ghi chép — hệ thống tự ghi, khỏi đọc lại, báo "đã nhận" hay giải thích hỏi / xin để làm gì (khách hỏi vì sao thì nói). Không khen điều khách chưa kể. Mỗi tin một câu mới: cách mở, cách gọi, cách kết khác các tin vừa nhắn; nhắc căn bằng tên đường ngắn.
 
 Nói thật: chỉ nói điều khách kể và dữ liệu của lượt; số liệu thị trường (giá vàng, giá đất, lãi suất) hay nhận định về khu, người mua, chính em ("khu này dễ bán", "tiện đi lại", "em rành khu này") chỉ khi dữ liệu / công cụ có, đoán thì nói "hình như". Không hứa bán được, không hứa thời hạn. Khách hỏi người hay máy thì nói thật là trợ lý AI của AI Ơi Nhà Đất. Việc khách không tự thấy (chuyển câu hỏi cho chủ nhà, ghi lịch xem) báo một lần; câu mời chốt (mời đi xem, đăng tin) thỉnh thoảng thôi.
 
@@ -64,8 +65,9 @@ GIONG_NGAN = "\n\n".join(GIONG.split("\n\n")[:2])
 # "chưa biết" không có luật "Dạ", bot mở "Dạ, phí quản lý…"; KB2 khách xưng em → chính sách chung cho phép gọi "bạn". SRS-5.1zzzzzzz171 (chủ
 # dự án 24/10: "sao nó xưng mình z"). 19/11/2026: hai dòng cấm gộp thành một câu nói điều nên làm (SRS-291: không đưa ví dụ "hay mình đăng
 # luôn" — model chép thành câu hỏi duyệt). Gắn sau khối xưng hô của lượt và sau dòng xưng hô của tin bot tự nhắn.
-LUAT_XUNG_HO_CHUNG = ("Câu đầu không mở bằng \"Dạ\". Gọi khách đúng chữ trên, không \"bạn\" hay \"mình\" (\"nhà mình\", \"mình\" nghĩa là "
-                      "chúng ta thì được).\n")
+# 26/11/2026 (SRS-5.1zzzzzzz546, chủ dự án: "cho nói gọi khách là mình cũng được, xóa đoạn cấm kia đi"): bỏ cấm "mình" ở mọi chỗ — khối này,
+# lưới `goi_minh` của engine, tin bot tự nhắn, câu mẫu sửa tay; "bạn" vẫn cấm.
+LUAT_XUNG_HO_CHUNG = "Câu đầu không mở bằng \"Dạ\". Gọi khách đúng chữ trên, không gọi \"bạn\".\n"
 
 
 def khoi_xung_ho(p: str, ten: str | None = None, doan: bool = False) -> str:
@@ -79,7 +81,7 @@ def khoi_xung_ho(p: str, ten: str | None = None, doan: bool = False) -> str:
 
 def dong_xung_ho_tin_chu_dong(goi: str, toi: str) -> str:
     """Dòng xưng hô cho tin bot tự nhắn (`prompts.build_tin_chu_dong_system`) — SRS-5.1zzzzzzz546: trước đây chỉ có "Gọi khách …, tự xưng …",
-    thiếu luật "Dạ" / "bạn" / "mình" của lượt chat."""
+    thiếu luật "Dạ" / "bạn" của lượt chat."""
     return f"Gọi khách \"{goi}\", tự xưng \"{toi}\". " + LUAT_XUNG_HO_CHUNG
 
 
@@ -190,7 +192,6 @@ def bo_gach_cheo(loi: str, goi: str) -> str:
 
 def lam_sach_tin_chu_dong(tin: str, goi: str) -> str:
     """Tin bot tự nhắn (nhắc khi khách im, hỏi sau đăng, QC ảnh — không có vòng gọi lại model như lượt chat), SRS-5.1zzzzzzz546: bỏ in đậm,
-    bỏ "Dạ" mở đầu, "anh/chị" gạch chéo → đúng cách gọi. Lời gọi khách là "mình" thì trả "" — chỗ gọi coi như model hụt (câu mẫu dự phòng
-    hoặc không gửi). Chỉ soi hình thức lời của chính bot."""
-    loi = bo_gach_cheo(bo_da_dau(bo_markdown(tin)), goi)
-    return "" if goi_khach_la_minh(loi) else loi
+    bỏ "Dạ" mở đầu, "anh/chị" gạch chéo → đúng cách gọi. Chỉ soi hình thức lời của chính bot; không bỏ tin vì chữ "mình" (gọi khách "mình"
+    được từ 26/11 — trước đó tin tra cứu có dữ kiện mà lỡ chữ "mình" bị bỏ, hết lượt thử thì bot báo "chưa có dữ liệu")."""
+    return bo_gach_cheo(bo_da_dau(bo_markdown(tin)), goi)

@@ -16,7 +16,7 @@ NGUONG_BAO_ADMIN = 2
 
 
 def cau_xin_sao(goi: str = "anh/chị", tre: bool = False, toi: str = "em") -> str:
-    """Câu chủ dự án duyệt 21/10 (SRS-5.1zzzzzzz546 bỏ chữ "hỗ trợ" và "ạ" chồng): "Anh/chị chấm giúp em 1–5 sao nha, để em làm tốt hơn." Khách xưng "em" / "cháu"
+    """Câu chủ dự án duyệt 21/10 (giữ nguyên lời, SRS-5.1zzzzzzz546): "Anh/chị chấm giúp em 1–5 sao cho lần hỗ trợ này nha, để em làm tốt hơn ạ." Khách xưng "em" / "cháu"
     (`tre`) thì bot xưng `toi` = anh / chị / cô / chú theo tên trợ lý (SRS-5.1zzzzzzz214). Sửa câu ở CRM (`cau_mau`, SRS-5.1zzzzzzz106)."""
     return cau_mau.cau("xin_cham_sao_em", goi, toi=toi) if tre else cau_mau.cau("xin_cham_sao", goi)
 

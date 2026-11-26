@@ -100,7 +100,7 @@ Chi tiết (ghi ô tin, dự án, địa chỉ, bản nháp, giọng, phí, phí
 - **Giọng: lời bot phải như người thật nhắn Zalo** (mục tiêu + quyết định cứng `docs/06` §6.8; dựng / sửa `docs/07` SRS-5.6). Lời lạ thì đọc chat thật, sửa ở gốc hoặc viết lại câu trong `GIONG` — KHÔNG thêm dòng cấm / đếm từ / câu mẫu cho model chép / lưới soát giọng, không chép luật cũ từ lịch sử git / file lưu trữ.
 - Ô tin chỉ ghi điều KHÁCH nói (bằng chứng nằm nguyên trong lời khách, `Engine._loc_o_tin`, SRS-73); việc bot tự giao làm theo ý AI đọc, không so nguyên văn (SRS-281).
 - Một nguồn: phí `revenue.py` / `prompts.muc_phi` (đừng gõ tay "1%"), giọng `giong.py` (GIONG + xưng hô của lượt + làm sạch lời), bảng xưng hô `xung_ho.py`, câu mẫu `cau_mau.MAC_DINH` (+ migration `*_cau_mau_*`).
-- Tối đa MỘT câu hỏi mỗi lượt; mỗi lượt MỘT khối "ƯU TIÊN LƯỢT NÀY"; không mở đầu "Dạ", không gọi khách "mình".
+- Tối đa MỘT câu hỏi mỗi lượt; mỗi lượt MỘT khối "ƯU TIÊN LƯỢT NÀY"; không mở đầu "Dạ", không gọi khách "bạn" (gọi "mình" được từ 26/11/2026, SRS-546).
 - Đổi hành vi theo ý khách: đưa quyết định cho AI (đọc theo nghĩa), KHÔNG thêm từ khoá vào regex.
 - Khối cố định trong prompt đặt TRƯỚC `RANH_GIOI_CACHE`, dữ liệu đổi mỗi lượt đặt sau.
 

@@ -176,15 +176,15 @@ Lệch ở câu nào thì tìm gốc rồi sửa theo SRS-5.6. Năm câu này l�
 | Quyết định | Nguồn | Chỗ giữ |
 |---|---|---|
 | Không mở đầu bằng "Dạ" | chủ dự án, CLAUDE.md §6.2 | khối xưng hô (`giong.LUAT_XUNG_HO_CHUNG`); model viết lại hai lần vẫn mở "Dạ" thì code bỏ chữ đó (`giong.bo_da_dau`, SRS-5.1zzzzzzz230); tin bot tự nhắn: `giong.lam_sach_tin_chu_dong` (SRS-5.1zzzzzzz546) |
-| Không gọi khách "mình" hay "bạn" ("nhà mình", "mình" nghĩa chúng ta thì được) | SRS-5.1zzzzzzz171 / 230 | khối xưng hô, lưới `goi_minh` |
+| Không gọi khách "bạn"; gọi "mình" được (chủ dự án 26/11/2026: "cho nói gọi khách là mình cũng được", bỏ cấm của SRS-171 / 230) | SRS-5.1zzzzzzz546 | khối xưng hô (`giong.LUAT_XUNG_HO_CHUNG`) |
 | Xưng hô theo bảng dưới | SRS-5.1zzzzzzz214 / 234 | `xung_ho.goi_toi` |
 | Mỗi lượt hỏi nhiều nhất một câu (lời chào đầu được gộp — chủ dự án 26/11/2026) | SRS-5.1zzzzzzz252 / 546 | `GIONG`, lưới `mot_cau_hoi` |
 | Khách hỏi người hay máy: nói thật là trợ lý AI, không bao giờ nhận là người | chủ dự án 13/09/2026 | `GIONG` |
 | Trong chat không nhận xét mức giá chủ nhà đưa (cao / thấp / hợp lý) khi không có khối NHẬN XÉT GIÁ; không hứa bán được, không hứa thời hạn | SRS-5.1zzzzzzz353 | `LEAN_SYSTEM_PROMPT`, `GIONG`, lưới `binh_luan_gia` |
 | Chỉ xin số điện thoại một lần, lúc khách chốt lịch xem | NFR-07, SRS-5.1zzzzzzz148 | luồng hẹn xem |
 | Chat là văn nói: không in đậm, gạch đầu dòng, đánh số (Zalo không hiện); không gạch dài "—", không viết "anh/chị" gạch chéo | OPEN-62 | `GIONG`; "anh/chị" gạch chéo: code thay ở đường ra (`giong.bo_gach_cheo` — lời model, câu mẫu, câu giữ chỗ; SRS-5.1zzzzzzz536). Gạch dài chưa giữ |
-| Cảm ơn khi khách bỏ công thật (duyệt tin, gửi ảnh / giấy tờ, giới thiệu người), không cảm ơn từng câu | chủ dự án 26/11/2026, SRS-5.1zzzzzzz546 | `GIONG` |
-| Không giải thích hỏi / xin để làm gì (kể cả lúc xin ảnh); lượt hỏi thông tin khoảng 20–30 từ | chủ dự án 23/11 và 26/11/2026, SRS-5.1zzzzzzz536 / 546 | `GIONG` |
+| Chỉ cảm ơn khi khách duyệt tin hoặc gửi ảnh / giấy tờ, không cảm ơn từng câu | chủ dự án 26/11/2026, SRS-5.1zzzzzzz546 | `GIONG` |
+| Không giải thích hỏi / xin để làm gì (kể cả lúc xin ảnh), khách hỏi vì sao thì nói rõ; câu hỏi khoảng 20–30 từ, khách kể điểm tốt của căn thì thêm trước đó một câu khen đúng điểm ấy | chủ dự án 23/11 và 26/11/2026, SRS-5.1zzzzzzz536 / 546 | `GIONG` |
 | Emoji tối đa một, chỉ ở lời chào hoặc lúc báo tin đã đăng; không chồng "ạ" với "nha" / "nhé" | chủ dự án 26/11/2026, SRS-5.1zzzzzzz546 | `GIONG`, câu mẫu |
 | Mức phí chỉ lấy từ `prompts.muc_phi`; phí thuê viết "0.75 tháng tiền thuê"; khách duyệt tin thì "Em xin phép đăng tin ạ!" | BR-05, CLAUDE.md §6.3 | `muc_phi`, lưới `phi_vai`, câu mẫu |
 
