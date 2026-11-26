@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-26 00:38 (giờ VN)
+-- Sinh lúc: 2026-11-26 14:25 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -4072,17 +4072,14 @@ begin
     update reminders set status = 'cancelled'
      where buyer_id = new.buyer_id and listing_id = new.listing_id
        and kind = 'followup' and status = 'pending';
-    if coalesce(new.question, '') = 'xac_nhan_lich' then                       -- 20260904f FR-52
+    if coalesce(new.question, '') = 'xac_nhan_lich' then                       -- 20260904f FR-52 · 20261126g: không tự chốt lịch
       select id into v_vw from viewings
        where buyer_id = new.buyer_id and listing_id = new.listing_id
-         and status in ('proposed', 'pending')
+         and status in ('proposed', 'pending', 'confirmed')
        order by created_at desc limit 1;
-      if v_vw is not null then
-        update viewings set status = 'confirmed' where id = v_vw;
-      end if;
       insert into reminders (kind, buyer_id, listing_id, viewing_id, due_at, note)
       values ('followup', new.buyer_id, new.listing_id, v_vw, now(),
-        'lịch xem #' || coalesce(v_code, '?') || ' đã được xác nhận: ' || left(coalesce(new.answer, ''), 200));
+        'trả lời lịch xem #' || coalesce(v_code, '?') || ': ' || left(coalesce(new.answer, ''), 200));
     else
       insert into reminders (kind, buyer_id, listing_id, due_at, note)
       values ('followup', new.buyer_id, new.listing_id, now(),
@@ -8842,3 +8839,4 @@ select cron.schedule('nhung-dia-danh-tick', '7-59/15 * * * *', 'select public.nh
 select cron.schedule('nhung-luat-tick', '12-59/15 * * * *', 'select public.nhung_luat_tick()');
 select cron.schedule('nhung-tick', '*/5 * * * *', 'select public.nhung_tick()');
 select cron.schedule('soat-du-lieu-tick', '5 1 * * *', 'select public.soat_du_lieu_tick()');
+
