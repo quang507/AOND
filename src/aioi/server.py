@@ -374,16 +374,13 @@ NHUONG_SAN_GIAY = int(os.environ.get("NHUONG_SAN_GIAY", "1800"))   # FR-141: bot
 
 def _duoc_dung_lenh(user_key: str, lenh: str | None) -> bool:
     """SRS-5.1zzzzzzz529 (audit 20/11 P0-4): /quit xoá sạch phiên + MỌI tin của người gõ (kể cả tin đã đăng), /import, /project ghi dữ liệu,
-    /state, /listings… lộ trạng thái nội bộ — trước đây mở cho MỌI khách. Nay chỉ: ID thử, admin có Zalo ID trong bảng `admins`, hoặc Zalo ID
-    trong env AIOI_LENH_ZALO_CHO (phẩy ngăn cách). /link vô hại (chỉ bỏ chữ lệnh) nên ai cũng dùng được. Người khác gõ lệnh → tin đi đường
+    /state, /listings… lộ trạng thái nội bộ — trước đây mở cho MỌI khách. Nay chỉ: ID thử, admin có Zalo ID trong bảng `admins` (env AIOI_LENH_ZALO_CHO
+    gỡ ở SRS-5.1zzzzzzz550 — chưa đặt lần nào). /link vô hại (chỉ bỏ chữ lệnh) nên ai cũng dùng được. Người khác gõ lệnh → tin đi đường
     chat thường."""
     if lenh == "/link":
         return True
     from .engine import _la_id_thu
     if _la_id_thu(user_key):
-        return True
-    cho = {x.strip() for x in (os.environ.get("AIOI_LENH_ZALO_CHO") or "").split(",") if x.strip()}
-    if user_key in cho:
         return True
     la_nv = getattr(_engine._convstore, "la_nhan_vien", None)
     try:

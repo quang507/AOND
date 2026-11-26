@@ -15,7 +15,6 @@ tra. Chạy cho mọi người bán (công tắc AGENT_BAN gỡ ở Đợt 8).""
 from __future__ import annotations
 
 import logging
-import os
 import time
 from typing import Any
 
@@ -114,8 +113,8 @@ CONG_CU: list[dict[str, Any]] = [
 _TEN = {c["name"] for c in CONG_CU}
 
 # SRS-5.1zzzzzzz526 (chủ dự án 18/11: "làm giống sếp"; bản anh Luận: giác quan của FDA chỉ có lời khách, việc cần nhìn / tra / ngẫm thì hẹn
-# lại cho BOA). FDA_TRA_CUU=bat trả lại đủ công cụ tra cứu trong lượt như trước 18/11.
-TRA_CUU_FDA_BAT = os.environ.get("FDA_TRA_CUU", "tat") == "bat"
+# lại cho BOA). SRS-5.1zzzzzzz550 (26/11): gỡ công tắc quay lui FDA_TRA_CUU — muốn FDA tra thêm thứ gì trong lượt thì thêm tên công cụ vào
+# `CONG_CU_FDA_GIU` (và bỏ đường hẹn BOA cho loại câu đó ở `engine._lap_ke_hoach`).
 # FDA giữ: điều khách đã gửi (rổ hàng, bộ nhớ dự án, giá đã gửi) và phí của chính bên em.
 CONG_CU_FDA_GIU = ("ro_hang", "bo_nho_du_an", "gia_da_gui", "tinh_phi_moi_gioi")
 # BOA tra khi trả lời điều đã hẹn. Không có định giá tự động và gợi ý bớt giá: bản anh Luận cấm định giá / khuyên giá — giá chỉ so căn thật
@@ -125,7 +124,7 @@ CONG_CU_BOA = ("tra_du_an", "du_an_trong_khu", "kiem_tra_phap_ly_so", "tham_dinh
 
 def cong_cu_fda() -> list[dict[str, Any]]:
     """Công cụ đọc FDA được dùng trong lượt chat."""
-    return CONG_CU if TRA_CUU_FDA_BAT else [c for c in CONG_CU if c["name"] in CONG_CU_FDA_GIU]
+    return [c for c in CONG_CU if c["name"] in CONG_CU_FDA_GIU]
 
 
 def _khoi(engine: Any, conv: Any, project: Any, ten: str, vao: dict[str, Any] | None = None) -> str:
@@ -190,8 +189,6 @@ def _khoi(engine: Any, conv: Any, project: Any, ten: str, vao: dict[str, Any] | 
 def goi_y(engine: Any, conv: Any, project: Any) -> str:
     """MỘT dòng cho model biết lượt này có dữ liệu gì để tra (không có gì thì rỗng — model khỏi gọi công cụ thừa)."""
     co = [ten for ten in ("ro_hang", "bo_nho_du_an", "gia_da_gui") if _khoi(engine, conv, project, ten).strip()]
-    if getattr(conv, "hoi_ve_luot", None) == "dinh_gia":   # SRS-5.1zzzzzzz470: chủ hỏi giá → khối định giá giao cho công cụ tra
-        co.append("dinh_gia_tham_khao")
     return ("\nDỮ LIỆU CÓ THỂ TRA lượt này: " + ", ".join(co) + " (gọi công cụ cùng tên khi cần).\n") if co else ""
 
 

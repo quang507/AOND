@@ -5659,7 +5659,7 @@ class Engine:
                 conv.y_luot["khach_gt"] = khach_gt   # SRS-5.1zzzzzzz527
         if kich_hoat is not None:
             conv.y_luot["kich_hoat_mg"] = kich_hoat   # SRS-5.1zzzzzzz524
-        if not agent_ban.TRA_CUU_FDA_BAT and conv.role != "buyer" and kich_hoat is None and not la_loc:
+        if conv.role != "buyer" and kich_hoat is None and not la_loc:
             # SRS-5.1zzzzzzz526: khách hỏi điều phải tra cứu / so sánh — FDA không có công cụ tra trong lượt nên không đoán, hẹn; câu hỏi ghi
             # vào căn đang nói (`_cho_tra_cuu`) để vòng nền trả lời (`hoi_sau_dang._tra_loi_tra_cuu`). Câu hỏi giá (hoi_ve = dinh_gia) đi cùng đường.
             cau_tc = plan.get("can_tra_cuu")
