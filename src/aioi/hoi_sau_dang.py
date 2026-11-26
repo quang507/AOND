@@ -20,7 +20,7 @@ from typing import Any, Callable
 
 from .bao_can_moi import trong_khung_gio
 from . import cau_mau
-from .giong import lam_sach_tin_chu_dong
+from .giong import bo_gach_cheo, lam_sach_tin_chu_dong
 from .xung_ho import goi_toi
 
 log = logging.getLogger(__name__)
@@ -94,7 +94,8 @@ def viet_tra_cuu(engine: Any, conv: Any, li: Any, caus: list[str], goi: str, toi
 
 def tin_chua_co_du_kien(goi: str, toi: str) -> str:
     """Hết lượt thử mà không tra ra dữ kiện nào: lời hẹn vẫn phải giữ — nói thật, không đoán; câu hỏi sang người phụ trách (code soạn, không qua model)."""
-    return cau_mau.cau("tra_cuu_chua_co", goi, toi=toi)   # SRS-5.1zzzzzzz546: câu nguyên văn ở cau_mau (bỏ "Dạ" mở đầu, "ạ" chồng)
+    # SRS-5.1zzzzzzz546: câu nguyên văn ở cau_mau (bỏ "Dạ" mở đầu, "ạ" chồng); chưa biết cách gọi thì "anh chị", không gạch chéo (OPEN-62)
+    return bo_gach_cheo(cau_mau.cau("tra_cuu_chua_co", goi, toi=toi), goi)
 
 
 def _tra_loi_tra_cuu(engine: Any, conv: Any, uk: str, bay_gio: datetime, gui: Callable[[str, str], bool]) -> tuple[str, str] | tuple[()] | None:

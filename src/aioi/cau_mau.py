@@ -109,7 +109,7 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                            "Khách gửi link ảnh / tệp không tải được", "Nhận tệp"),
     "link_web_trong": ("Em mở link rồi mà chưa đọc được nội dung. {Goi} gửi link khác, hoặc dán nội dung giúp em nhé.",
                        "Khách gửi link trang web mà trang trống", "Nhận tệp"),
-    "nhap_bang_tinh": ("Em nhập xong {n} căn từ bảng tính rồi nha, {goi} xem giúp em có sót căn nào không?",
+    "nhap_bang_tinh": ("Em nhập xong {n} căn từ bảng tính rồi. {Goi} xem giúp em có sót căn nào thì báo em nha.",
                        "Khách gửi link bảng tính (rổ hàng). {n} = số căn đã nhập", "Nhận tệp"),
     "bang_tinh_trong": ("Em có nhận bảng tính nhưng chưa đọc ra căn nào — {goi} kiểm tra lại các cột (loại hình, địa chỉ, diện tích, "
                         "giá...) giúp em nhé.", "Bảng tính không đọc ra căn nào", "Nhận tệp"),
