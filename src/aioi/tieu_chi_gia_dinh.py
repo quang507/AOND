@@ -7,8 +7,6 @@ Tinh hoa MOSO:
 """
 from __future__ import annotations
 
-from typing import Any
-
 TIEU_CHUAN_GIA_DINH = {
     "tang_dep": {
         "ten": "Tầng trung lý tưởng (Tầng 8 - 18)",

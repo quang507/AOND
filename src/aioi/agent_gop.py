@@ -3,8 +3,8 @@ và trả lời lại khách. quá trình thu thập diễn ra song song với v
 
 Mỗi lượt người bán là MỘT cuộc hội thoại công cụ với model chat (Sonnet), theo khung "Suy nghĩ → Chọn công cụ → Thực thi → Đánh giá":
 
-- Bước 1 (`mo`, trong `Engine._lap_ke_hoach`): system = phần cố định phía bán (`prompts.co_dinh_ban`: prompt gọn + kiến thức nghề khi
-  `AIOI_PROMPT_GON=bat`, phiếu lượt cũ khi tắt) + luật ghi chung + dữ liệu của lượt. Model gọi công cụ GHI (`ghi_o`, `them_can`, `doi_trang_thai`, `bo_can`,
+- Bước 1 (`mo`, trong `Engine._lap_ke_hoach`): system = phần cố định phía bán (`prompts.co_dinh_ban`: prompt gọn + kiến thức nghề)
+  + luật ghi chung + dữ liệu của lượt. Model gọi công cụ GHI (`ghi_o`, `them_can`, `doi_trang_thai`, `bo_can`,
   `ghi_y_khach` — thân `_chay_ghi`, cổng trích + cổng rổ nhiều căn `Engine._chua_ro_can`), công cụ ĐỌC (rổ hàng / bộ nhớ dự án / giá đã gửi — thân
   là hàm khối của engine qua `agent_ban._khoi`) và công cụ TRA CỨU luật `tra_luat_o(o)` (RAG: luật ghi từng ô cắt NGUYÊN từ
   `OPERATIONS_SYSTEM_BAN` + mô tả schema, không nhồi cả 45.000 chữ vào mọi lượt).

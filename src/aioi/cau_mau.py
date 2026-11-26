@@ -63,10 +63,6 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                      "Khách chào (hello / hi / alo / 👋) lần đầu ở số KÝ GỬI. {ten} = tên trợ lý",
                      "Lời chào cũ (20/10); 26/10 một câu hỏi (SRS-212); 28/10 số ký gửi chỉ hỏi gửi bán / cho thuê — số tư vấn lo người mua "
                      "(SRS-5.1zzzzzzz251); 13/11 mời kể luôn địa chỉ và giá (SRS-5.1zzzzzzz481)"),
-    "chao_lam_moi": ("Chào {goi}! Em là {ten}, trợ lý ký gửi nhà đất của AI Ơi Nhà Đất 🏡\nEm làm mới cuộc trò chuyện rồi nha. {Goi} "
-                     "đang có căn nào muốn gửi bán hay cho thuê?",
-                     "Khách chào khi đã có chuyện cũ — làm mới phiên (số ký gửi). {ten} = tên trợ lý",
-                     "Quyết định 20/10: hello làm mới phiên; 26/10 bỏ kể loại nhà (SRS-212); 28/10 chỉ gửi bán / cho thuê (SRS-5.1zzzzzzz251)"),
     "chao_tu_van": ("Chào {goi}! Em là {ten} bên AI Ơi Nhà Đất nè 🏡\n{Goi} đang tìm mua hay thuê, khu nào, tầm giá bao nhiêu để em lọc "
                     "căn hợp liền ạ?",
                     "Khách chào lần đầu ở số Zalo TƯ VẤN người mua. {ten} = tên trợ lý",

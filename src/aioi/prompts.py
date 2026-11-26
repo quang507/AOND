@@ -17,8 +17,8 @@ from .revenue import RENTAL_FEE_MONTHS, SALE_FEE_RATE, SellerRole
 from . import cau_mau
 from . import phap_ly
 from .llm.base import RANH_GIOI_CACHE
-# Giọng ở MỘT chỗ (SRS-5.1zzzzzzz546): `GIONG` / `GIONG_NGAN` / dòng xưng hô tin chủ động sống ở giong.py; `prompts.GIONG` giữ cho scripts.
-from .giong import GIONG, GIONG_NGAN, dong_xung_ho_tin_chu_dong  # noqa: F401
+# Giọng ở MỘT chỗ (SRS-5.1zzzzzzz546): `GIONG` / `GIONG_NGAN` / dòng xưng hô tin chủ động sống ở giong.py.
+from .giong import GIONG, GIONG_NGAN, dong_xung_ho_tin_chu_dong
 from .web import SITE_HOST, SITE_URL, link_tin
 from .schema import (
     LOAI_PHAP_LY,
@@ -730,7 +730,7 @@ def viec_theo_khoi(ten_viec: str, viec_o: str = "") -> str:
 
 
 def viec_phieu(prop: Property, next_field: str | None, hoi_lai: bool = False, o_bo_qua: str | None = None) -> str:
-    """Dòng việc hỏi ô của phiếu lượt (tách khỏi `build_phieu_luot` ở Đợt 4 để engine thay bằng `VIEC_THEO_KHOI` khi việc khác thắng)."""
+    """Dòng việc hỏi ô của lượt (engine thay bằng `VIEC_THEO_KHOI` khi việc khác thắng)."""
     mo_ho = _dien_tich_mo_ho(prop, next_field)
     if mo_ho:
         return f"khách đã nói diện tích {mo_ho} nhưng chưa rõ là diện tích ĐẤT hay diện tích NHÀ (nhà phố / biệt thự có hai diện tích khác nhau): hỏi lại xem {mo_ho} đó là đất hay nhà."
@@ -1245,7 +1245,7 @@ hỏi hay từng khen trong lúc chat không phải dữ liệu. Vì vậy:
 # đếm / danh sách chữ cấm sinh ra từ từng ca (khen "đắc địa", "<gọi> ơi", "Em ghi nhận" một lần…) — gốc chung của chúng là "nói như người
 # thật, không lặp khuôn của chính mình" nên chỉ ghi nguyên tắc đó. Phần phía mua / bản nháp / sau đăng không thuộc lượt này nên không có
 # ở đây. Từ SRS-5.1zzzzzzz480 prompt này ghép chung khối `GIONG` với các prompt kia (trước đó có bộ luật nhắn riêng → một cuộc chat hai
-# giọng). Tắt công tắc `AIOI_PROMPT_GON` thì về phiếu cũ `build_phieu_luot`.
+# giọng). Đường DUY NHẤT của lượt hỏi ô phía bán (phiếu cũ `build_phieu_luot` + công tắc `AIOI_PROMPT_GON` gỡ ở SRS-5.1zzzzzzz531).
 # Từ điển tiếng nghề — phần cố định bước ghi (SRS-5.1zzzzzzz506); bước viết tra qua công cụ `kien_thuc_nghe` (SRS-5.1zzzzzzz536).
 TIENG_NGHE = """HIỂU TIẾNG NGHỀ (hiểu luôn, không hỏi lại nghĩa):
 - Tiền: tỏi = tỷ, củ = triệu, xị = trăm nghìn, 5t5 = 5,5 tỷ, 4 tỷ 8 = 4,8 tỷ; TL / bớt lộc = còn thương lượng; giá net / giá bao = bên bán
@@ -1295,8 +1295,8 @@ KIEN_THUC_TRA = TIENG_NGHE + "\n" + KIEN_THUC_NGHE
 
 
 def co_dinh_ban(assistant_name: str) -> str:
-    """Phần cố định bước ghi phía bán (trước `RANH_GIOI_CACHE`) theo công tắc: `LEAN_GHI` + kiến thức nghề (SRS-5.1zzzzzzz506) hoặc phiếu cũ
-    (SRS-5.1zzzzzzz414). Bước ghi và bước viết không chung cache được (khác bộ công cụ, công cụ đứng trước system), nên tách không tốn thêm."""
+    """Phần cố định bước ghi phía bán (trước `RANH_GIOI_CACHE`): `LEAN_GHI` + kiến thức nghề (SRS-5.1zzzzzzz506).
+    Bước ghi và bước viết không chung cache được (khác bộ công cụ, công cụ đứng trước system), nên tách không tốn thêm."""
     return LEAN_GHI.replace("{TEN_TRO_LY}", assistant_name, 1) + "\n" + KIEN_THUC_NGHE + "\n"
 
 
@@ -1308,7 +1308,7 @@ def lean_system_prompt_cho_luot(
     project_block: str = "",
     viec: str | None = None,
 ) -> str:
-    """Prompt gọn lượt hỏi thông tin phía bán (SRS-5.1zzzzzzz414) — dùng thay `build_phieu_luot` khi `AIOI_PROMPT_GON=bat`.
+    """Prompt lượt hỏi thông tin phía bán (SRS-5.1zzzzzzz414) — đường duy nhất từ SRS-5.1zzzzzzz531.
     Phần cố định (trước `RANH_GIOI_CACHE`) được cache; sau ranh giới chỉ có dự án, dữ liệu căn và việc lượt này."""
     viec = viec or viec_phieu(prop, next_field)
     return (

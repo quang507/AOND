@@ -20,8 +20,6 @@ import urllib.parse
 import urllib.request
 from typing import Callable
 
-from .prompts import NHAN_VIEC_LUOT
-
 log = logging.getLogger("aioi.dia_danh")
 
 URL_NHUNG = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent"
