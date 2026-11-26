@@ -302,10 +302,9 @@ SLANG_NOTES = """TỪ ĐIỂN TIẾNG LÓNG BĐS (hiểu đúng, không hỏi l�
 
 # SRS-5.1zzzzzzz504: `SLANG_NOTES` = từ điển tiếng lóng + KIẾN THỨC NGHỀ (SRS-499 / 500). Đường chính của người bán (prompt gọn + vòng agent gộp)
 # KHÔNG nhận `SLANG_NOTES` — `agent_gop.chia_luat` bỏ nó khỏi luật ghi vì "phiếu lượt đã có", mà prompt gọn dùng khối "HIỂU TIẾNG NGHỀ" riêng —
-# nên kiến thức nghề thêm ở SRS-499 / 500 chỉ tới model ở lượt đầu chưa rõ vai. Tách hai tên trên CÙNG một chuỗi: `TU_LONG` (đã có bản gọn
+# nên kiến thức nghề thêm ở SRS-499 / 500 chỉ tới model ở lượt đầu chưa rõ vai. Tách hai tên trên CÙNG một chuỗi: phần tiếng lóng (đã có bản gọn
 # trong `LEAN_SYSTEM_PROMPT`) và `KIEN_THUC_NGHE` — khối này đi kèm phần cố định của prompt gọn ở cả bước ghi lẫn bước viết (`_lean_co_dinh`).
 _I_KIEN_THUC = SLANG_NOTES.index("- KIẾN THỨC NGHỀ")
-TU_LONG = SLANG_NOTES[:_I_KIEN_THUC].rstrip("\n")
 KIEN_THUC_NGHE = SLANG_NOTES[_I_KIEN_THUC:]
 
 # Một nguồn cho ô is_rental ở lượt bóc tách lẫn lượt lập thao tác (SRS-5.1zzzzzzz107, bắn thử 207 KB2: "giá 27 tỷ… đang cho thuê 50

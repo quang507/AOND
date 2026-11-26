@@ -36,7 +36,7 @@ def nho_admin_tra(conv, dia_chi: str, quan_huyen: str = "") -> bool:
     return True
 
 
-def tra_cuu_quy_hoach_lo_gioi(dia_chi: str, quan_huyen: str = "", loai_quy_hoach: str = "tat_ca", da_bao_admin: bool = False) -> str:
+def tra_cuu_quy_hoach_lo_gioi(dia_chi: str, quan_huyen: str = "", da_bao_admin: bool = False) -> str:
     """Kết quả công cụ `tham_dinh_quy_hoach`: kiến thức chung + cách tra, không kết luận về địa chỉ cụ thể."""
     vt = _vi_tri(dia_chi or "")
     noi = ", ".join(x for x in (dia_chi.strip(), quan_huyen.strip()) if x) or "chưa rõ địa chỉ"

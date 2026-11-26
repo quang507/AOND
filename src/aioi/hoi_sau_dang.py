@@ -118,7 +118,7 @@ def _tra_loi_tra_cuu(engine: Any, conv: Any, uk: str, bay_gio: datetime, gui: Ca
         return ()
     if ly_do_khong_nhan(conv, bay_gio, "tra_hen", engine._convstore, uk):
         return ()
-    goi, toi = goi_toi(_detect_customer_pronoun(conv, ""), getattr(conv.assistant, "name", None))
+    goi, toi = goi_toi(_detect_customer_pronoun(conv), getattr(conv.assistant, "name", None))
     caus = [str(d["cau"]) for d in ds]
     tin = viet_tra_cuu(engine, conv, li, caus, goi, toi)
     chuyen = False
@@ -168,7 +168,7 @@ def _nhac_hen(engine: Any, conv: Any, uk: str, bay_gio: datetime, gui: Callable[
         return ()
     if ly_do_khong_nhan(conv, bay_gio, "nhac_hen", engine._convstore, uk):
         return ()
-    goi, toi = goi_toi(_detect_customer_pronoun(conv, ""), getattr(conv.assistant, "name", None))
+    goi, toi = goi_toi(_detect_customer_pronoun(conv), getattr(conv.assistant, "name", None))
     tin = viet_tin(engine, conv, h, khoi_nhac_hen(fh.get("_hen_viec") or "việc đã hẹn", luc), goi, toi)
     if not tin:
         return ()
@@ -215,7 +215,7 @@ def _nhac_mot(engine: Any, uk: str, lid: str, bay_gio: datetime, gui: Callable[[
         if not cum:
             return None
         khoi, moc = engine.khoi_cum_sau(li, cum, kq_ss)
-        goi, toi = goi_toi(_detect_customer_pronoun(conv, ""), getattr(conv.assistant, "name", None))
+        goi, toi = goi_toi(_detect_customer_pronoun(conv), getattr(conv.assistant, "name", None))
         tin = viet_tin(engine, conv, li, khoi, goi, toi)
         if not tin:
             return None

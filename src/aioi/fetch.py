@@ -76,7 +76,6 @@ def is_drive_folder(url: str) -> bool:
 class FetchedMedia:
     data: bytes
     media_type: str  # one of ALLOWED_TYPES
-    source_url: str
     filename: str = ""  # from Content-Disposition or the URL — shown back to the seller
 
     @property
@@ -325,6 +324,5 @@ def fetch_media(
     return FetchedMedia(
         data=data,
         media_type=media_type,
-        source_url=url,
         filename=filename or _url_basename(url),
     )

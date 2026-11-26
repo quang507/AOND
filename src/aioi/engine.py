@@ -1161,10 +1161,10 @@ class SqliteConversationStore(ConversationStore):
 CAC_O_DIA_CHI = frozenset({"dia_chi", "duong"})
 
 
-def _detect_customer_pronoun(conv: Conversation, current_text: str = "") -> str:
+def _detect_customer_pronoun(conv: Conversation) -> str:
     """Khách tự xưng gì: "em" / "anh" / "chi" / "elder" / "unknown". Do lượt AI lập thao tác đọc theo nghĩa (`xung_ho`, code kiểm
     trích dẫn trong lời khách) — không dò từ khoá (SRS-5.1zzzzzzz54; bản trước regex "em gửi|nhà em…" nhầm cả chữ "em" khách
-    dùng để GỌI bot). `current_text` giữ cho chỗ gọi cũ, không dùng."""
+    dùng để GỌI bot)."""
     goc, _, chu = (conv.xung_ho or conv.xung_ho_goi_y or "").partition(":")
     if goc == "chu_co_bac" and chu:   # SRS-5.1zzzzzzz233: khách tự xưng đúng chữ nào (chú / cô / bác…) — câu mẫu gọi đúng chữ đó
         return f"elder:{chu}"
@@ -3148,7 +3148,7 @@ class Engine:
         # 1d. Buyer branch routing
         # 1d. Buyer branch routing
         if conv.role == "buyer" and conv.buyer_lead is not None:
-            customer_pronoun = _detect_customer_pronoun(conv, text)
+            customer_pronoun = _detect_customer_pronoun(conv)
             next_field = conv.buyer_lead.next_question_field()
             if next_field:   # SRS-5.1zzzzzzz154: đếm câu hỏi nhu cầu — đủ MAX_CAU_HOI_MUA thì thôi hỏi (xem next_question_field)
                 conv.buyer_lead.fields["_so_cau_hoi"] = str(_so_nguyen(conv.buyer_lead.fields.get("_so_cau_hoi")) + 1)
@@ -3211,7 +3211,7 @@ class Engine:
         #    - essentials still missing       -> <=30-word praise + 1 question (collecting)
         #    - "khá đầy đủ", not yet proposed -> draft the ad, ask "hấp dẫn chưa" (no fee)
         #    - draft already shown            -> react to approval & pivot to the fee (§V)
-        customer_pronoun = _detect_customer_pronoun(conv, text)
+        customer_pronoun = _detect_customer_pronoun(conv)
         customer_is_em = _xung_tre(customer_pronoun)   # em / cháu: câu mẫu biến thể `_em` (SRS-5.1zzzzzzz214)
 
         # Căn ngoài vùng nhận tin (SRS-5.1zzzzzzz86, chủ dự án 20/10: chỉ TP.HCM, Bình Dương, Vũng Tàu, Long An, Tây Ninh, Đồng Nai):
@@ -4422,7 +4422,7 @@ class Engine:
                             f"{detail_lines or '(chưa đọc được dòng nào)'}\nViết 1–2 câu tiếp theo với MỘT câu hỏi cả lượt: {hoi_y}. Lượt này KHÔNG khen "
                             "sổ / pháp lý (kể cả theo khối GIỌNG), KHÔNG nói sổ \"chuẩn\", \"đầy đủ\" — em mới đọc ảnh, chưa kiểm sổ. Không lặp lại các dòng trên.")
                 he = (lean_system_prompt_cho_luot(conv.assistant.name, conv.active.prop, next_field, viec=viec_anh)
-                      + khoi_xung_ho(_detect_customer_pronoun(conv, caption or ""), conv.assistant.name, _xung_ho_doan(conv)))
+                      + khoi_xung_ho(_detect_customer_pronoun(conv), conv.assistant.name, _xung_ho_doan(conv)))
                 ask_tail = self._provider.reply(he, conv.messages() + [Message("user", seller_turn)],
                                                 max_tokens=REPLY_MAX_TOKENS).strip()
                 if not ask_tail:

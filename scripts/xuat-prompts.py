@@ -94,7 +94,7 @@ def main() -> None:
     them("---\n\n## 8. D — ĐỌC Ý & THAO TÁC (bước 1 của mỗi lượt phía bán)\n`OPERATIONS_SYSTEM_BAN` · AI đọc theo NGHĨA; mỗi giá trị ghi vào tin phải kèm "
          "cụm trích nằm nguyên trong lời khách — code kiểm, thiếu thì bỏ. Từ điển + kiến thức nghề (mục 9) nằm trong khối này.\n")
     them(khoi(P.OPERATIONS_SYSTEM_BAN.replace(P.SLANG_NOTES, "_↑ chèn khối TỪ ĐIỂN & KIẾN THỨC NGHỀ (mục 9)_")))
-    them("---\n\n## 9. TỪ ĐIỂN TIẾNG LÓNG + KIẾN THỨC NGHỀ\n`SLANG_NOTES` = `TU_LONG` + `KIEN_THUC_NGHE`. Đường chính người bán (prompt gọn): khối KIẾN THỨC NGHỀ đi kèm phần cố định ở cả bước đọc ý lẫn bước viết lời; từ điển thì dùng bản rút \"HIỂU TIẾNG NGHỀ\" trong mục 4. Nguyên khối chỉ dùng ở lượt đầu chưa rõ vai và phía mua.\n")
+    them("---\n\n## 9. TỪ ĐIỂN TIẾNG LÓNG + KIẾN THỨC NGHỀ\n`SLANG_NOTES` = tiếng lóng + `KIEN_THUC_NGHE`. Đường chính người bán (prompt gọn): khối KIẾN THỨC NGHỀ đi kèm phần cố định ở cả bước đọc ý lẫn bước viết lời; từ điển thì dùng bản rút \"HIỂU TIẾNG NGHỀ\" trong mục 4. Nguyên khối chỉ dùng ở lượt đầu chưa rõ vai và phía mua.\n")
     them(khoi(P.SLANG_NOTES))
     them("---\n\n## 10. CÔNG CỤ bot tự gọi\n### 10a. Phía bán — hướng dẫn (`agent_ban.HUONG_DAN`)\n" + khoi(agent_ban.HUONG_DAN))
     them("Danh sách công cụ phía bán:\n" + cong_cu(agent_ban.CONG_CU))

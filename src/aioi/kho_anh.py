@@ -116,10 +116,3 @@ class SupabaseMediaStore(MediaStore):
             log.warning("tải bản nhỏ 480 lỗi: %s", e)
             return ""
         return f"{BUCKET_CONG_KHAI}/{khoa_nho}"
-
-    def delete(self, item_id: str) -> None:
-        bucket, _, khoa = item_id.partition("/")
-        if bucket not in (BUCKET_CONG_KHAI, BUCKET_RIENG) or not khoa:
-            return
-        self._gui("DELETE", f"{self._goc}/storage/v1/object/{bucket}/{urllib.parse.quote(khoa)}", None,
-                  {"apikey": self._key, "Authorization": f"Bearer {self._key}"})

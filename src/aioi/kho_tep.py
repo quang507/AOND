@@ -104,11 +104,6 @@ class MediaStore(ABC):
         concept keeps files where they are)."""
         return None
 
-    def delete(self, item_id: str) -> None:
-        """Remove a stored file by its id (best-effort) — used when a listing is removed from
-        a seller's basket. Default: no-op."""
-        return None
-
 
 class LocalDirectoryMediaStore(MediaStore):
     """Kho thư mục trên máy — chỉ cho chạy thử offline / test (bản chạy thật dùng Supabase Storage). Tệp nằm ở
@@ -148,12 +143,4 @@ class LocalDirectoryMediaStore(MediaStore):
                     pass
             else:
                 old_dir.rename(new_dir)
-
-    def delete(self, item_id: str) -> None:
-        try:
-            p = Path(item_id).resolve()
-            if p.is_file() and self.base_dir.resolve() in p.parents:   # không xoá tệp ngoài kho
-                p.unlink()
-        except Exception:
-            pass
 

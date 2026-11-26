@@ -306,7 +306,7 @@ def _ghi_va_nhan(engine: Any, tin: dict, kq: dict, bay_gio: datetime, gui: Calla
         from .lqc import ly_do_khong_nhan
         if viec and so_lan < TOI_DA_NHAN_MOI_CAN and not ly_do_khong_nhan(conv, bay_gio, "hoi", engine._convstore, uk):
             from .engine import _detect_customer_pronoun
-            goi, toi = goi_toi(_detect_customer_pronoun(conv, ""), getattr(conv.assistant, "name", None))
+            goi, toi = goi_toi(_detect_customer_pronoun(conv), getattr(conv.assistant, "name", None))
             chu = viet_tin_nhan(engine, conv, li, kq, goi, toi, viec)
             if chu:   # gửi trước, ghi mốc sau (SRS-5.1zzzzzzz441): bridge hụt thì tin chưa tới chủ — không tính lượt nhắn, không chờ "ừ" ẩn ảnh
                 try:

@@ -190,8 +190,6 @@ class ZaloBridgeResponse(BaseModel):
     photos: list[str] = []
     # Bridge thả tim (zca-js addReaction) lên tin khách vừa nhắn — lời chào / duyệt tin / "ok" / vừa cho địa chỉ (SRS-5.1zzzzzzz163).
     tha_tim: bool = False
-    # ms từng khâu của lượt (lap_thao_tac / tra_loi / ghi_kho / con_lai / tong) — chỉ con số, để đo chỗ chậm (SRS-5.1zzzzzzz86).
-    thoi_gian_ms: dict[str, int] = {}
     # FR-162 / SRS-5.1zzzzzzz529: cùng msg_id giao lần hai (bridge gửi lại khi quá 90 s) — xem `_SO_MSG`.
     in_flight: bool = False
     replayed: bool = False
@@ -316,7 +314,7 @@ def _xung_ho_khach(zalo_id: str) -> tuple[str, str | None]:
     from .engine import _detect_customer_pronoun
     try:
         conv = _engine.conversation(zalo_id)
-        return _detect_customer_pronoun(conv, ""), conv.assistant.name
+        return _detect_customer_pronoun(conv), conv.assistant.name
     except Exception:  # noqa: BLE001
         return "unknown", None
 
@@ -820,7 +818,6 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
 
 
 def _chat_reply_that(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
-    t_vao = time.perf_counter()   # SRS-5.1zzzzzzz96: tổng thời gian máy chủ (gồm chờ khoá lượt, đọc ảnh / tin thoại, sau lượt)
     if payload.mark_sent:
         return ZaloBridgeResponse(
             reply="ok",
@@ -1092,7 +1089,6 @@ def _chat_reply_that(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         completeness=r.completeness,
         photos=photos,
         tha_tim=bool(r.tha_tim),
-        thoi_gian_ms={**thoi_gian, "may_chu": int((time.perf_counter() - t_vao) * 1000)},
     )
 
 

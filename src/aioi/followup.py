@@ -225,7 +225,7 @@ class FollowUpManager:
                 log.info("Follow-up for %s: căn ngoài vùng nhận tin. Skipping.", user_key)
                 return
             # Determine tone and pronoun based on conversation context
-            customer_pronoun = _detect_customer_pronoun(conv, "")
+            customer_pronoun = _detect_customer_pronoun(conv)
             ten = getattr(getattr(conv, "assistant", None), "name", None)
             customer_is_em = tre(customer_pronoun)
 
