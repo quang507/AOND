@@ -70,7 +70,7 @@ def main() -> None:
     them("---\n\n## 2. BUSINESS_CONTEXT — bối cảnh nghiệp vụ (chèn vào prompt B / C)\n`BUSINESS_CONTEXT` · mức phí lấy từ `revenue.py` (một nguồn).\n")
     them(khoi(P.BUSINESS_CONTEXT))
     them("---\n\n## 3. NHÂN VẬT + GIỌNG — tính cách và cách nói (đứng đầu mọi prompt bot nói với khách)\n`khoi_nhan_vat` + `GIONG`. Đổi giọng thì "
-         f"sửa ở `GIONG`, không thêm luật rời chỗ khác. Trần: `GIONG` ≤ 4.000 chữ (hiện {so(len(P.GIONG))}).\n")
+         f"sửa ở `src/aioi/giong.py`, không thêm luật rời chỗ khác. Trần: `GIONG` ≤ 4.000 chữ (hiện {so(len(P.GIONG))}).\n")
     them("### 3a. Nhân vật — nói với người gửi bán / cho thuê\n" + thu(lambda: P.khoi_nhan_vat(TEN, "người gửi bán / cho thuê nhà", kem_giong=False)))
     them("### 3b. Nhân vật — nói với khách tìm mua / thuê\n" + thu(lambda: P.khoi_nhan_vat(TEN, "khách tìm mua / thuê nhà", kem_giong=False)))
     them("### 3c. GIỌNG (chung hai phía)\n" + khoi(P.GIONG))

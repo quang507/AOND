@@ -17,7 +17,12 @@ thành câu mẫu `bao_phi` — hai câu tester sửa còn lại (nhắc bản n
 13/11/2026 (SRS-5.1zzzzzzz481, chủ dự án "sửa luôn câu mẫu cho khớp giọng mới… vẫn quan trọng là lấy thông tin cho db"): 18 câu viết lại theo
 khối `prompts.GIONG` — bỏ `**` (Zalo không hiện), chữ HOA nhấn, mặt cười, "ạ" chồng, câu báo cáo "Em đã cập nhật", "anh/chị" viết cứng;
 câu chào số ký gửi mời khách kể luôn địa chỉ và giá. Câu chủ dự án / tester đã chốt (duyệt tin, hỏi phí, báo phí, chấm sao, xác nhận
-lịch, bản nháp) giữ nguyên."""
+lịch, bản nháp) giữ nguyên.
+
+26/11/2026 (SRS-5.1zzzzzzz546, chủ dự án: "các luật lệ để chỗ khác còn tông giọng để riêng 1 chỗ"): giọng ở `giong.GIONG`; câu ở đây viết theo
+đó — bỏ "hỗ trợ", "ạ" chồng với "nha" / "nhé", chữ HOA, emoji ngoài lời chào / báo tin đã đăng, nửa câu lý do khi xin ảnh. Câu đã chốt (nhắc
+bản nháp, chấm sao, hỏi phí) giữ lời, chỉ bỏ "hỗ trợ" / "ạ" chồng; duyệt tin, báo phí không đổi. Migration `20261126b` đưa câu mới vào bảng
+`cau_mau` cho dòng chưa ai sửa (cau = mac_dinh) — bảng có đủ khoá nên chỉ sửa code thì bot vẫn nói câu cũ."""
 from __future__ import annotations
 
 import logging
@@ -32,24 +37,24 @@ log = logging.getLogger(__name__)
 MAC_DINH: dict[str, tuple[str, str, str]] = {
     "duyet_tin": ("Em xin phép đăng tin ạ!",
                   "Khách duyệt bản nháp — đoạn đầu lời đáp (tin đã lên web)", "SRS-5.1zzzzzzz103 · tester, chủ dự án 21/10"),
-    "hoi_phi": ("{Goi} có thể vào {web} để theo dõi tin rao ạ. {Goi} biết phí môi giới bên em chưa ạ?",
+    "hoi_phi": ("{Goi} có thể vào {web} để theo dõi tin rao. {Goi} biết phí môi giới bên em chưa ạ?",
                 "Ngay sau câu duyệt tin — tin nhắn thứ hai, câu hỏi phí (bot nói theo tinh thần câu này)",
                 "SRS-5.1zzzzzzz81 / 98 · bản anh Luận + câu tester 21/10"),
     "bao_phi": ("Đăng tin bên em miễn phí ạ. Phí môi giới là {phi}, chỉ thu khi giao dịch thành công — chưa thành công thì {goi} không "
                 "tốn đồng nào.",
                 "Báo con số phí (khách chưa biết phí / hỏi phí). {phi} = mức phí theo vai + bán hay thuê, code điền (vd \"0.75 tháng "
                 "tiền thuê\") — câu sửa phải giữ {phi}", "SRS-5.1zzzzzzz111 · câu tester sửa ở Câu chuẩn 21/10; 31/10 chủ dự án: viết lại, bỏ giọng tổng đài (SRS-5.1zzzzzzz315)"),
-    "nhac_ban_nhap": ("Em gửi {goi} bản nháp tin đăng, {goi} cần chỉnh sửa thêm nhắn em hỗ trợ ạ!",
+    "nhac_ban_nhap": ("Em gửi {goi} bản nháp tin đăng, {goi} cần chỉnh sửa thêm thì nhắn em nha!",
                       "Tin nhắc sau 5 phút khách chưa trả lời bản nháp", "SRS-5.1zzzzzzz99 / 101 · câu tester 21/10"),
-    "nhac_ban_nhap_em": ("{Toi} gửi {goi} bản nháp tin đăng, {goi} cần chỉnh sửa thêm nhắn {toi} hỗ trợ nhé!",
+    "nhac_ban_nhap_em": ("{Toi} gửi {goi} bản nháp tin đăng, {goi} cần chỉnh sửa thêm thì nhắn {toi} nhé!",
                          "Như trên, khi khách xưng \"em\" / \"cháu\" ({goi} = em / cháu, {toi} = anh / chị / cô / chú theo tên trợ lý)",
                          "SRS-5.1zzzzzzz101 · 214"),
-    "xin_cham_sao": ("{Goi} chấm giúp em 1–5 sao cho lần hỗ trợ này nha, để em làm tốt hơn ạ.",
+    "xin_cham_sao": ("{Goi} chấm giúp em 1–5 sao nha, để em làm tốt hơn.",
                      "Xin khách chấm sao — một lần, sau khi tin lên web và nói xong phí / khách mua đủ thông tin căn",
                      "SRS-5.1zzzzzzz104 · chủ dự án chốt 21/10"),
-    "xin_cham_sao_em": ("{Goi} chấm giúp {toi} 1–5 sao cho lần hỗ trợ này nha, để {toi} làm tốt hơn nhé.",
+    "xin_cham_sao_em": ("{Goi} chấm giúp {toi} 1–5 sao nha, để {toi} làm tốt hơn.",
                         "Như trên, khi khách xưng \"em\" / \"cháu\" ({goi} = em / cháu, {toi} = anh / chị / cô / chú theo tên trợ lý)", "SRS-5.1zzzzzzz104 · 214"),
-    "giu_cho": ("{Toi} đang xem kỹ thông tin {goi} gửi, {goi} chờ {toi} một chút nhé, {toi} trả lời ngay ạ.",
+    "giu_cho": ("{Toi} đang xem kỹ thông tin {goi} gửi, {goi} chờ {toi} một chút nhé, {toi} trả lời ngay.",
                 "Lượt trả lời bị lỗi — giữ chỗ, bot tự làm lại sau 20 giây", "SRS-5.1zzzzzzz82 · đánh giá UX 20/10; 29/10 gọi theo cách khách xưng (SRS-5.1zzzzzzz267)"),
     "thu_lai_hong": ("{Toi} xin lỗi {goi}, hệ thống bên {toi} đang chậm. {Toi} đã báo người phụ trách xem tin nhắn của {goi}, người phụ trách "
                      "sẽ nhắn lại sớm ạ.", "Làm lại vẫn lỗi — xin lỗi và báo người phụ trách (server gọi `bao_can_nguoi`)",
@@ -82,7 +87,7 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                         "Kịch bản người bán; 26/10 bỏ câu dẫn dắt (SRS-5.1zzzzzzz212); 27/10 bot xưng theo tên (SRS-5.1zzzzzzz214)"),
     "xac_nhan_an": ("{Goi} muốn em {viec}, đúng không ạ? Nhắn \"đúng\" để em làm, hoặc \"thôi\" để giữ nguyên nhé. Em không xóa dữ liệu "
                     "đâu, chỉ ẩn tin, muốn rao lại lúc nào cũng được.",
-                    "Khách bảo gỡ / ẩn căn — hỏi xác nhận trước. {viec} = việc sắp làm (vd \"NGƯNG RAO căn A12\")",
+                    "Khách bảo gỡ / ẩn căn — hỏi xác nhận trước. {viec} = việc sắp làm (vd \"ngưng rao (ẩn) căn A12\")",
                     "Hỏi trước khi ẩn"),
     "da_an_het": ("Em ngưng rao hết các tin của {goi} rồi nha. Dữ liệu em vẫn giữ nguyên, {goi} muốn rao lại căn nào cứ nhắn em.", "Khách đồng ý ẩn hết", "Hỏi trước khi ẩn"),
     "da_an_bot": ("Xong rồi {goi}, giờ còn {n} căn đang rao. Mấy căn kia em chuyển sang không rao, dữ liệu vẫn giữ, muốn rao lại lúc nào "
@@ -104,7 +109,7 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                            "Khách gửi link ảnh / tệp không tải được", "Nhận tệp"),
     "link_web_trong": ("Em mở link rồi mà chưa đọc được nội dung. {Goi} gửi link khác, hoặc dán nội dung giúp em nhé.",
                        "Khách gửi link trang web mà trang trống", "Nhận tệp"),
-    "nhap_bang_tinh": ("Em nhận bảng tính rồi, đã nhập {n} căn vào danh sách tin 🎉 {Goi} xem lại giúp em có sót căn nào không nhé.",
+    "nhap_bang_tinh": ("Em nhập xong {n} căn từ bảng tính rồi nha, {goi} xem giúp em có sót căn nào không?",
                        "Khách gửi link bảng tính (rổ hàng). {n} = số căn đã nhập", "Nhận tệp"),
     "bang_tinh_trong": ("Em có nhận bảng tính nhưng chưa đọc ra căn nào — {goi} kiểm tra lại các cột (loại hình, địa chỉ, diện tích, "
                         "giá...) giúp em nhé.", "Bảng tính không đọc ra căn nào", "Nhận tệp"),
@@ -119,12 +124,12 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "nhac_hoi_lai": ("{Goi} ơi, {toi} hỏi lại chút nha: {hoi}",
                      "Tin nhắc sau 5 phút khách im — hỏi lại câu bot vừa hỏi. {toi} = bot tự xưng (em / anh / chị / cô / chú), {hoi} = câu bot vừa hỏi",
                      "SRS-5.1zzzzzzz73"),
-    "nhac_xin_anh": ("Khi nào tiện {goi} chụp gửi em vài tấm ảnh thực tế nhé, để tin đăng nổi bật và hút khách hơn ạ.",
+    "nhac_xin_anh": ("Khi nào tiện {goi} chụp gửi em vài tấm ảnh thực tế của căn nhé.",
                      "Tin nhắc sau 5 phút khi không còn câu chờ và căn chưa có ảnh", "SRS-5.1zzzzzzz73"),
-    "nhac_xin_anh_em": ("Khi nào tiện {goi} chụp gửi {toi} vài tấm ảnh thực tế nhé, để tin đăng nổi bật và hút khách hơn nè.",
+    "nhac_xin_anh_em": ("Khi nào tiện {goi} chụp gửi {toi} vài tấm ảnh thực tế của căn nhé.",
                         "Như trên, khi khách xưng \"em\" / \"cháu\" ({goi} = em / cháu, {toi} = anh / chị / cô / chú theo tên trợ lý)", "SRS-5.1zzzzzzz73 · 214"),
     # --- Xin ảnh sau khi tin lên web (SRS-5.1zzzzzzz421) — DỰ PHÒNG khi lượt model viết tin nhắc hụt ---
-    "xin_anh_sau_dang": ("{Goi} tiện thì chụp thêm giúp {toi} vài tấm ảnh thực tế của căn nha, tin nhiều ảnh khách hỏi nhiều hơn hẳn.",
+    "xin_anh_sau_dang": ("{Goi} tiện thì chụp thêm giúp {toi} vài tấm ảnh thực tế của căn nha.",
                          "Tin nhắc 10 phút sau khi tin đã lên web mà chưa đủ ảnh — chỉ dùng khi model viết tin nhắc hụt (bình thường model viết "
                          "theo góc hợp nhánh căn)", "SRS-5.1zzzzzzz421"),
     # --- Báo khách mua khi có căn mới vừa nhu cầu (SRS-5.1zzzzzzz150) ---
@@ -142,7 +147,7 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     'bao_can_moi_2': ('Vừa có căn mới lên kệ, {toi} thấy khá sát chỗ {goi} đang tìm đó.\n\n{Mo_ta}. {vi_sao}\n\nHình với thông tin đầy đủ {toi} để ở đây nè: {link}\n\nNếu {goi} ưng thì {toi} giữ lịch cho {goi} qua xem nhé?',
         'Biến thể xoay vòng theo số tin báo đã gửi cho khách (SRS-5.1zzzzzzz188), cùng khung bốn đoạn và cùng chỗ giữ chữ với `bao_can_moi`',
         'SRS-5.1zzzzzzz188 · chủ dự án 26/10: hai tin báo căn liền nhau trùng văn phong'),
-    'bao_can_moi_3': ('Hôm nay {toi} gặp một căn {goi} có thể thích đó.\n\n{Mo_ta}. {vi_sao}\n\n{Goi} bấm vào đây xem ảnh thật nha: {link}\n\nNếu {goi} thấy ổn, {toi} hẹn giờ cho {goi} đi xem luôn nha?',
+    'bao_can_moi_3': ('Hôm nay {toi} gặp một căn {goi} có thể thích đó.\n\n{Mo_ta}. {vi_sao}\n\n{Goi} bấm vào đây xem ảnh thật nha: {link}\n\nNếu {goi} thấy ổn, {toi} hẹn giờ cho {goi} đi xem luôn nhé?',
         'Biến thể xoay vòng theo số tin báo đã gửi cho khách (SRS-5.1zzzzzzz188), cùng khung bốn đoạn và cùng chỗ giữ chữ với `bao_can_moi`',
         'SRS-5.1zzzzzzz188 · chủ dự án 26/10: hai tin báo căn liền nhau trùng văn phong'),
     'bao_can_moi_4': ('Mới có thêm một căn đúng gu {goi} tìm nè, {goi} xem thử nha.\n\n{Mo_ta}. {vi_sao}\n\nChi tiết và hình ảnh ở link này ạ: {link}\n\n{Goi} có tiện đi xem không, để {toi} sắp xếp giúp {goi} ạ?',
@@ -151,7 +156,7 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     'bao_can_moi_vuot_2': ('Vừa có căn mới lên kệ, {toi} thấy khá gần chỗ {goi} đang tìm đó.\n\n{Mo_ta}. {vi_sao} Giá cao hơn mức {goi} đặt khoảng {pct}%.\n\nHình với thông tin đầy đủ {toi} để ở đây nè: {link}\n\nNếu {goi} thấy được thì {toi} giữ lịch cho {goi} qua xem nhé?',
         'Biến thể xoay vòng của `bao_can_moi_vuot` (SRS-5.1zzzzzzz188), thêm {pct} = % vượt ngân sách',
         'SRS-5.1zzzzzzz188 · chủ dự án 26/10: hai tin báo căn liền nhau trùng văn phong'),
-    'bao_can_moi_vuot_3': ('Hôm nay {toi} gặp một căn gần ý {goi}, có điều giá nhỉnh một chút.\n\n{Mo_ta}. {vi_sao} Giá vượt ngân sách khoảng {pct}%.\n\n{Goi} bấm vào đây xem ảnh thật nha: {link}\n\nNếu {goi} thấy chấp nhận được, {toi} hẹn giờ cho {goi} đi xem luôn nha?',
+    'bao_can_moi_vuot_3': ('Hôm nay {toi} gặp một căn gần ý {goi}, có điều giá nhỉnh một chút.\n\n{Mo_ta}. {vi_sao} Giá vượt ngân sách khoảng {pct}%.\n\n{Goi} bấm vào đây xem ảnh thật nha: {link}\n\nNếu {goi} thấy chấp nhận được, {toi} hẹn giờ cho {goi} đi xem luôn nhé?',
         'Biến thể xoay vòng của `bao_can_moi_vuot` (SRS-5.1zzzzzzz188), thêm {pct} = % vượt ngân sách',
         'SRS-5.1zzzzzzz188 · chủ dự án 26/10: hai tin báo căn liền nhau trùng văn phong'),
     'bao_can_moi_vuot_4': ('Mới có thêm một căn gần gu {goi} tìm nè, {goi} xem thử nha.\n\n{Mo_ta}. {vi_sao} Lưu ý giá đang cao hơn ngân sách khoảng {pct}%.\n\nChi tiết và hình ảnh ở link này ạ: {link}\n\n{Goi} có tiện đi xem không, để {toi} sắp xếp giúp {goi} ạ?',
@@ -166,12 +171,12 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "bao_tra_loi_chu_nha": ("Chủ nhà căn {ma} vừa trả lời câu {goi} hỏi “{cau_hoi}”: {tra_loi}\n{Goi} còn muốn hỏi thêm gì về căn này không ạ?",
                             "Chủ nhà / admin trả lời câu khách mua hỏi (nhắc `followup`). {ma} = mã căn, {cau_hoi} = câu khách hỏi, {tra_loi} = câu "
                             "trả lời, {toi} = bot tự xưng — câu sửa phải giữ {tra_loi}", "SRS-5.1zzzzzzz216"),
-    "bao_lich_da_chot": ("Lịch xem căn {ma} của {goi} đã được chốt: {gio}. Tới giờ {goi} ghé xem nhé, có gì thay đổi {goi} nhắn {toi} ạ.",
+    "bao_lich_da_chot": ("Lịch xem căn {ma} của {goi} đã được chốt: {gio}. Tới giờ {goi} ghé xem nhé, có gì thay đổi thì nhắn {toi}.",
                          "Admin chốt lịch xem (`#mã: ok giờ`) → báo khách mua (nhắc `followup` có viewing_id). {ma} = mã căn, {gio} = giờ đã chốt, "
                          "{toi} = bot tự xưng — câu sửa phải giữ {gio}", "SRS-5.1zzzzzzz216"),
     "bao_can_da_ban": ("Căn {ma} {goi} quan tâm vừa có người chốt mất rồi. {Goi} muốn {toi} tìm căn khác tương tự không?",
                        "Căn khách mua đã quan tâm chuyển sang đã chốt (nhắc `sold`). {ma} = mã căn, {toi} = bot tự xưng", "SRS-5.1zzzzzzz216"),
-    "bao_them_anh": ("Chủ nhà căn {ma} vừa gửi thêm ảnh rồi {goi} ạ 📸 {Goi} xem ở đây nhé: {url}",
+    "bao_them_anh": ("Chủ nhà căn {ma} vừa gửi thêm ảnh rồi {goi} ạ. {Goi} xem ở đây nhé: {url}",
                      "Chủ nhà gửi thêm ảnh sau khi khách mua xin (nhắc `followup`). {ma} = mã căn, {url} = link trang tin — câu sửa phải giữ {url}",
                      "SRS-5.1zzzzzzz254"),
     "bao_tin_len_web": ("Tin của {goi} đã hiển thị trên web rồi ạ 🎉 {Goi} xem ở đây nhé: {url}",
@@ -180,17 +185,17 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "hoi_cam_nhan_sau_xem": ("{Goi} đi xem căn {ma} rồi thấy sao ạ? {Goi} kể {toi} nghe vài dòng để {toi} tìm tiếp cho đúng ý nhé.",
                              "4 giờ sau giờ hẹn xem nhà (nhắc `feedback`). {ma} = mã căn, {toi} = bot tự xưng", "SRS-5.1zzzzzzz216"),
     "giu_ket_noi_mua": ("{Goi} ơi, {toi} vẫn đang để mắt tìm căn hợp ý cho {goi}. Nhờ {goi} nhắn lại {toi} một chữ thôi, kẻo Zalo tự ngắt "
-                        "kết nối thì {toi} không nhắn được nữa ạ 🙏",
+                        "kết nối thì {toi} không nhắn được nữa ạ.",
                         "Khách mua im 6 ngày — giữ kết nối Zalo trước mốc 7 ngày (FR-63). {toi} = bot tự xưng", "SRS-5.1zzzzzzz238"),
     "giu_ket_noi_ban": ("{Goi} ơi, {toi} vẫn đang giữ tin căn của {goi} trên hệ thống. Nhờ {goi} nhắn lại {toi} một chữ thôi, kẻo Zalo tự "
-                        "ngắt kết nối thì có khách hỏi {toi} không báo {goi} được ạ 🙏",
+                        "ngắt kết nối thì có khách hỏi {toi} không báo {goi} được ạ.",
                         "Người bán im 6 ngày — giữ kết nối Zalo trước mốc 7 ngày (FR-63). {toi} = bot tự xưng", "SRS-5.1zzzzzzz238"),
     "hoi_con_ban": ("{Goi} ơi, {toi} hỏi thăm chút: {can} của {goi} hiện {con} không ạ? Còn thì {goi} nhắn {toi} một chữ \"còn\" là được, "
-                    "bán / cọc rồi thì báo {toi} cập nhật tin cho đúng nha.",
+                    "bán / cọc rồi thì báo {toi} sửa tin cho đúng nha.",
                     "Tin rao quá 20 ngày chưa xác nhận — hỏi chủ nhà căn còn bán / còn cho thuê (lõi gửi, 8–21 giờ). {can} = các căn, "
                     "{con} = \"còn bán\" / \"còn cho thuê\"", "SRS-5.1zzzzzzz295"),
     # --- Luồng dự án: câu trước đây viết cứng "anh/chị" / "Em" trong engine (SRS-5.1zzzzzzz250, chủ dự án 28/10 mục 11) ---
-    "du_an_hoi_mau_nha": ("‘{ten}’ nghe giống MẪU NHÀ trong dự án “{du_an}” — đây là mẫu nhà của “{du_an}”, hay là một dự án riêng ạ? {Toi} "
+    "du_an_hoi_mau_nha": ("‘{ten}’ nghe giống mẫu nhà trong dự án “{du_an}” — đây là mẫu nhà của “{du_an}”, hay là một dự án riêng ạ? {Toi} "
                           "hỏi cho chắc kẻo nhầm.",
                           "Tên khách nói giống mẫu nhà của một dự án trong kho. {ten} = tên khách nói, {du_an} = dự án trong kho",
                           "SRS-5.1zzzzzzz250"),
@@ -198,17 +203,21 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                             "để khỏi tách nhầm thành 2 dự án.",
                             "Tên dự án khách nói gần giống một dự án trong kho. {ten} = tên khách nói, {du_an} = dự án trong kho",
                             "SRS-5.1zzzzzzz250"),
-    "web_da_luu": ("{Toi} đọc trang {host} rồi:\n\n{tom_tat}\n\n{Toi} ghi lại rồi (nguồn: {url}), lần sau {goi} hỏi là có ngay.",
+    "web_da_luu": ("{Toi} đọc trang {host} rồi:\n\n{tom_tat}\n\nLần sau {goi} hỏi tới là {toi} trả lời được liền (nguồn: {url}).",
                    "Khách gửi link trang web về dự án đang rao — bot tóm tắt và ghi vào kiến thức dự án. {tom_tat} {url} {host} code điền",
                    "SRS-5.1zzzzzzz250"),
     "web_hoi_du_an": ("{Toi} đọc trang {host} rồi:\n\n{tom_tat}\n\n{Goi} đang rao dự án nào để {toi} gắn thông tin này vào cho đúng?",
                       "Khách gửi link trang web mà chưa biết căn thuộc dự án nào. {tom_tat} {host} code điền", "SRS-5.1zzzzzzz250"),
-    "ban_ve_gui_kem": ("Bản vẽ / mặt bằng mẫu {mau_nha} {toi} gửi kèm đây ạ 📐",
+    "ban_ve_gui_kem": ("Bản vẽ / mặt bằng mẫu {mau_nha} {toi} gửi kèm đây ạ.",
                        "Khách xin bản vẽ — ảnh bản vẽ mẫu nhà gửi kèm sau câu này. {mau_nha} = tên mẫu nhà", "SRS-5.1zzzzzzz249"),
-    "ban_ve_pdf": ("Bản vẽ / mặt bằng mẫu {mau_nha} đây ạ 📐: {link}",
+    "ban_ve_pdf": ("Bản vẽ / mặt bằng mẫu {mau_nha} đây ạ: {link}",
                    "Khách xin bản vẽ — mẫu nhà chỉ có bản PDF. {link} = đường dẫn PDF (bắt buộc)", "SRS-5.1zzzzzzz249"),
     "hoi_ro_can": ("{Goi} nói rõ thêm giúp {toi} căn nào ạ?",
                    "Lượt tra rổ hàng không ra lời — hỏi lại khách căn nào", "SRS-5.1zzzzzzz250"),
+    "tra_cuu_chua_co": ("{Goi} ơi, điều {goi} hỏi lúc nãy {toi} xem lại rồi, hiện bên {toi} chưa có dữ liệu đủ chắc nên {toi} không đoán. "
+                        "{Toi} chuyển câu hỏi cho người phụ trách xem thêm rồi, có thông tin là {toi} báo {goi} liền.",
+                        "Điều bot đã hẹn tra cứu mà hết lượt thử vẫn không có dữ kiện (vòng nền `hoi_sau_dang`, code gửi, không qua model). "
+                        "{toi} = bot tự xưng", "SRS-5.1zzzzzzz526 · 546: dời từ câu viết cứng trong hoi_sau_dang, bỏ \"Dạ\" mở đầu và \"ạ\" chồng"),
 }
 
 # Khung bắt buộc của vài câu — code dựa vào khung đó (dòng mở bản nháp: tìm tiêu đề, cắt câu dẫn). Câu sửa sai khung → mặc định.

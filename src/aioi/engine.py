@@ -141,6 +141,9 @@ from .schema import ANH_TIN_DEP, CAU_MO_MUA, CUM_XIN_ANH, FACETS, HOUSE_TYPES, K
 from .prompts import Y_MO_DAU
 from .dia_danh import TraDiaDanh, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
+# SRS-5.1zzzzzzz546: giọng ở MỘT chỗ — khối xưng hô + làm sạch hình thức lời gửi khách nằm ở giong.py (tên cũ giữ cho các chỗ gọi).
+from .giong import (bo_da_dau as _bo_da_dau, bo_gach_cheo as _bo_gach_cheo, bo_markdown as _bo_markdown, khoi_xung_ho,  # noqa: F401
+                    mo_dau_da as _mo_dau_da)
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
                   lenh_tra_loi, nhan_nhu_cau, nhan_tu_du_lieu, nhu_cau_cua, tim_sdt)
 from . import agent_ban, agent_gop, agent_mua
@@ -454,19 +457,6 @@ def _xung_ho_cau(cau: str, goi: str, toi: str) -> str:
     hoa = lambda s: s[:1].upper() + s[1:]
     bang = {"anh/chị": goi, "Anh/chị": hoa(goi), "em": toi, "Em": hoa(toi)}
     return _XUNG_HO_CAU_RE.sub(lambda m: bang[m.group(1)], cau)
-
-
-_GACH_CHEO_RE = re.compile(r"(?<![\wà-ỹđ])([Aa]nh)\s*/\s*(chị|Chị)(?![\wà-ỹđ])")
-
-
-def _bo_gach_cheo(loi: str, goi: str) -> str:
-    """OPEN-62 (chủ dự án 09/10/2026: "bật đi") — lời gửi khách không viết "anh/chị" gạch chéo; code thay ở ĐƯỜNG RA, không thêm dòng cấm vào
-    prompt (SRS-5.1zzzzzzz536). Phần chat (trước 📋): biết / đoán được cách gọi khách thì thay bằng chữ đó, chưa biết thì "anh chị". Thân bản
-    tin nói với người mua nên luôn là "anh chị"."""
-    def doi(chu: str, thay: str) -> str:
-        return _GACH_CHEO_RE.sub(lambda m: thay[:1].upper() + thay[1:] if m.group(1)[0] == "A" else thay, chu)
-    chat, dau, tin = (loi or "").partition("📋")
-    return doi(chat, goi if goi and goi != "anh/chị" else "anh chị") + dau + doi(tin, "anh chị")
 
 
 def _nhieu_cau_hoi(loi: str) -> bool:
@@ -822,90 +812,6 @@ class Conversation:
         return [Message(t.role, t.content) for t in turns]
 
 
-# Luật giọng chung mọi cách xưng hô (SRS-5.1zzzzzzz86; quyết định chủ dự án: cấm mở đầu "Dạ"). Bắn thử 20/10: KB3 khách chưa tự
-# xưng → khối "chưa biết" không có luật "Dạ", bot mở "Dạ, phí quản lý…"; KB2 khách xưng em → chính sách chung cho phép gọi "bạn".
-# 19/11/2026: hai dòng cấm cũ ("Dạ", "bạn" / "mình") gộp thành một câu nói điều nên làm; `_CAM_GOI_MINH` giữ tên để khỏi đổi chỗ gọi.
-_GIONG_CHUNG = ("Câu đầu không mở bằng \"Dạ\". Gọi khách đúng chữ trên, không \"bạn\" hay \"mình\" (\"nhà mình\", \"mình\" nghĩa là "
-                "chúng ta thì được).\n")
-
-
-# SRS-5.1zzzzzzz171 (chủ dự án 24/10/2026: "sao nó xưng mình z"): bot gọi khách là "mình" ("em xin lỗi mình nhé. Mình đang cần gửi…") dù khách
-# chưa xưng "em" — khối "chưa biết" bảo gọi "anh/chị" nhưng không cấm "mình". Chỉ khi khách xưng "em" bot mới xưng "mình" (xem `_khoi_xung_ho_rieng`).
-_CAM_GOI_MINH = ""   # 19/11/2026: đã gộp vào `_GIONG_CHUNG` (SRS-291: không đưa ví dụ "hay mình đăng luôn" — model chép thành câu hỏi duyệt)
-
-
-def khoi_xung_ho(p: str, ten: str | None = None, doan: bool = False) -> str:
-    """Khối luật xưng hô của lượt theo cách khách tự xưng (`_detect_customer_pronoun`) và tên trợ lý (`xung_ho.goi_toi`). Một nguồn cho
-    lượt chat và lượt ảnh sổ (SRS-5.1zzzzzzz82 — trước đó câu sau ảnh sổ viết cứng, luôn "anh/chị", có nhánh "vậy anh?").
-    `doan`: "anh" / "chị" chỉ đoán từ giới tính Zalo — khối nói rõ là đoán, lời khách tự xưng ở các tin trên thắng (SRS-5.1zzzzzzz245)."""
-    if doan and p in ("anh", "chi"):
-        return _khoi_xung_ho_doan(p, ten) + _GIONG_CHUNG + _CAM_GOI_MINH
-    return _khoi_xung_ho_rieng(p, ten) + _GIONG_CHUNG + _CAM_GOI_MINH
-
-
-def _khoi_xung_ho_doan(p: str, ten: str | None = None) -> str:
-    # SRS-5.1zzzzzzz245 (chat thử 28/10: khách "chú bán nhà…", lượt lập thao tác không đọc ra chữ xưng, khối cũ ghi "Khách xưng 'anh'" theo giới
-    # tính Zalo nên model đang gọi "chú" chuyển sang "Anh cho em hỏi"): đoán thì nói là đoán, model đọc lời khách quyết.
-    goi = "anh" if p == "anh" else "chị"
-    em_toi = goi_toi_khach("em", ten)[1]
-    return (
-        "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-        f"Khách CHƯA được ghi nhận tự xưng; hồ sơ Zalo cho ĐOÁN là '{goi}' — tạm gọi '{goi}', xưng 'em'. ĐỌC LẠI các tin của khách ở trên: "
-        "khách đã TỰ XƯNG thì gọi đúng chữ khách xưng, bỏ chữ đoán — xưng chú / cô / bác / dì (\"chú bán nhà…\") thì gọi đúng chữ đó, "
-        f"bot xưng 'cháu'; xưng cháu / con thì gọi 'cháu'; xưng em thì gọi 'em', bot xưng '{em_toi}'. Câu mẫu ở trên viết 'anh/chị' thì "
-        "đổi theo cách gọi đó.\n"
-    )
-
-
-def _khoi_xung_ho_rieng(p: str, ten: str | None = None) -> str:
-    # SRS-5.1zzzzzzz214 (chủ dự án 27/10/2026: "người ta xưng em thì mình xưng anh hoặc chị tùy tên, xưng cháu thì cô hoặc chú"): bot
-    # không còn xưng "mình" (khách ảo 26/10 ra "Em ơi, em…"); cách xưng lấy từ `xung_ho.goi_toi` theo tên trợ lý.
-    if p == "em":
-        toi = goi_toi_khach("em", ten)[1]
-        return (
-            "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC LƯỢT NÀY (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
-            f"Khách tự xưng 'em' ('nhà em...', 'em bán...'). Gọi khách 'em', bản thân xưng '{toi}', không dạ thưa. "
-            "Câu mẫu / gợi ý ở trên viết 'anh/chị' thì đổi thành 'em'.\n"
-        )
-    elif p == "chau":
-        toi = goi_toi_khach("chau", ten)[1]
-        return (
-            "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC LƯỢT NÀY (KHÁCH TỰ XƯNG LÀ 'CHÁU' / 'CON'): ===\n"
-            f"Khách tự xưng là 'cháu' / 'con' (vd: 'cháu muốn bán nhà', 'con có căn…'). Gọi khách là 'cháu', bản thân xưng '{toi}'. "
-            "Câu mẫu / gợi ý ở trên viết 'anh/chị' thì đổi thành 'cháu'.\n"
-        )
-    elif p == "chi":
-        return (
-            "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "Khách xưng 'chị'. Gọi khách là 'chị', bản thân xưng 'em'; câu mẫu ở trên (cả lời chào) viết 'anh/chị' thì đổi thành 'chị'.\n"
-        )
-    elif p == "anh":
-        return (
-            "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "Khách xưng 'anh'. Gọi khách là 'anh', bản thân xưng 'em'; câu mẫu ở trên (cả lời chào) viết 'anh/chị' thì đổi thành 'anh'.\n"
-        )
-    elif p.startswith("elder:"):
-        lon = p.partition(":")[2]
-        return (
-            "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            f"Khách tự xưng '{lon}'. Gọi khách là '{lon}', bản thân lễ phép xưng 'cháu'; câu mẫu ở trên viết "
-            f"'anh/chị' thì đổi thành '{lon}'.\n"
-        )
-    elif p == "elder":
-        return (
-            "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "Khách là người lớn tuổi (chú/cô/bác/dì). Lễ phép xưng 'cháu', gọi đúng 'chú/cô/bác/dì'.\n"
-        )
-    else:
-        # 19/10/2026 (SRS-5.1zzzzzzz73): chưa biết khách anh hay chị thì không có luật nào — model chép chữ "anh" trong ví dụ
-        # mẫu, gọi khách "anh" suốt 10 lượt rồi đổi "chị" khi khách tự xưng.
-        return (
-            "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "Chưa biết khách là anh hay chị: xưng 'em', câu cần gọi thì bỏ đại từ (\"Nhà ở đường nào vậy ạ?\") — tới khi khách tự xưng "
-            "(tên, giọng văn; ví dụ mẫu không tính).\n"
-        )
-
-
 class LoiTraLoi(RuntimeError):
     """Lượt trả lời không ra được lời gửi khách (model trả rỗng sau lượt gọi lại). Server bắt, gửi câu giữ chỗ và tự thử lại
     (SRS-5.1zzzzzzz82) — trước đó khách nhận "kết nối mạng vừa gián đoạn, nhắn lại giúp em"."""
@@ -925,7 +831,7 @@ def khoi_can_nguoi(conv: "Conversation") -> str:
         )
     return (
         "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH XIN GẶP NGƯỜI THẬT (hệ thống đã đọc, ĐÃ BÁO người phụ trách): ===\n"
-        "Việc lượt này: báo em đã báo anh/chị phụ trách, anh/chị ấy sẽ nhắn khách sớm qua Zalo này; trong lúc chờ em vẫn hỗ trợ được. "
+        "Việc lượt này: báo em đã báo anh/chị phụ trách, anh/chị ấy sẽ nhắn khách sớm qua Zalo này; trong lúc chờ khách cần gì em vẫn lo được. "
         "Lượt này không hỏi thông tin căn.\n"
     )
 
@@ -950,7 +856,7 @@ def khoi_ngoai_viec(conv: "Conversation") -> str:
                 "Em không nắm việc đó. Việc lượt này: nói thật ngắn là em không nắm, rồi hỏi khách có cần gửi bán"
                 + (", cho thuê hay tìm mua" if conv.so_nhan == SO_TU_VAN else " hay cho thuê") + " nhà đất không.\n")
     return (f"\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI LẠI VIỆC NGOÀI NHÀ ĐẤT (lần thứ {n}): ===\n"
-            "Bên em chỉ hỗ trợ gửi bán / cho thuê / tìm mua nhà đất, và chưa báo ai việc này. Việc lượt này: nói việc này em chưa nắm, rồi hỏi "
+            "Bên em chỉ nhận gửi bán / cho thuê / tìm mua nhà đất, và chưa báo ai việc này. Việc lượt này: nói việc này em chưa nắm, rồi hỏi "
             "khách có muốn em nối anh/chị phụ trách để hỏi giúp không.\n")
 
 
@@ -1670,12 +1576,6 @@ def _ban_tin_da_trinh(conv: "Conversation", can: "Listing | None" = None) -> tup
     return None
 
 
-def _mo_dau_da(reply: str) -> bool:
-    """Lời bot mở đầu bằng "Dạ" — luật chủ dự án (cấm mở đầu "Dạ", CLAUDE.md §6) mà model có lượt không theo (chat chị N. 20/10: hai
-    lượt sau khi đăng tin mở đầu bằng Dạ). Chỉ kiểm chữ đầu; không sửa lời — lệch thì gọi lại model (SRS-5.1zzzzzzz87)."""
-    return re.match(r"(?i)\s*dạ(?![a-zà-ỹđ])", reply or "") is not None
-
-
 def _goi_khach_la_minh(reply: str, pronoun: str) -> bool:
     """Lời bot gọi khách là "mình" như đại từ — SRS-5.1zzzzzzz171 / 214. Luật một nguồn ở `xung_ho.goi_khach_la_minh` (câu mẫu cố định
     cũng qua đó, SRS-5.1zzzzzzz226). Kiểm HÌNH THỨC lời của chính bot, không đoán ý khách."""
@@ -1694,22 +1594,6 @@ def _bot_hua_gui_anh(loi: str) -> bool:
     (SRS-5.1zzzzzzz228 mục 4, ban-thu-srd 27/10: "Anh có muốn em gửi thêm ảnh thực tế để tin nổi bật hơn không ạ?"). Chỉ soi phần CHAT: thân bản tin
     📋 viết cho NGƯỜI MUA, câu mời chốt "nhắn Zalo cho em, em gửi thêm hình" đúng vai và AD_FORMAT cho phép (SRS-5.1zzzzzzz306)."""
     return bool(loi) and _BOT_GUI_ANH_RE.search(_phan_chat_quanh_ban_tin(loi)) is not None
-
-
-_DA_DAU_RE = re.compile(r"(?i)^\s*dạ(?![a-zà-ỹđ])[\s,.!…]*")
-
-
-def _bo_da_dau(loi: str) -> str:
-    """Bỏ chữ "Dạ" mở đầu lời — chỉ dùng khi model đã viết lại HAI lần vẫn mở "Dạ" (SRS-5.1zzzzzzz230, chủ dự án 27/10: "sửa 2 đi"; ban-thu-ban:
-    khách "Xin lỗi em…" → «Dạ không sao anh…» qua hai lần gọi lại). Không bỏ khi phần còn lại mở bằng "không" mà không phải "không sao / không
-    có gì / không vấn đề" («Dạ không, em hiểu rồi» → «Không, em hiểu rồi» là đổi nghĩa) — khi ấy giữ nguyên lời."""
-    m = _DA_DAU_RE.match(loi or "")
-    if not m:
-        return loi
-    con = loi[m.end():]
-    if not con.strip() or re.match(r"(?i)không(?![a-zà-ỹđ])(?!\s+(?:sao|có\s+gì|vấn\s+đề))", con):
-        return loi
-    return con[0].upper() + con[1:]
 
 
 def _ba_chu_dau(reply: str) -> tuple[str, ...]:
@@ -1771,12 +1655,6 @@ def _phi_lech_vai(loi: str, role: SellerRole, thue: bool) -> str | None:
     if dung is None:
         return "chủ đầu tư: phí theo thoả thuận riêng, KHÔNG báo con số %"
     return None if noi == {m.group(1).replace(",", ".") for m in _PHI_PHAN_TRAM_RE.finditer(dung)} else dung
-
-
-def _bo_markdown(reply: str) -> str:
-    """Bỏ in đậm markdown (Zalo không hiển thị). Không sửa lời bot theo từ khoá ("Dạ", "anh/chị") — SRS-5.1zzzzzzz55. Ghi chú nội bộ
-    của model lọt vào lời bot thì sửa ở prompt (công cụ hai ô `gui_khach` của SRS-5.1zzzzzzz76 đã gỡ, SRS-490)."""
-    return re.sub(r"\*\*([^*]+)\*\*", r"\1", reply.strip())
 
 
 # ── Bảng luật soát hình thức (SRS-5.1zzzzzzz318, audit AU-06) ──────────────────────────────────────────────────────────────────────────────
@@ -4440,10 +4318,9 @@ class Engine:
                 # list as reference and ASK which căn they want to rao. Don't auto-list.
                 if n_imported == 0:
                     cap_line = f"“{caption.strip()}” — " if caption and caption.strip() else ""
-                    reply = f"📊 {cap_line}" + _xung_ho_cau(
-                        f"Em đọc được bảng giá ({names}) rồi ạ — **{n_in_list} căn**{where}, em đã LƯU LẠI GIÁ của từng căn. Em chưa "
-                        "cho căn nào vào rổ rao vì anh/chị chưa nói rao căn nào — anh/chị muốn RAO căn nào ạ (hoặc hỏi em giá căn nào "
-                        "cũng được)? 😊", *self._goi_toi(conv))
+                    reply = cap_line + _xung_ho_cau(   # SRS-5.1zzzzzzz546: giọng theo giong.GIONG (không in đậm, chữ HOA, "rổ", emoji)
+                        f"Em đọc được bảng giá ({names}) rồi, có {n_in_list} căn{where}; giá từng căn em lưu lại để tra, chưa đưa căn nào "
+                        "lên tin. Anh/chị muốn rao căn nào, hay hỏi giá căn nào cũng được?", *self._goi_toi(conv))
                     reply = self._hoi_trung_ten(conv, reply)
                     conv.history.append(Turn("user",
                         f"[Khách gửi bảng giá tham chiếu: {names}]" if not caption else
@@ -4455,21 +4332,20 @@ class Engine:
                 scope = (f" (bảng có {n_in_list} căn, em chỉ lấy đúng {n_imported} căn anh/chị rao)"
                          if n_imported < n_in_list else "")
                 if n_new == n_imported:
-                    body = f"đã nhập **{n_imported} căn** vào rổ hàng{where}{scope} ạ! Mỗi căn em ghi theo mã lô + mẫu nhà + giá."
+                    body = f"nhập {n_imported} căn vào danh sách tin{where}{scope} rồi, mỗi căn ghi theo mã lô, mẫu nhà và giá."
                 elif n_new == 0:
-                    body = f"rổ hàng đã có đủ **{n_imported} căn** này rồi{where}{scope} — em CẬP NHẬT lại giá/thông tin, KHÔNG thêm trùng nha."
+                    body = f"thấy {n_imported} căn này đã có trong danh sách tin{where}{scope}, em sửa lại giá và thông tin, không thêm trùng."
                 else:
-                    body = f"em thêm **{n_new} căn mới** và cập nhật {n_imported - n_new} căn đã có{where}{scope} (không trùng lặp)."
+                    body = f"thêm {n_new} căn mới, sửa lại {n_imported - n_new} căn đã có{where}{scope}, không thêm trùng."
                 cap_line = f"“{caption.strip()}” — " if caption and caption.strip() else ""
                 # Ambiguous scope → import the best guess but ASK to confirm (don't guess silently).
                 if uncertain:
                     picked = ", ".join(f"lô {li.prop.fields['ma_so_can']}"
                                        for li in conv.listings if li.prop.fields.get("ma_so_can"))
-                    tail = (f"\n⚠️ Em CHƯA chắc ý anh/chị nên tạm lấy: **{picked}**. Đúng những căn "
-                            "này không ạ, hay anh/chị muốn căn nào khác? Em chỉnh lại ngay.")
+                    tail = f"\nEm chưa chắc ý anh/chị nên tạm lấy {picked}. Đúng mấy căn này không, hay anh/chị muốn căn khác?"
                 else:
-                    tail = "\nAnh/chị xem giúp em có đúng không — cần sửa căn nào báo em ạ."
-                reply = f"📊 {cap_line}" + _xung_ho_cau(f"Em đọc bảng giá ({names}) và {body}{tail}", *self._goi_toi(conv))
+                    tail = "\nAnh/chị xem giúp em có đúng không, cần sửa căn nào thì báo em."
+                reply = cap_line + _xung_ho_cau(f"Em đọc bảng giá ({names}) và {body}{tail}", *self._goi_toi(conv))
                 reply = self._hoi_trung_ten(conv, reply)
                 seller_said = f"[Khách nhắn: “{caption.strip()}” kèm bảng giá: {names}]" if caption and caption.strip() else f"[Khách gửi bảng giá: {names}]"
                 conv.history.append(Turn("user", seller_said, now))
@@ -6380,14 +6256,14 @@ class Engine:
         n = self._basket_size(conv)
         for op in ops:
             if op.get("op") == "clear":
-                return f"NGƯNG RAO (ẩn) toàn bộ {n} căn — dữ liệu vẫn giữ, rao lại được bất cứ lúc nào"
+                return f"ngưng rao (ẩn) cả {n} căn"   # SRS-5.1zzzzzzz546: câu xác nhận đã nói "không xóa dữ liệu" — không chữ HOA, không lặp
             if op.get("op") == "keep_only":
                 keep = ", ".join(self._op_targets(op)) or "(không rõ)"
-                return f"chỉ GIỮ RAO căn {keep}, NGƯNG RAO (ẩn) các căn còn lại (dữ liệu vẫn giữ)"
+                return f"chỉ giữ rao căn {keep}, ngưng rao (ẩn) các căn còn lại"
             if op.get("op") == "remove":
                 drop = ", ".join(self._op_targets(op)) or "(không rõ)"
-                return f"NGƯNG RAO (ẩn) căn {drop} — dữ liệu vẫn giữ, rao lại được"
-        return "đổi trạng thái rao của rổ hàng"
+                return f"ngưng rao (ẩn) căn {drop}"
+        return "đổi trạng thái rao các tin"
 
     def _apply_pending_destructive(self, conv: Conversation) -> tuple[list[str], list[tuple]]:
         """Apply the destructive op(s) the seller just CONFIRMED, then clear the pending state."""

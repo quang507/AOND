@@ -297,7 +297,7 @@ flowchart TD
    bảng `required_facts` gỡ 19/10/2026.
 3. **Lượt hỏi 20–30 từ**: KHÔNG mở bằng "Dạ"; hỏi thẳng **một** thông tin kế tiếp, không đọc lại lời khách,
    không báo đã ghi; chỉ điểm thật sự hiếm mới được nửa câu nói lợi gì (FR-177 b, FR-178 b).
-   Giọng theo khối `GIONG` trong `src/aioi/prompts.py` (SRS-5.1zzzzzzz480 / 486 / 489).
+   Giọng theo khối `GIONG` trong `src/aioi/giong.py` (SRS-5.1zzzzzzz480 / 486 / 489).
 4. **Hỏi một đường, trả lời một nẻo thì VẪN GHI** (FR-177 e): nhận ra S đang nói
    fact nào thì ghi vào đúng fact đó; không nhận ra thì không ghi bừa — ô tự do
    `uu_the` chỉ giữ cụm nằm nguyên trong lời khách (SRS-5.1zzzzzzz205; ô `bo_sung` là đường

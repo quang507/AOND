@@ -2,7 +2,7 @@
 xưng anh hoặc chị tùy tên, xưng cháu thì cô hoặc chú"). Trước đó khách xưng "em" → bot xưng "mình" (SRS-5.1zzzzzzz86), khách ảo 26/10 ra câu
 rối "Em ơi, em…"; khách tự xưng "cháu" chưa có nhánh.
 
-Khối luật xưng hô cho model (`engine.khoi_xung_ho`), câu mẫu `{goi}` / `{toi}` (`cau_mau`), tin nhắc (`followup`), tin báo căn (`bao_can_moi`),
+Khối luật xưng hô cho model (`giong.khoi_xung_ho`), câu mẫu `{goi}` / `{toi}` (`cau_mau`), tin nhắc (`followup`), tin báo căn (`bao_can_moi`),
 câu xin sao (`danh_gia`), lịch hẹn (`mua`) đều lấy ở đây — đừng viết lại bảng anh / chị ở chỗ khác."""
 from __future__ import annotations
 

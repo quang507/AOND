@@ -149,8 +149,10 @@ ngắn, đúng việc, không gây áp lực. Đây là thước đo duy nhất 
 thì câu luật đó sai, kể cả khi nó đúng trên giấy [nguồn: chủ dự án 19/11/2026 "phần trả lời của bot bị không được tự nhiên", "cái nào ko
 merg dc mới phải cấm càng ít càng tốt"; 23/11/2026 "mục tiêu là giọng tự nhiên rep giống người"].
 
-- **Nguồn duy nhất của giọng: `prompts.GIONG`**, vào mọi prompt nói với khách qua `prompts.khoi_nhan_vat` (vai + hiểu khách + GIONG,
-  SRS-5.1zzzzzzz531). Tài liệu không chép lại câu chữ của `GIONG`; muốn biết bot được dặn gì thì đọc code.
+- **Nguồn duy nhất của giọng: `src/aioi/giong.py`** (SRS-5.1zzzzzzz546, chủ dự án 26/11/2026: "các luật lệ để chỗ khác còn tông giọng để
+  riêng 1 chỗ"): `GIONG` vào mọi prompt nói với khách qua `prompts.khoi_nhan_vat` (vai + hiểu khách + GIONG, SRS-5.1zzzzzzz531); khối xưng hô
+  của lượt, dòng xưng hô tin bot tự nhắn và các hàm làm sạch lời gửi khách cũng ở đó. Khối luật nghiệp vụ chỉ nói việc, không tả giọng.
+  Tài liệu không chép lại câu chữ của `GIONG`; muốn biết bot được dặn gì thì đọc code.
 - Cách dựng, lưới soát còn lại và **cách sửa khi lời bot lạ**: `07` SRS-5.6.
 - Các tiểu mục cũ (Bảy quy tắc, Cấm, Thư viện câu mẫu, Nhịp nhắn giống người, Kịch bản người bán, các bảng bỏ / giữ 09–10/2026…)
   đã XOÁ ngày 23/11/2026 (chủ dự án: "chạy trên 1 bản thôi"); cần tra vết thì `git show 111a002:docs/06-ui-design.md`. **Không chép lại chúng thành luật prompt.**
@@ -173,14 +175,17 @@ Lệch ở câu nào thì tìm gốc rồi sửa theo SRS-5.6. Năm câu này l�
 
 | Quyết định | Nguồn | Chỗ giữ |
 |---|---|---|
-| Không mở đầu bằng "Dạ" | chủ dự án, CLAUDE.md §6.2 | khối xưng hô (`engine._GIONG_CHUNG`); model viết lại hai lần vẫn mở "Dạ" thì code bỏ chữ đó (`engine._bo_da_dau`, SRS-5.1zzzzzzz230) |
+| Không mở đầu bằng "Dạ" | chủ dự án, CLAUDE.md §6.2 | khối xưng hô (`giong.LUAT_XUNG_HO_CHUNG`); model viết lại hai lần vẫn mở "Dạ" thì code bỏ chữ đó (`giong.bo_da_dau`, SRS-5.1zzzzzzz230); tin bot tự nhắn: `giong.lam_sach_tin_chu_dong` (SRS-5.1zzzzzzz546) |
 | Không gọi khách "mình" hay "bạn" ("nhà mình", "mình" nghĩa chúng ta thì được) | SRS-5.1zzzzzzz171 / 230 | khối xưng hô, lưới `goi_minh` |
 | Xưng hô theo bảng dưới | SRS-5.1zzzzzzz214 / 234 | `xung_ho.goi_toi` |
-| Mỗi lượt hỏi nhiều nhất một câu | SRS-5.1zzzzzzz252 | `GIONG`, lưới `mot_cau_hoi` |
+| Mỗi lượt hỏi nhiều nhất một câu (lời chào đầu được gộp — chủ dự án 26/11/2026) | SRS-5.1zzzzzzz252 / 546 | `GIONG`, lưới `mot_cau_hoi` |
 | Khách hỏi người hay máy: nói thật là trợ lý AI, không bao giờ nhận là người | chủ dự án 13/09/2026 | `GIONG` |
 | Trong chat không nhận xét mức giá chủ nhà đưa (cao / thấp / hợp lý) khi không có khối NHẬN XÉT GIÁ; không hứa bán được, không hứa thời hạn | SRS-5.1zzzzzzz353 | `LEAN_SYSTEM_PROMPT`, `GIONG`, lưới `binh_luan_gia` |
 | Chỉ xin số điện thoại một lần, lúc khách chốt lịch xem | NFR-07, SRS-5.1zzzzzzz148 | luồng hẹn xem |
-| Chat là văn nói: không in đậm, gạch đầu dòng, đánh số (Zalo không hiện); không gạch dài "—", không viết "anh/chị" gạch chéo | OPEN-62 | `GIONG`; "anh/chị" gạch chéo: code thay ở đường ra (`engine._bo_gach_cheo` — lời model, câu mẫu, câu giữ chỗ; SRS-5.1zzzzzzz536). Gạch dài chưa giữ |
+| Chat là văn nói: không in đậm, gạch đầu dòng, đánh số (Zalo không hiện); không gạch dài "—", không viết "anh/chị" gạch chéo | OPEN-62 | `GIONG`; "anh/chị" gạch chéo: code thay ở đường ra (`giong.bo_gach_cheo` — lời model, câu mẫu, câu giữ chỗ; SRS-5.1zzzzzzz536). Gạch dài chưa giữ |
+| Cảm ơn khi khách bỏ công thật (duyệt tin, gửi ảnh / giấy tờ, giới thiệu người), không cảm ơn từng câu | chủ dự án 26/11/2026, SRS-5.1zzzzzzz546 | `GIONG` |
+| Không giải thích hỏi / xin để làm gì (kể cả lúc xin ảnh); lượt hỏi thông tin khoảng 20–30 từ | chủ dự án 23/11 và 26/11/2026, SRS-5.1zzzzzzz536 / 546 | `GIONG` |
+| Emoji tối đa một, chỉ ở lời chào hoặc lúc báo tin đã đăng; không chồng "ạ" với "nha" / "nhé" | chủ dự án 26/11/2026, SRS-5.1zzzzzzz546 | `GIONG`, câu mẫu |
 | Mức phí chỉ lấy từ `prompts.muc_phi`; phí thuê viết "0.75 tháng tiền thuê"; khách duyệt tin thì "Em xin phép đăng tin ạ!" | BR-05, CLAUDE.md §6.3 | `muc_phi`, lưới `phi_vai`, câu mẫu |
 
 Thêm một dòng vào bảng này phải có lời chủ dự án. Ngoài bảng, mọi điều về giọng là mô tả trong `GIONG`, sửa được khi chat thật cho thấy

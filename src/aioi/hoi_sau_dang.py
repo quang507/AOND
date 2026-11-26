@@ -19,6 +19,8 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 
 from .bao_can_moi import trong_khung_gio
+from . import cau_mau
+from .giong import lam_sach_tin_chu_dong
 from .xung_ho import goi_toi
 
 log = logging.getLogger(__name__)
@@ -46,6 +48,7 @@ def viet_tin(engine: Any, conv: Any, li: Any, khoi: str, goi: str, toi: str) -> 
     except Exception as e:  # noqa: BLE001
         log.warning("hoi_sau_dang: model hụt (%s)", type(e).__name__)
         return ""
+    tin = lam_sach_tin_chu_dong(tin, goi)   # SRS-5.1zzzzzzz546: tin chủ động không có lưới gọi lại model
     if not tin or len(tin) > DAI_TOI_DA or tin.count("?") > 1:
         return ""
     return tin
@@ -84,15 +87,14 @@ def viet_tra_cuu(engine: Any, conv: Any, li: Any, caus: list[str], goi: str, toi
     except Exception as e:  # noqa: BLE001
         log.warning("tra_cuu: model hụt (%s)", type(e).__name__)
         return ""
-    tin = (ra[0] if ra else "").strip()
+    tin = lam_sach_tin_chu_dong((ra[0] if ra else "").strip(), goi)   # SRS-5.1zzzzzzz546
     log.warning("BOA tra cứu: gọi %d công cụ, có dữ kiện: %s", len(ra[2]) if ra else 0, co[0])
     return tin if co[0] and tin and len(tin) <= 900 and tin.count("?") <= 1 else ""
 
 
 def tin_chua_co_du_kien(goi: str, toi: str) -> str:
     """Hết lượt thử mà không tra ra dữ kiện nào: lời hẹn vẫn phải giữ — nói thật, không đoán; câu hỏi sang người phụ trách (code soạn, không qua model)."""
-    return (f"Dạ {goi} ơi, điều {goi} hỏi lúc nãy {toi} đã xem lại, hiện bên {toi} chưa có dữ liệu đủ chắc để trả lời nên {toi} xin phép không đoán ạ. "
-            f"{toi[:1].upper() + toi[1:]} đã chuyển câu hỏi cho người phụ trách xem thêm, có thông tin bên {toi} báo {goi} ngay.")
+    return cau_mau.cau("tra_cuu_chua_co", goi, toi=toi)   # SRS-5.1zzzzzzz546: câu nguyên văn ở cau_mau (bỏ "Dạ" mở đầu, "ạ" chồng)
 
 
 def _tra_loi_tra_cuu(engine: Any, conv: Any, uk: str, bay_gio: datetime, gui: Callable[[str, str], bool]) -> tuple[str, str] | tuple[()] | None:

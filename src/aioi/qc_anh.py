@@ -394,11 +394,11 @@ def viet_tin_nhan(engine: Any, conv: Any, li: Any, kq: dict, goi: str, toi: str,
     gan = "\n".join(f"{'Khách' if t.role == 'user' else 'Em'}: {(t.content or '')[:300]}" for t in conv.history[-6:])
     loai = viec["loai"]
     if loai == "nghi":
-        viec_txt = (f"Có ảnh trông chưa giống căn: {viec['anh'].get('ly_do')}. HỎI KHÉO tấm đó có phải ảnh căn mình không (tả tấm ảnh bằng "
+        viec_txt = (f"Có ảnh trông chưa giống căn: {viec['anh'].get('ly_do')}. Hỏi tấm đó có phải ảnh căn mình không (tả tấm ảnh bằng "
                     "nội dung, không nói số thứ tự / tên tệp, không nói ảnh sai / bị loại / bị trừ điểm).")
     elif loai == "xau":
         a = viec["anh"]
-        viec_txt = (f"Tấm {a.get('mo_ta') or 'ảnh'} {a.get('ly_do_xau') or 'chưa được đẹp'}. Hỏi khéo chủ cho em ẨN tấm đó khỏi tin cho tin đẹp "
+        viec_txt = (f"Tấm {a.get('mo_ta') or 'ảnh'} {a.get('ly_do_xau') or 'chưa được đẹp'}. Hỏi chủ cho em ẨN tấm đó khỏi tin cho tin đẹp "
                     "hơn — chỉ ẩn, không xoá, muốn hiện lại lúc nào cũng được. Nói nhẹ (\"hơi tối\", \"hơi mờ\"), không dùng chữ \"xấu\". "
                     "Tin kết thúc bằng câu hỏi xin phép.")
     elif loai == "thieu":
@@ -421,4 +421,6 @@ def viet_tin_nhan(engine: Any, conv: Any, li: Any, kq: dict, goi: str, toi: str,
     except Exception as e:  # noqa: BLE001
         log.warning("qc_anh: viết tin hụt (%s)", type(e).__name__)
         return ""
+    from .giong import lam_sach_tin_chu_dong
+    tin = lam_sach_tin_chu_dong(tin, goi)   # SRS-5.1zzzzzzz546: tin chủ động không có lưới gọi lại model
     return tin if 0 < len(tin) <= 400 else ""

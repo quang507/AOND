@@ -16,6 +16,7 @@ import urllib.request
 from typing import TYPE_CHECKING
 
 from .xung_ho import goi_toi, tre
+from .giong import lam_sach_tin_chu_dong
 from . import cau_mau
 from . import khoa_noi_bo
 from .engine import Turn, _detect_customer_pronoun, _image_count
@@ -77,6 +78,7 @@ def cau_xin_anh_sau_dang(engine, conv, listing, moc: str, pronoun: str, ten: str
         he = build_xin_anh_nhac_system(ten or "em", listing.prop, so, moc == "sau:anh_lan_2", goi, toi)
         gan = "\n".join(f"{'Khách' if t.role == 'user' else 'Em'}: {(t.content or '')[:300]}" for t in conv.history[-6:])
         tin = engine._provider.reply(he, [Message("user", f"Mấy lượt vừa nói:\n{gan}\n\nViết tin nhắc xin ảnh.")], max_tokens=200).strip()
+        tin = lam_sach_tin_chu_dong(tin, goi)   # SRS-5.1zzzzzzz546: tin chủ động không có lưới gọi lại model
         if tin and len(tin) <= 400:
             return tin
     except Exception as e:  # noqa: BLE001
@@ -92,6 +94,7 @@ def _nhac_hoi_lai_model(engine, conv, goi: str, toi: str, ten: str | None) -> st
         gan = "\n".join(f"{'Khách' if t.role == 'user' else 'Em'}: {(t.content or '')[:300]}" for t in conv.history[-6:])
         tin = engine._provider.reply(build_nhac_hoi_lai_system(ten or "em", goi, toi),
                                      [Message("user", f"Mấy lượt vừa nói:\n{gan}\n\nViết tin nhắc.")], max_tokens=150).strip()
+        tin = lam_sach_tin_chu_dong(tin, goi)   # SRS-5.1zzzzzzz546
         return tin if tin and len(tin) <= 300 and "?" in tin else ""
     except Exception as e:  # noqa: BLE001
         log.warning("Tin nhắc hỏi lại: model hụt (%s) — dùng câu mẫu", type(e).__name__)
