@@ -31,7 +31,7 @@ from . import gamification as g
 from . import phap_ly
 from .prompts import _dien_tich_mo_ho, khoi_nhan_vat, nhan_o_ngan, viec_phieu, viec_theo_khoi
 from .prompts import NHAN_VIEC_LUOT, khoi_doi_so, khoi_so_dang_nhan
-from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, LOC_KHACH, NHAN_DUONG_VAO, SU_THAT_CAN, khoi_hen_tra_cuu, khoi_kich_hoat_mg, khoi_loc_khach, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
+from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, LOC_KHACH, NHAN_DUONG_VAO, SU_THAT_CAN, khoi_kich_hoat_mg, khoi_loc_khach, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
 from .sdt import che_giay_to, che_sdt
@@ -1331,7 +1331,6 @@ def _them_khach_gt(kq: dict | None) -> str:
 # SRS-5.1zzzzzzz526 (chủ dự án 18/11: "làm giống sếp" — bản anh Luận: FDA chỉ nhận rao bán, ai tới mua / tìm thuê thì dẫn đúng chỗ): phía mua
 # TẮT theo mặc định; khách cần mua / thuê được chuyển cho người phụ trách (`bao_can_nguoi`). PHIA_MUA=bat trả lại vòng tư vấn mua như trước.
 PHIA_MUA_BAT = os.environ.get("PHIA_MUA", "tat") == "bat"
-HEN_TRA_CUU_GIU = 3   # số câu hẹn tra cứu giữ cho một căn
 _KD_CHINH_CHU = re.compile(r"(?i)chính chủ")
 _KD_PHAP_LY = re.compile(r"(?i)(sổ hồng|sổ đỏ|sổ riêng|hoàn công|pháp lý (?:rõ ràng|đầy đủ|chuẩn|sạch|minh bạch))")
 _KD_HEM_XE_HOI = re.compile(r"(?i)(?<![\wÀ-ỹ])(hẻm xe hơi|hẻm ô tô|hxh)(?![\wÀ-ỹ])")
@@ -3511,7 +3510,6 @@ class Engine:
         for ten_ut, lay in (("kich_hoat_mg", lambda: khoi_kich_hoat_mg(conv.y_luot.get("kich_hoat_mg"))),   # SRS-5.1zzzzzzz524
                             ("can_nguoi", lambda: khoi_can_nguoi(conv)), ("phap_ly", lambda: khoi_phap_ly(conv, self._can_cua_chu(conv))),
                             ("loc_khach", lambda: khoi_loc_khach(conv.y_luot.get("loc_khach"), conv.y_luot.get("khach_gt"))),   # SRS-5.1zzzzzzz521
-                            ("hen_tra_cuu", lambda: khoi_hen_tra_cuu(conv.y_luot.get("hen_tra_cuu"))),   # SRS-5.1zzzzzzz526
                             ("ngoai_viec", lambda: khoi_ngoai_viec(conv)), ("hoi_ve", lambda: hoi_ve_khoi),
                             ("hoi_trung_ten", lambda: self._khoi_hoi_trung_ten(conv))):   # cùng thứ tự / cùng ngắt sớm như chuỗi `or` cũ
             note_cu = conv.pending_name_note
@@ -5659,23 +5657,6 @@ class Engine:
                 conv.y_luot["khach_gt"] = khach_gt   # SRS-5.1zzzzzzz527
         if kich_hoat is not None:
             conv.y_luot["kich_hoat_mg"] = kich_hoat   # SRS-5.1zzzzzzz524
-        if conv.role != "buyer" and kich_hoat is None and not la_loc:
-            # SRS-5.1zzzzzzz526: khách hỏi điều phải tra cứu / so sánh — FDA không có công cụ tra trong lượt nên không đoán, hẹn; câu hỏi ghi
-            # vào căn đang nói (`_cho_tra_cuu`) để vòng nền trả lời (`hoi_sau_dang._tra_loi_tra_cuu`). Câu hỏi giá (hoi_ve = dinh_gia) đi cùng đường.
-            cau_tc = plan.get("can_tra_cuu")
-            hen_tc = (cau_tc.strip()[:200] if isinstance(cau_tc, str) and cau_tc.strip()
-                      and _vai_co_bang_chung(plan.get("can_tra_cuu_trich_dan"), gan_khach) else None)
-            if conv.hoi_ve_luot == "dinh_gia":
-                hen_tc, conv.hoi_ve_luot = hen_tc or "giá căn của khách so với các căn đang rao quanh đó", None
-            if hen_tc:
-                conv.y_luot["hen_tra_cuu"] = hen_tc
-                fc = conv.prop.fields
-                try:
-                    ds_tc = [d for d in json.loads(fc.get("_cho_tra_cuu") or "[]") if isinstance(d, dict)]
-                except ValueError:
-                    ds_tc = []
-                fc["_cho_tra_cuu"] = json.dumps((ds_tc + [{"cau": hen_tc, "luc": int(time.time())}])[-HEN_TRA_CUU_GIU:], ensure_ascii=False)
-                log.warning("Hẹn tra cứu: đã ghi 1 câu")
         for k in ("xin_xem_ban_ve", "cau_hoi_du_an", "mo_ta_du_an"):   # Q5 (SRS-5.1zzzzzzz328): theo ý AI đọc, không so nguyên văn
             if _ai_co_y(plan.get(k)):
                 conv.y_luot[k] = True

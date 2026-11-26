@@ -208,10 +208,6 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                    "Khách xin bản vẽ — mẫu nhà chỉ có bản PDF. {link} = đường dẫn PDF (bắt buộc)", "SRS-5.1zzzzzzz249"),
     "hoi_ro_can": ("{Goi} nói rõ thêm giúp {toi} căn nào ạ?",
                    "Lượt tra rổ hàng không ra lời — hỏi lại khách căn nào", "SRS-5.1zzzzzzz250"),
-    "tra_cuu_chua_co": ("{Goi} ơi, điều {goi} hỏi lúc nãy {toi} xem lại rồi, hiện bên {toi} chưa có dữ liệu đủ chắc nên {toi} không đoán. "
-                        "{Toi} chuyển câu hỏi cho người phụ trách xem thêm rồi, có thông tin là {toi} báo {goi} liền.",
-                        "Điều bot đã hẹn tra cứu mà hết lượt thử vẫn không có dữ kiện (vòng nền `hoi_sau_dang`, code gửi, không qua model). "
-                        "{toi} = bot tự xưng", "SRS-5.1zzzzzzz526 · 546: dời từ câu viết cứng trong hoi_sau_dang, bỏ \"Dạ\" mở đầu và \"ạ\" chồng"),
 }
 
 # Khung bắt buộc của vài câu — code dựa vào khung đó (dòng mở bản nháp: tìm tiêu đề, cắt câu dẫn). Câu sửa sai khung → mặc định.

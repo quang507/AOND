@@ -576,25 +576,6 @@ def khoi_loc_khach(loai: str | None, khach_gt: dict | None = None) -> str:
     return ""
 
 
-def khoi_hen_tra_cuu(cau: str | None) -> str:
-    """Việc của lượt khi khách hỏi điều phải tra cứu / so sánh mới trả lời được (SRS-5.1zzzzzzz526): FDA không đoán, hẹn — BOA nhắn lại."""
-    if not cau:
-        return ""
-    return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI ĐIỀU PHẢI TRA CỨU MỚI TRẢ LỜI ĐƯỢC (hệ thống đã ghi lại để xem kỹ): ===\n"
-            f"Điều khách hỏi: {cau}. Lượt này em chưa có dữ liệu để trả lời. Việc lượt này: hưởng ứng câu hỏi, nói em xem kỹ rồi nhắn lại "
-            "anh/chị ngay trên Zalo này; không đoán, không nêu con số hay nhận định nào. Xong thì tiếp việc đang dở của cuộc chat, nếu có.\n")
-
-
-def khoi_tra_hen(caus: list[str]) -> str:
-    """Việc của tin BOA trả lời điều FDA đã hẹn (SRS-5.1zzzzzzz526)."""
-    ds = "; ".join(f"«{c}»" for c in caus)
-    return ("\n\n=== VIỆC CỦA TIN NÀY — TRẢ LỜI ĐIỀU EM ĐÃ HẸN XEM KỸ: ===\n"
-            f"Lúc nãy khách hỏi: {ds}. Em đã hẹn xem rồi nhắn lại. Gọi công cụ tra cho từng điều khách hỏi trước khi viết, rồi trả lời ngắn gọn. "
-            "Mỗi nhận định trong tin phải lấy từ kết quả công cụ hoặc khối dữ kiện dưới; điều nào không có dữ kiện thì nói thật là em chưa có "
-            "số liệu cho điều đó — không đoán, không trấn an, không khen chê giá. Về giá: chỉ đưa các căn thật đang rao ở khối dữ kiện dưới "
-            "(nếu có), không tự định giá, không khuyên nên bán giá nào. Tối đa một câu hỏi lại.\n")
-
-
 def khoi_kich_hoat_mg(kq: dict | None) -> str:
     """Việc của lượt khi khách vừa nhắn mã kích hoạt môi giới (SRS-5.1zzzzzzz524) — hệ thống đã nối (hoặc từ chối) trước khi model viết."""
     if not kq:
@@ -2897,12 +2878,6 @@ def operations_schema() -> dict[str, Any]:
                           "dịch vụ / hàng hoá khác, tin rác, chửi phá; hoi_dao = khách nói rõ chỉ hỏi cho biết / thử bot, không có nhà để bán và "
                           "không cần mua, thuê. Khách thật nói cộc lốc, hỏi phí, hỏi thử rồi khai căn → bỏ trống."},
             "loc_khach_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách nói (bắt buộc khi có loc_khach)."},
-            # SRS-5.1zzzzzzz526 (bản anh Luận: việc cần nhìn / tra / ngẫm thì FDA hẹn, BOA nhắn lại): AI đọc theo nghĩa, code kiểm cụm trích.
-            "can_tra_cuu": {"type": "string",
-                            "description": "Tóm ngắn điều khách HỎI mà phải tra cứu / so sánh / xem kỹ mới trả lời được: giá khu vực, giá mình "
-                            "đưa cao hay thấp, quy hoạch, lộ giới, thông tin một dự án, phong thuỷ, nên bớt bao nhiêu. Khách hỏi phí bên em, hỏi "
-                            "thủ tục chung, hay chỉ kể thông tin căn → bỏ trống."},
-            "can_tra_cuu_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách hỏi (bắt buộc khi có can_tra_cuu)."},
             "ca_ban_ca_thue": {"type": "boolean", "description": "true CHỈ KHI khách nói CÙNG căn đang nói muốn VỪA bán VỪA cho thuê (\"bán "
                                "hay cho thuê đều được\", \"ai thuê cũng cho, mua cũng bán\"). \"Đang cho thuê 30 triệu\" khi rao bán là hiện trạng → bỏ trống."},
             "ca_ban_ca_thue_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách nói vừa bán vừa cho thuê (bắt buộc khi có ca_ban_ca_thue)."},

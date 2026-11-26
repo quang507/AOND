@@ -11,16 +11,13 @@ Khi nào được nhắn (một người bán tối đa một tin mỗi lượt,
 Model hụt hay viết hơn một câu hỏi → không gửi (không có câu mẫu dự phòng — câu hỏi sai ngữ cảnh tệ hơn không hỏi)."""
 from __future__ import annotations
 
-import copy
-import json
 import logging
 import time
 from datetime import datetime, timezone
 from typing import Any, Callable
 
 from .bao_can_moi import trong_khung_gio
-from . import cau_mau
-from .giong import bo_gach_cheo, lam_sach_tin_chu_dong
+from .giong import lam_sach_tin_chu_dong
 from .xung_ho import goi_toi
 
 log = logging.getLogger(__name__)
@@ -52,100 +49,6 @@ def viet_tin(engine: Any, conv: Any, li: Any, khoi: str, goi: str, toi: str) -> 
     if not tin or len(tin) > DAI_TOI_DA or tin.count("?") > 1:
         return ""
     return tin
-
-
-HEN_TRA_HAN_GIAY = 24 * 3600   # SRS-5.1zzzzzzz526: câu hẹn tra cứu quá một ngày chưa trả lời được thì bỏ
-HEN_TRA_THU_TOI_DA = 2         # model không viết được câu trả lời quá số lượt này thì bỏ câu hẹn
-
-
-def viet_tra_cuu(engine: Any, conv: Any, li: Any, caus: list[str], goi: str, toi: str) -> str:
-    """BOA trả lời điều FDA đã hẹn xem kỹ (SRS-5.1zzzzzzz526): một vòng công cụ nhỏ với các công cụ tra cứu (`agent_ban.CONG_CU_BOA`) + căn thật
-    đang rao gần (`so_sanh`) làm dữ kiện giá. Hụt / dài quá → ""."""
-    from . import agent_ban, agent_gop, so_sanh
-    from .prompts import build_hoi_sau_dang_nhac_system, khoi_tra_hen
-    f = li.prop.fields
-    try:
-        khoi_gia = so_sanh.khoi_tra_loi_gia(so_sanh.can_gan(engine._convstore, li.listing_id)) or ""
-    except Exception as e:  # noqa: BLE001
-        log.warning("tra_cuu: so sánh giá hụt (%s)", type(e).__name__)
-        khoi_gia = ""
-    he = build_hoi_sau_dang_nhac_system(getattr(conv.assistant, "name", None) or "em", li.prop, khoi_tra_hen(caus) + khoi_gia, goi, toi)
-    tools = [copy.deepcopy(c) for c in agent_ban.CONG_CU if c["name"] in agent_ban.CONG_CU_BOA]
-    project = engine._projects.get(f.get("du_an")) if f.get("du_an") else None
-
-    co = [bool(khoi_gia)]   # có dữ kiện thật (căn đang rao gần, hoặc một công cụ trả ra nội dung) thì model mới được viết câu trả lời
-
-    def chay(c: Any) -> str:
-        r = agent_ban._khoi(engine, conv, project, c.name, dict(c.input or {})).strip()
-        co[0] = co[0] or bool(r)
-        return r or "Không có dữ liệu này."
-
-    gan = "\n".join(f"{'Khách' if t.role == 'user' else 'Em'}: {(t.content or '')[:300]}" for t in conv.history[-6:])
-    try:
-        ra = agent_gop._vong_viet(engine, he, [{"role": "user", "content": f"Mấy lượt vừa nói:\n{gan}\n\nViết tin trả lời điều em đã hẹn."}],
-                                  tools, chay, time.monotonic(), 500, "BOA tra cứu")
-    except Exception as e:  # noqa: BLE001
-        log.warning("tra_cuu: model hụt (%s)", type(e).__name__)
-        return ""
-    tin = lam_sach_tin_chu_dong((ra[0] if ra else "").strip(), goi)   # SRS-5.1zzzzzzz546
-    log.warning("BOA tra cứu: gọi %d công cụ, có dữ kiện: %s", len(ra[2]) if ra else 0, co[0])
-    return tin if co[0] and tin and len(tin) <= 900 and tin.count("?") <= 1 else ""
-
-
-def tin_chua_co_du_kien(goi: str, toi: str) -> str:
-    """Hết lượt thử mà không tra ra dữ kiện nào: lời hẹn vẫn phải giữ — nói thật, không đoán; câu hỏi sang người phụ trách (code soạn, không qua model)."""
-    # SRS-5.1zzzzzzz546: câu nguyên văn ở cau_mau (bỏ "Dạ" mở đầu, "ạ" chồng); chưa biết cách gọi thì "anh chị", không gạch chéo (OPEN-62)
-    return bo_gach_cheo(cau_mau.cau("tra_cuu_chua_co", goi, toi=toi), goi)
-
-
-def _tra_loi_tra_cuu(engine: Any, conv: Any, uk: str, bay_gio: datetime, gui: Callable[[str, str], bool]) -> tuple[str, str] | tuple[()] | None:
-    """Căn có câu FDA đã hẹn tra cứu (`_cho_tra_cuu`): chat im đủ lâu thì BOA trả lời MỘT tin rồi xoá hẹn. Gọi trong khoá lượt.
-    None = không có câu hẹn; () = có nhưng lượt này không gửi; (tin, "tra_cuu") = đã gửi."""
-    from .engine import _detect_customer_pronoun
-    from .lqc import ly_do_khong_nhan
-    li = next((x for x in conv.listings if x.prop.fields.get("_cho_tra_cuu")), None)
-    if li is None:
-        return None
-    f, ts = li.prop.fields, bay_gio.timestamp()
-    luu = lambda: engine._convstore.save(conv) if engine._convstore is not None else None
-    try:
-        ds = [d for d in json.loads(f["_cho_tra_cuu"]) if isinstance(d, dict) and d.get("cau") and ts - float(d.get("luc") or 0) < HEN_TRA_HAN_GIAY]
-    except (ValueError, TypeError):
-        ds = []
-    if not ds:
-        f.pop("_cho_tra_cuu", None)
-        luu()
-        return ()
-    if ly_do_khong_nhan(conv, bay_gio, "tra_hen", engine._convstore, uk):
-        return ()
-    goi, toi = goi_toi(_detect_customer_pronoun(conv), getattr(conv.assistant, "name", None))
-    caus = [str(d["cau"]) for d in ds]
-    tin = viet_tra_cuu(engine, conv, li, caus, goi, toi)
-    chuyen = False
-    if not tin:
-        for d in ds:
-            d["lan"] = int(d.get("lan") or 0) + 1
-        if any(d["lan"] < HEN_TRA_THU_TOI_DA for d in ds):
-            f["_cho_tra_cuu"] = json.dumps(ds, ensure_ascii=False)
-            luu()
-            return ()
-        tin, chuyen = tin_chua_co_du_kien(goi, toi), True   # hết lượt thử: không bỏ rơi lời hẹn, không cho model đoán
-    try:
-        if not gui(uk, tin):
-            return ()
-    except Exception as e:  # noqa: BLE001
-        log.warning("hoi_sau_dang: bridge hụt (%s)", type(e).__name__)
-        return ()
-    f.pop("_cho_tra_cuu", None)
-    luu()
-    if chuyen:
-        bao = getattr(engine._convstore, "bao_can_nguoi", None)
-        try:
-            if callable(bao):
-                bao(uk, "Chủ hỏi điều bot chưa tra ra dữ liệu: " + "; ".join(caus))
-        except Exception as e:  # noqa: BLE001
-            log.warning("tra_cuu: báo người phụ trách hụt (%s)", type(e).__name__)
-    return tin, "tra_cuu"
 
 
 def _nhac_hen(engine: Any, conv: Any, uk: str, bay_gio: datetime, gui: Callable[[str, str], bool]) -> tuple[str, str] | tuple[()] | None:
@@ -196,9 +99,6 @@ def _nhac_mot(engine: Any, uk: str, lid: str, bay_gio: datetime, gui: Callable[[
         li = next((x for x in conv.listings if str(x.listing_id).replace("-", "") == lid), None)
         if li is None:
             return None
-        tra = _tra_loi_tra_cuu(engine, conv, uk, bay_gio, gui)   # SRS-5.1zzzzzzz526: điều bot đã hẹn xem kỹ đi trước mọi thứ
-        if tra is not None:
-            return tra or None
         nhac = _nhac_hen(engine, conv, uk, bay_gio, gui)   # SRS-5.1zzzzzzz476: lời hẹn tới giờ đi trước hàng câu hỏi
         if nhac is not None:
             return nhac or None
@@ -245,8 +145,7 @@ def chay_mot_luot(engine: Any, gui: Callable[[str, str], bool],
     chon = "&select=id,code,diem_boa:boc_tach->>_diem_boa,sellers!listings_seller_id_fkey(zalo_user_id,name)&order=updated_at.desc&limit=200"
     # Căn có lời hẹn của chủ (SRS-5.1zzzzzzz476) xét trước — kể cả căn chưa đăng (chủ hẹn gửi ảnh lúc đang khai). Sau đó là tin đang rao,
     # tin điểm chất lượng BOA thấp đi trước (SRS-5.1zzzzzzz520; bản anh Luận: "mỗi ngày soi lại listing đang rao mà điểm chất lượng còn thấp").
-    rows = (kho._get("listings?boc_tach->>_cho_tra_cuu=not.is.null" + chon) or []) + (   # SRS-5.1zzzzzzz526: câu bot đã hẹn tra cứu
-        kho._get("listings?boc_tach->>_hen_luc=not.is.null" + chon) or []) + sorted(
+    rows = (kho._get("listings?boc_tach->>_hen_luc=not.is.null" + chon) or []) + sorted(
         kho._get("listings?status=in.(dang_ban,dang_quan_tam)&boc_tach->>_da_bao_dang=eq.1" + chon) or [],
         key=lambda r: trung_binh(r.get("diem_boa")))
     ra: list[dict] = []

@@ -327,7 +327,7 @@ def cong_cu_viet(chia: dict[str, Any]) -> list[dict[str, Any]]:
     """Công cụ bước 2: chỉ đọc + tra cứu — bước ghi đã đóng (không còn công cụ ghi để gọi). `tra_luat_o` giữ TÊN (lịch sử bước 1 có lần gọi
     nó) nhưng mô tả ngắn: bước viết hầu như không cần danh sách khoá luật (SRS-5.1zzzzzzz536, ≈ 300 token mỗi lượt)."""
     tra = {**_tra_cong_cu(chia), "description": "Luật ghi nguyên văn của một khoá ô tin (bước ghi đã xong — bước này hiếm khi cần)."}
-    return [tra, copy.deepcopy(CONG_CU_KIEN_THUC)] + copy.deepcopy(agent_ban.cong_cu_fda())   # SRS-5.1zzzzzzz526: FDA không tra cứu trong lượt
+    return [tra, copy.deepcopy(CONG_CU_KIEN_THUC)] + copy.deepcopy(agent_ban.cong_cu_fda())   # SRS-5.1zzzzzzz551: đủ công cụ tra cứu trong lượt
 
 
 HUONG_DAN_GHI = (

@@ -112,19 +112,10 @@ CONG_CU: list[dict[str, Any]] = [
 ]
 _TEN = {c["name"] for c in CONG_CU}
 
-# SRS-5.1zzzzzzz526 (chủ dự án 18/11: "làm giống sếp"; bản anh Luận: giác quan của FDA chỉ có lời khách, việc cần nhìn / tra / ngẫm thì hẹn
-# lại cho BOA). SRS-5.1zzzzzzz550 (26/11): gỡ công tắc quay lui FDA_TRA_CUU — muốn FDA tra thêm thứ gì trong lượt thì thêm tên công cụ vào
-# `CONG_CU_FDA_GIU` (và bỏ đường hẹn BOA cho loại câu đó ở `engine._lap_ke_hoach`).
-# FDA giữ: điều khách đã gửi (rổ hàng, bộ nhớ dự án, giá đã gửi) và phí của chính bên em.
-CONG_CU_FDA_GIU = ("ro_hang", "bo_nho_du_an", "gia_da_gui", "tinh_phi_moi_gioi")
-# BOA tra khi trả lời điều đã hẹn. Không có định giá tự động và gợi ý bớt giá: bản anh Luận cấm định giá / khuyên giá — giá chỉ so căn thật
-# đang rao (`so_sanh`).
-CONG_CU_BOA = ("tra_du_an", "du_an_trong_khu", "kiem_tra_phap_ly_so", "tham_dinh_quy_hoach", "tra_cuu_phong_thuy")
-
-
 def cong_cu_fda() -> list[dict[str, Any]]:
-    """Công cụ đọc FDA được dùng trong lượt chat."""
-    return [c for c in CONG_CU if c["name"] in CONG_CU_FDA_GIU]
+    """Công cụ FDA được dùng trong lượt chat: đủ mọi công cụ đọc / tra (SRS-5.1zzzzzzz551, chủ dự án 26/11 "bật hết" — đảo phần "FDA
+    không tra trong lượt, hẹn BOA nhắn lại" của SRS-5.1zzzzzzz526). Định giá / gợi ý đàm phán là bảng ước lượng: kết quả tự ghi "tham khảo"."""
+    return list(CONG_CU)
 
 
 def _khoi(engine: Any, conv: Any, project: Any, ten: str, vao: dict[str, Any] | None = None) -> str:
@@ -189,6 +180,8 @@ def _khoi(engine: Any, conv: Any, project: Any, ten: str, vao: dict[str, Any] | 
 def goi_y(engine: Any, conv: Any, project: Any) -> str:
     """MỘT dòng cho model biết lượt này có dữ liệu gì để tra (không có gì thì rỗng — model khỏi gọi công cụ thừa)."""
     co = [ten for ten in ("ro_hang", "bo_nho_du_an", "gia_da_gui") if _khoi(engine, conv, project, ten).strip()]
+    if getattr(conv, "hoi_ve_luot", None) == "dinh_gia":   # SRS-5.1zzzzzzz551: chủ hỏi giá → khối định giá giao cho công cụ tra
+        co.append("dinh_gia_tham_khao")
     return ("\nDỮ LIỆU CÓ THỂ TRA lượt này: " + ", ".join(co) + " (gọi công cụ cùng tên khi cần).\n") if co else ""
 
 
