@@ -152,7 +152,8 @@ merg dc mới phải cấm càng ít càng tốt"; 23/11/2026 "mục tiêu là g
 - **Nguồn duy nhất của giọng: `src/aioi/giong.py`** (SRS-5.1zzzzzzz546, chủ dự án 26/11/2026: "các luật lệ để chỗ khác còn tông giọng để
   riêng 1 chỗ"): `GIONG` vào mọi prompt nói với khách qua `prompts.khoi_nhan_vat` (vai + hiểu khách + GIONG, SRS-5.1zzzzzzz531); khối xưng hô
   của lượt, dòng xưng hô tin bot tự nhắn và các hàm làm sạch lời gửi khách cũng ở đó. Khối luật nghiệp vụ chỉ nói việc, không tả giọng.
-  Tài liệu không chép lại câu chữ của `GIONG`; muốn biết bot được dặn gì thì đọc code.
+  Tài liệu không chép lại câu chữ của `GIONG`; muốn biết bot được dặn gì thì đọc code. `GIONG` viết điều NÊN làm, không chữ cấm
+  ("không / chỉ / khỏi / đừng") — chủ dự án 26/11/2026: "vẫn có nhiều luật cấm quá" (SRS-5.1zzzzzzz548).
 - Cách dựng, lưới soát còn lại và **cách sửa khi lời bot lạ**: `07` SRS-5.6.
 - Các tiểu mục cũ (Bảy quy tắc, Cấm, Thư viện câu mẫu, Nhịp nhắn giống người, Kịch bản người bán, các bảng bỏ / giữ 09–10/2026…)
   đã XOÁ ngày 23/11/2026 (chủ dự án: "chạy trên 1 bản thôi"); cần tra vết thì `git show 111a002:docs/06-ui-design.md`. **Không chép lại chúng thành luật prompt.**
