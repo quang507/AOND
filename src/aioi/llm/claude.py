@@ -14,14 +14,14 @@ from typing import Any
 from ..config import Settings
 from ..imaging import downscale_image
 from ..so_token import SoToken
-from .base import KHONG_NGHI_LUOT, MODEL_CHAT_LUOT, LLMProvider, Message, ToolCall, ToolTurn, tach_on_dinh
+from .base import KHONG_NGHI_LUOT, MODEL_CHAT_LUOT, TRONG_LUOT_CHAT, LLMProvider, Message, ToolCall, ToolTurn, tach_on_dinh
 
 log = logging.getLogger(__name__)
 
 # SRS-5.1zzzzzzz541 (audit ECC P1-8): hạn chờ theo loại lượt gọi. Client chung 120 s × 1 lần thử lại (cho đọc ảnh / tài liệu dài) làm lượt
 # chat treo tới 240 s mới lỗi — quá 90 s bridge đã gửi lại, quá ~150 s khách mất lời. Lượt chữ hạn ngắn, KHÔNG tự thử lại: quá hạn là
 # `APITimeoutError` → `du_phong.nen_doi_sang` đổi sang Gemini / Groq ngay trong ngân sách của lượt.
-HAN_CLAUDE_GIAY = {"chat": 30.0, "agent": 30.0, "extract": 60.0}
+HAN_CLAUDE_GIAY = {"chat": 30.0, "agent": 30.0, "extract": 60.0, "extract_luot": 30.0}   # extract_luot: bóc tách trong lượt chat (SRS-554)
 
 
 def _doc_mang_chiu_loi(s: str) -> list[Any]:
@@ -125,7 +125,8 @@ class ClaudeProvider(LLMProvider):
         if tat_nghi:
             kw = {**kw, "thinking": {"type": "between_tools"}}
         try:
-            return self._client_theo_viec.get(nhan, self._client).messages.create(**kw)
+            viec = "extract_luot" if nhan == "extract" and TRONG_LUOT_CHAT.get() else nhan
+            return self._client_theo_viec.get(viec, self._client).messages.create(**kw)
         except Exception as e:
             if tat_nghi and "thinking" in str(e):
                 self._khong_tat_nghi.add(str(kw.get("model")))

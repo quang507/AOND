@@ -52,7 +52,7 @@ from .fetch import (
     is_drive_folder,
 )
 from .llm import LLMProvider, Message
-from .llm.base import CHI_GEMINI, MODEL_CHAT_LUOT, NGUON_LUOT, RANH_GIOI_CACHE, model_chat_thu
+from .llm.base import CHI_GEMINI, MODEL_CHAT_LUOT, NGUON_LUOT, RANH_GIOI_CACHE, TRONG_LUOT_CHAT, model_chat_thu
 from .web import SITE_HOST
 from . import so_sanh
 from . import bulk
@@ -2926,9 +2926,11 @@ class Engine:
         # SRS-5.1zzzzzzz239: `gemini` không phải tên model Claude — cả lượt của ID thử đi thẳng Gemini (`llm.base.NGUON_LUOT`).
         dau = MODEL_CHAT_LUOT.set(m) if m and m != CHI_GEMINI else None
         dau_nguon = NGUON_LUOT.set(CHI_GEMINI) if m == CHI_GEMINI else None
+        dau_luot = TRONG_LUOT_CHAT.set(True)
         try:
             return self._handle(user_key, text, now)
         finally:
+            TRONG_LUOT_CHAT.reset(dau_luot)
             if dau is not None:
                 MODEL_CHAT_LUOT.reset(dau)
             if dau_nguon is not None:
@@ -5358,7 +5360,8 @@ class Engine:
             system = OPERATIONS_SYSTEM + system[len(OPERATIONS_SYSTEM_MUA):]
             with _do(conv, "lap_thao_tac"):
                 plan = self._provider.extract(system, src, operations_schema())
-        if ban_gon and plan.get("user_intent") == "buy":
+        # SRS-5.1zzzzzzz554 (audit 25/11 P1-19): phía mua tắt thì kết quả đọc lại bị bỏ (vai không thành buyer) — không đọc lại (~34 nghìn chữ / tin).
+        if ban_gon and PHIA_MUA_BAT and plan.get("user_intent") == "buy":
             # SRS-5.1zzzzzzz303: form bán gọn không có ô việc khách mua — người bán chuyển sang hỏi mua thì đọc lại cả lượt bằng form đầy đủ.
             log.warning("Kế hoạch: form bán gọn đọc ra ý mua — đọc lại bằng form đầy đủ")
             conv.vong_gop = None   # sang vai mua: lượt viết lời đi đường phía mua

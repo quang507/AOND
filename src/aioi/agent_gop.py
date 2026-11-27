@@ -447,7 +447,9 @@ def _vong_ghi(engine: Any, he: str, tin: list[dict], tools: list[dict], chay: An
                 r, them = chay(c.name, dict(c.input or {}), vong)
                 mo_them = mo_them or them
                 kq.append({"type": "tool_result", "tool_use_id": c.id, "content": r[:TRAN_KET_QUA]})
-            if not mo_them or vong == MAX_VONG_GHI - 1 or time.monotonic() - bat_dau > HAN_GIAY / 2:
+            # SRS-5.1zzzzzzz554 (audit 25/11 P1-17): hạn giờ chỉ cắt khi đã GHI — vòng đầu chỉ tra luật / đọc mà chậm thì bản trước dừng, kế hoạch rỗng.
+            ghi_roi = any(t not in DOC and t != "tra_luat_o" for t in da_goi)
+            if not mo_them or vong == MAX_VONG_GHI - 1 or (ghi_roi and time.monotonic() - bat_dau > HAN_GIAY / 2):
                 break
             tin.append({"role": "user", "content": kq})
             kq = []

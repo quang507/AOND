@@ -40,6 +40,8 @@ NGUON_LUOT: contextvars.ContextVar[str | None] = contextvars.ContextVar("nguon_l
 # SRS-5.1zzzzzzz483 (chủ dự án 13/11/2026: "tăng tốc lượt bản tin"): bước VIẾT lời người bán (agent_gop.viet) không nghĩ thêm — bước đọc / ghi
 # đã nghĩ và áp xong; đo 13/11 bước viết bản tin ra 1.249 token cho lời 673 token (gần nửa là nghĩ). Provider Claude đọc cờ này.
 KHONG_NGHI_LUOT: contextvars.ContextVar[bool] = contextvars.ContextVar("khong_nghi_luot", default=False)
+# SRS-5.1zzzzzzz554 (audit 25/11 P1-18): đang trong lượt chat chữ (`Engine.handle`) — bóc tách Claude hạn 30 s như lượt chat (ngoài lượt 60 s).
+TRONG_LUOT_CHAT: contextvars.ContextVar[bool] = contextvars.ContextVar("trong_luot_chat", default=False)
 CHI_GEMINI = "gemini"
 
 

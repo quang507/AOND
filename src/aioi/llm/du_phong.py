@@ -17,6 +17,7 @@ và vẫn cắt lại; model Groq không nhìn được ảnh; PDF chỉ Claude 
 from __future__ import annotations
 
 import base64
+import contextvars
 import json
 import logging
 import re
@@ -37,6 +38,11 @@ URL_GEMINI = "https://generativelanguage.googleapis.com/v1beta/openai/chat/compl
 URL_GROQ = "https://api.groq.com/openai/v1/chat/completions"
 # Claude báo hết số dư → bỏ qua Claude trong khoảng này (khỏi tốn một lượt gọi hỏng mỗi tin khách); hết khoảng thì thử lại.
 NGHI_CLAUDE_GIAY = 300
+# SRS-5.1zzzzzzz554 (audit 25/11 P1-18): Claude quá hạn / quá tải (529) cũng nghỉ — bản trước mỗi lần gọi trong lượt lại chờ Claude từ đầu
+# (lượt 65–160 s). Hạn mỗi lần thử dự phòng không vượt ngân sách còn lại (`_han`); còn dưới HAN_TOI_THIEU_GIAY thì thôi thử.
+NGHI_CLAUDE_CHAM_GIAY = 90
+HAN_TOI_THIEU_GIAY = 5.0
+_HET_DU_PHONG: contextvars.ContextVar[float | None] = contextvars.ContextVar("het_du_phong", default=None)
 # SRS-5.1zzzzzzz133 (22/10/2026, Lê Quang: "rút ngắn đi"): theo dõi thật 13:36 — Claude hết số dư, một lượt khách mất hơn 4 phút vì
 # vòng dự phòng thử từng khoá × từng model, mỗi lần chờ tới 30 s; bridge chỉ chờ 90 s nên lời bot không bao giờ tới Zalo. Nay: mỗi lần
 # gọi tối đa HAN_MOT_LAN_GIAY, cả vòng dự phòng của MỘT lượt gọi model không quá NGAN_SACH_GIAY, và model nào quá hạn thì bỏ luôn các
@@ -168,9 +174,12 @@ class DuPhongProvider(LLMProvider):
                 loi_chinh = e
                 if _het_so_du(e):
                     self._nghi_den, self._loi_nghi = time.time() + NGHI_CLAUDE_GIAY, e
+                elif _qua_han(e) or int(getattr(e, "status_code", 0) or 0) == 529:
+                    self._nghi_den, self._loi_nghi = time.time() + NGHI_CLAUDE_CHAM_GIAY, e
         loi = loi_chinh
         bat_dau = time.time()
         gemini_chinh = bo_claude or self.claude_het_tien()   # SRS-5.1zzzzzzz529: Claude hết tiền → Gemini dùng hạn của đường chính
+        het = bat_dau + (NGAN_SACH_CHINH_GIAY if gemini_chinh else NGAN_SACH_GIAY)
         for n in self._nguon:
             if (can_anh and not n.nhin_anh) or (chi_gemini and n.ten != "Gemini"):
                 continue
@@ -179,9 +188,10 @@ class DuPhongProvider(LLMProvider):
                     continue   # model này vừa quá hạn — nghỉ, khỏi tốn thêm một lần chờ
                 lan_qua_han = 0
                 for khoa in n.khoa:
-                    if time.time() - bat_dau > (NGAN_SACH_CHINH_GIAY if gemini_chinh else NGAN_SACH_GIAY):
+                    if het - time.time() < HAN_TOI_THIEU_GIAY:
                         log.warning("Dự phòng (%s): quá ngân sách thời gian — dừng, không thử tiếp", viec)
                         raise loi or RuntimeError("dự phòng quá ngân sách thời gian")
+                    dau = _HET_DU_PHONG.set(het)
                     try:
                         kq = goi_phu(n, model, khoa)
                         self._bao(viec, n, model, loi_chinh, ghi_so=not bo_claude)
@@ -193,11 +203,15 @@ class DuPhongProvider(LLMProvider):
                         if not nen_doi_sang(e) and not isinstance(e, (ValueError, LoiNguon, urllib.error.URLError, OSError)):
                             raise
                         if _qua_han(e):
+                            if het - time.time() < 1.0:
+                                break   # quá hạn vì hết ngân sách, không tại model — không cho nghỉ
                             lan_qua_han += 1
                             if gemini_chinh and lan_qua_han < 2:
                                 continue   # Gemini là đường chính (SRS-5.1zzzzzzz517): quá hạn một lần thì thử khoá kế, chưa cho model nghỉ
                             self._nghi_model[(n.ten, model)] = time.time() + (NGHI_MODEL_CHINH_GIAY if gemini_chinh else NGHI_MODEL_GIAY)
                             break   # model này chậm → khoá khác cũng chậm như vậy; sang model / nguồn kế
+                    finally:
+                        _HET_DU_PHONG.reset(dau)
         raise loi_chinh or loi or RuntimeError("không còn đường gọi model")
 
     def _bao(self, viec: str, n: Nguon, model: str, loi_chinh: BaseException | None, ghi_so: bool = True) -> None:
@@ -264,7 +278,9 @@ class DuPhongProvider(LLMProvider):
 
     def _han(self, than: dict[str, Any]) -> float:
         tran = HAN_CHINH_GIAY if (NGUON_LUOT.get() == CHI_GEMINI or self.dang_chi_gemini() or self.claude_het_tien()) else HAN_MOT_LAN_GIAY
-        return min(tran, max(10.0, 8.0 + than["max_completion_tokens"] * 0.008))
+        han = min(tran, max(10.0, 8.0 + than["max_completion_tokens"] * 0.008))
+        het = _HET_DU_PHONG.get()
+        return han if het is None else max(1.0, min(han, het - time.time()))
 
     def _ghi_so(self, n: Nguon, model: str, j: dict[str, Any]) -> None:
         u = j.get("usage") or {}
