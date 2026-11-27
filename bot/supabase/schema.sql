@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-26 14:25 (giờ VN)
+-- Sinh lúc: 2026-11-27 16:39 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -635,7 +635,8 @@ create table if not exists public.reminders (
   attempts integer not null default 0,
   next_retry_at timestamp with time zone,
   last_error text,
-  noi_dung_gui text
+  noi_dung_gui text,
+  info_request_id uuid
 );
 
 create table if not exists public.sellers (
@@ -1257,6 +1258,9 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.reminders add constraint reminders_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES buyers(id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.reminders add constraint reminders_info_request_id_fkey FOREIGN KEY (info_request_id) REFERENCES info_requests(id) ON DELETE SET NULL;
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.reminders add constraint reminders_listing_id_fkey FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE;
@@ -4069,20 +4073,18 @@ begin
   if new.status = 'answered' and old.status is distinct from 'answered'
      and new.source = 'buyer_ask' and new.buyer_id is not null then
     select code into v_code from listings where id = new.listing_id;
-    update reminders set status = 'cancelled'
-     where buyer_id = new.buyer_id and listing_id = new.listing_id
-       and kind = 'followup' and status = 'pending';
+    -- 20261127a (SRS-553): không huỷ nhắc chưa gửi của cùng (khách, căn) — mỗi câu trả lời một nhắc, gắn đúng câu (info_request_id)
     if coalesce(new.question, '') = 'xac_nhan_lich' then                       -- 20260904f FR-52 · 20261126g: không tự chốt lịch
       select id into v_vw from viewings
        where buyer_id = new.buyer_id and listing_id = new.listing_id
          and status in ('proposed', 'pending', 'confirmed')
        order by created_at desc limit 1;
-      insert into reminders (kind, buyer_id, listing_id, viewing_id, due_at, note)
-      values ('followup', new.buyer_id, new.listing_id, v_vw, now(),
+      insert into reminders (kind, buyer_id, listing_id, viewing_id, info_request_id, due_at, note)
+      values ('followup', new.buyer_id, new.listing_id, v_vw, new.id, now(),
         'trả lời lịch xem #' || coalesce(v_code, '?') || ': ' || left(coalesce(new.answer, ''), 200));
     else
-      insert into reminders (kind, buyer_id, listing_id, due_at, note)
-      values ('followup', new.buyer_id, new.listing_id, now(),
+      insert into reminders (kind, buyer_id, listing_id, info_request_id, due_at, note)
+      values ('followup', new.buyer_id, new.listing_id, new.id, now(),
         'chủ nhà vừa trả lời câu khách hỏi về #' || coalesce(v_code, '?') || ' — "'
         || coalesce(new.question, '') || '": ' || left(coalesce(new.answer, ''), 300));
     end if;
@@ -4823,7 +4825,7 @@ begin
     insert into interests (buyer_id, listing_id)
     select p_buyer_id, l.id from listings l
      where (l.code = any(p_codes) or l.legacy_code = any(p_codes))
-       and l.status in ('dang_ban', 'dang_quan_tam', 'da_chot')
+       and l.status in ('dang_ban', 'dang_quan_tam', 'da_coc', 'da_chot')   -- 20261127a (SRS-553): thêm da_coc
     on conflict (buyer_id, listing_id) do update set trang_thai = 'quan_tam', ly_do = null;
   end if;
   return n;
@@ -6705,11 +6707,18 @@ CREATE OR REPLACE FUNCTION public.tim_nha(p_deal text, p_loai text DEFAULT NULL:
  STABLE SECURITY DEFINER
  SET search_path TO 'public', 'extensions', 'pg_temp'
 AS $function$
-  with chon as (
+  -- 20261127a (SRS-553): khớp TRỌN tên khu trên chữ bỏ dấu — số không dính số khác ("quan 1" không khớp "quan 10"); "Q1" / "Q.1" → "quan 1".
+  with khu as (
+    select case when v = '' then null
+                else '(^|[^0-9])' || regexp_replace(v, '([.^$|?*+()\[\]{}\\])', '\\\1', 'g') || '([^0-9]|$)' end as mau
+      from (select regexp_replace(regexp_replace(btrim(public.bo_dau(coalesce(p_khu, ''))), '\s+', ' ', 'g'),
+                                  '^(q|quan)\s*\.?\s*([0-9]{1,2})$', 'quan \2') as v) s
+  ),
+  chon as (
     select l.*,
-      case when nullif(btrim(p_khu), '') is not null
-                and (l.ward ilike '%' || btrim(p_khu) || '%' or l.district ilike '%' || btrim(p_khu) || '%'
-                     or l.street ilike '%' || btrim(p_khu) || '%') then 3 else 0 end as d_khu,
+      case when k.mau is not null
+                and (public.bo_dau(coalesce(l.ward, '')) ~ k.mau or public.bo_dau(coalesce(l.district, '')) ~ k.mau
+                     or public.bo_dau(coalesce(l.street, '')) ~ k.mau) then 3 else 0 end as d_khu,
       case when p_dt_min is not null and l.area_m2 >= p_dt_min then 1 else 0 end as d_dt,
       case when p_pn_min is not null and l.bedrooms >= p_pn_min then 1 else 0 end as d_pn,
       case when p_tang_min is not null and l.floors >= p_tang_min then 1 else 0 end as d_tang,
@@ -6721,7 +6730,7 @@ AS $function$
            then (select count(*) from jsonb_array_elements(l.tien_ich_gan) t
                   where t->>'loai' = any(p_tien_ich) and coalesce((t->>'m')::numeric, 99999) <= 1000) * 2
            else 0 end as d_ti
-      from public.listings l
+      from public.listings l cross join khu k
      where l.status in ('dang_ban', 'dang_quan_tam', 'da_coc')
        and l.deal::text = p_deal
        and (p_loai is null or l.property_type::text = p_loai)
@@ -7167,6 +7176,33 @@ begin
   perform public.email_admin('VIEWING', v_uid,
     'Khách: ' || coalesce(v_ten, '(chưa biết tên)') || E'\nGiờ hẹn: ' || v_gio
     || coalesce(E'\nSĐT khách: ' || new.phone, '') || E'\nTrạng thái: ' || new.status, v_listing);
+  return null;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.viewings_hen_hoi_cam_nhan()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare v_code text;
+begin
+  -- 20261127a (SRS-553): lịch chốt có giờ → hỏi cảm nhận 4 giờ sau buổi xem (lõi gửi trong khung 8–21 giờ; lịch huỷ thì lõi bỏ nhắc).
+  if new.status = 'confirmed' and new.slot is not null and new.buyer_id is not null
+     and (old.status is distinct from 'confirmed' or old.slot is distinct from new.slot)
+     and new.slot > now() then
+    begin
+      select code into v_code from listings where id = new.listing_id;
+      insert into reminders (kind, buyer_id, listing_id, viewing_id, due_at, note)
+      values ('feedback', new.buyer_id, new.listing_id, new.id, new.slot + interval '4 hours',
+              'hỏi cảm nhận sau khi xem ' || coalesce('#' || coalesce(v_code, new.listing_code), 'nhà'))
+      on conflict (viewing_id) where kind = 'feedback' and viewing_id is not null
+      do update set due_at = excluded.due_at where reminders.status = 'pending';
+    exception when others then
+      perform public.log_loi('viewings_hen_hoi_cam_nhan', left(sqlerrm, 400), null::integer);
+    end;
+  end if;
   return null;
 end $function$
 ;
@@ -7985,6 +8021,8 @@ drop trigger if exists trg_pe_viewings on public.viewings;
 CREATE TRIGGER trg_pe_viewings AFTER INSERT ON public.viewings FOR EACH ROW EXECUTE FUNCTION trg_property_event();
 drop trigger if exists trg_viewings_bao_admin_va_email on public.viewings;
 CREATE TRIGGER trg_viewings_bao_admin_va_email AFTER INSERT ON public.viewings FOR EACH ROW EXECUTE FUNCTION viewings_bao_admin_va_email();
+drop trigger if exists trg_viewings_hen_hoi_cam_nhan on public.viewings;
+CREATE TRIGGER trg_viewings_hen_hoi_cam_nhan AFTER UPDATE OF status, slot ON public.viewings FOR EACH ROW EXECUTE FUNCTION viewings_hen_hoi_cam_nhan();
 
 -- ══ Bật RLS ══
 alter table public.admins enable row level security;
@@ -8793,6 +8831,8 @@ revoke all on function public.van_ban_nhung(p_id uuid) from public, anon, authen
 grant execute on function public.van_ban_nhung(p_id uuid) to service_role;
 revoke all on function public.viewings_bao_admin_va_email() from public, anon, authenticated;
 grant execute on function public.viewings_bao_admin_va_email() to service_role;
+revoke all on function public.viewings_hen_hoi_cam_nhan() from public, anon, authenticated;
+grant execute on function public.viewings_hen_hoi_cam_nhan() to service_role;
 revoke all on function public.xa_tinh_khac_trong_chu(p text) from public, anon, authenticated;
 grant execute on function public.xa_tinh_khac_trong_chu(p text) to anon;
 grant execute on function public.xa_tinh_khac_trong_chu(p text) to authenticated;
