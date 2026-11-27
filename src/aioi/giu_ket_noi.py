@@ -32,7 +32,8 @@ def _iso(t: datetime) -> str:
 def can_nhan(kho: Any) -> list[dict]:
     """Danh sách khách cần tin giữ kết nối; rpc chưa có (migration chưa áp) / lỗi mạng → [] kèm cảnh báo."""
     try:
-        kq = kho._request("POST", "rpc/khach_can_giu_ket_noi", data={"p_limit": TOI_DA_MOT_LUOT})
+        # đọc rộng hơn trần gửi: dòng bị bỏ qua (vai chưa rõ, LQC chặn) không có nhắc nên lượt nào cũng quay lại — không được chiếm chỗ người bán
+        kq = kho._request("POST", "rpc/khach_can_giu_ket_noi", data={"p_limit": 5 * TOI_DA_MOT_LUOT})
     except Exception as e:  # noqa: BLE001
         log.warning("giu_ket_noi: rpc khach_can_giu_ket_noi lỗi (%s)", type(e).__name__)
         return []
@@ -41,25 +42,34 @@ def can_nhan(kho: Any) -> list[dict]:
 
 def chay_mot_luot(kho: Any, gui: Callable[[str, str], bool], xung_ho_cua: Callable[[str], Any] | None = None,
                   ghi_lich_su: Callable[[str, str, str, str | None, str], None] | None = None,
-                  bay_gio: datetime | None = None, lqc_chan: Callable[[str, str], str | None] | None = None) -> list[dict]:
+                  bay_gio: datetime | None = None, lqc_chan: Callable[[str, str], str | None] | None = None,
+                  vai_cua: Callable[[str], str | None] | None = None) -> list[dict]:
     """Một lượt quét. `gui(zalo_id, chữ)` → True khi bridge nhận. Trả danh sách khách đã nhắn."""
     bay_gio = bay_gio or datetime.now(timezone.utc)
     if not getattr(kho, "is_configured", False) or not trong_khung_gio(bay_gio):
         return []
     ra: list[dict] = []
     for r in can_nhan(kho):
+        if len(ra) >= TOI_DA_MOT_LUOT:
+            break
         zalo, vai = r.get("zalo_user_id"), ("seller" if r.get("vai") == "seller" else "buyer")
-        if not zalo:
+        if zalo and vai_cua is not None:   # SRS-5.1zzzzzzz555 (audit chat Zalo P1-16): vai theo hội thoại lõi; None (chưa rõ / phía mua tắt) → không gửi
+            try:
+                vai = vai_cua(zalo)
+            except Exception as e:  # noqa: BLE001 — đọc hội thoại hụt: bỏ khách này, không bỏ cả lượt
+                log.warning("giu_ket_noi: đọc vai hụt (%s)", type(e).__name__)
+                continue
+        if not zalo or not vai:
             continue
-        if vai == "seller" and lqc_chan and lqc_chan(zalo, "giu_ket_noi"):   # SRS-5.1zzzzzzz475: luật chung LQC (trần ngày, im lặng, nhường sân)
+        if lqc_chan and lqc_chan(zalo, "giu_ket_noi"):   # SRS-5.1zzzzzzz475: luật chung LQC — nay cho MỌI vai
             continue
         xh = xung_ho_cua(zalo) if xung_ho_cua else "unknown"
         xh, ten_tro_ly = (xh if isinstance(xh, tuple) else (xh, None))
         goi, toi = goi_toi(xh, ten_tro_ly)
         chu = cau_mau.cau("giu_ket_noi_ban" if vai == "seller" else "giu_ket_noi_mua", goi, toi=toi)
         try:
-            cho = kho._post("reminders", {"kind": "reengage", "buyer_id": r.get("buyer_id") if vai == "buyer" else None,
-                                          "seller_id": r.get("seller_id") if vai == "seller" else None,
+            # cả hai id của hội thoại — rpc chống trùng khớp theo id có mặt (bản trước một id null → mỗi lượt quét gửi lại)
+            cho = kho._post("reminders", {"kind": "reengage", "buyer_id": r.get("buyer_id"), "seller_id": r.get("seller_id"),
                                           "due_at": _iso(bay_gio), "note": NOTE, "status": "pending"})
         except Exception as e:  # noqa: BLE001 — trùng chỗ giữ (lượt khác đang gửi) hay lỗi mạng: bỏ lượt này
             log.warning("giu_ket_noi: giữ chỗ hụt (%s)", type(e).__name__)

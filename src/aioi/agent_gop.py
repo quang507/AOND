@@ -517,20 +517,24 @@ def mo(engine: Any, conv: Any, du_lieu: str) -> dict[str, Any] | None:
     tools = cong_cu(schema, chia)
     tin: list[dict] = [{"role": m.role, "content": m.content} for m in conv.messages()]
     plan: dict[str, Any] = {"operations": []}
-    nguon: dict[tuple[str, str], tuple[int, int]] = {}
+    nguon: dict[tuple[str, str], tuple[int, int, bool]] = {}
     project = engine.project_for(conv.prop, conv)
 
     def chay(ten: str, vao: dict[str, Any], vong: int) -> tuple[str, bool]:
         if ten in GHI:
             truoc = len(plan["operations"])
             r = _ghi(engine, conv, ten, vao, plan, o_hop_le)
-            khoa = (ten, str(vao.get("target") or ""))
+            khoa = (ten, str(vao.get("target") or vao.get("targets") or ""))
             if ten in ("ghi_o", "them_can") and len(plan["operations"]) > truoc:
-                cu = nguon.get(khoa)   # gọi lại sau khi sửa cụm trích → bản mới THAY bản vòng trước
-                if cu is not None and cu[0] < vong:
-                    plan["operations"][cu[1]] = plan["operations"].pop()
+                cu = nguon.get(khoa)
+                if cu is not None and cu[0] < vong and cu[2]:
+                    # gọi lại sau khi sửa cụm trích → GỘP từng ô vào bản vòng trước (SRS-5.1zzzzzzz555, audit chat Zalo P1-12: bản trước thay cả thao tác,
+                    # model chỉ gửi lại ô bị bỏ thì giá / diện tích vừa ghi mất)
+                    moi, op = plan["operations"].pop(), plan["operations"][cu[1]]
+                    plan["operations"][cu[1]] = {**op, **moi, **{k: {**(op.get(k) or {}), **(moi.get(k) or {})} for k in ("fields", "bang_chung")}}
+                    nguon[khoa] = (vong, cu[1], SUA in r)
                 else:
-                    nguon[khoa] = (vong, len(plan["operations"]) - 1)
+                    nguon[khoa] = (vong, len(plan["operations"]) - 1, SUA in r)
             return r, SUA in r
         if ten == "tra_luat_o":
             return tra_luat(vao.get("o"), schema, chia), True

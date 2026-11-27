@@ -12,7 +12,7 @@ from typing import Any
 
 from .sdt import che_sdt
 
-from .projects import Project, UnitType
+from .projects import Project, UnitType, la_chac_chan
 from .revenue import RENTAL_FEE_MONTHS, SALE_FEE_RATE, SellerRole
 from . import cau_mau
 from . import phap_ly
@@ -310,7 +310,8 @@ KIEN_THUC_NGHE = SLANG_NOTES[_I_KIEN_THUC:]
 # Một nguồn cho ô is_rental ở lượt bóc tách lẫn lượt lập thao tác (SRS-5.1zzzzzzz107, bắn thử 207 KB2: "giá 27 tỷ… đang cho thuê 50
 # triệu/tháng" thành tin CHO THUÊ — mô tả cũ chỉ "Có phải tin cho thuê không"). Hiện trạng có người thuê không phải ý muốn cho thuê.
 MO_TA_CHO_THUE = ("true CHỈ KHI khách muốn CHO THUÊ căn này (rao cho thuê, giá thuê theo tháng). Khách rao BÁN (giá bán, vd \"27 tỷ\") "
-                  "mà nói \"đang cho thuê 50 triệu/tháng\" là HIỆN TRẠNG (nhà đang có người thuê) → false.")
+                  "mà nói \"đang cho thuê 50 triệu/tháng\" là HIỆN TRẠNG (nhà đang có người thuê) → false. Khách nói rõ căn đang cho thuê nay "
+                  "để BÁN: false kèm bang_chung.is_rental = nguyên văn cụm đó. Lượt không nói bán hay thuê thì BỎ TRỐNG.")
 
 
 # Stable business context used when discussing fees / drafting listings
@@ -453,6 +454,9 @@ def build_project_block(
     return "".join(parts)
 
 
+NHAN_CHUA_CHAC = ' — chưa chắc chắn: một người gửi, nói kèm "em chưa xác minh"'
+
+
 def build_project_docs_block(project_name: str, docs: list[dict[str, str]]) -> str:
     """Inject the project's stored source .md (phân lô, brochure mẫu nhà, gói nội thất...) so
     the bot answers a FACTUAL question with grounding — from the real document, not recall."""
@@ -469,8 +473,7 @@ def build_project_docs_block(project_name: str, docs: list[dict[str, str]]) -> s
     for d in docs:
         md = (d.get("markdown") or "").strip()
         if md:   # tài liệu một người bán gửi, chưa admin xác nhận: vẫn dùng, kèm nhãn (SRS-5.1zzzzzzz445)
-            nhan = ("" if not d.get("nguoi_gui") or str(d["nguoi_gui"]).startswith("chac_chan:")
-                    else ' — chưa chắc chắn: một người gửi, nói kèm "em chưa xác minh"')
+            nhan = "" if la_chac_chan(d.get("nguoi_gui")) else NHAN_CHUA_CHAC
             parts.append(f'\n[{d.get("title", "tài liệu")}{nhan}]\n{md}')
     return "\n".join(parts) + "\n"
 

@@ -126,7 +126,8 @@ async function imageMetadataGetter(filePath) {
   const kt = kichThuocAnh(data) || { width: 0, height: 0 };
   return { width: kt.width, height: kt.height, size: data.length };
 }
-const zalo = new Zalo({ imageMetadataGetter });
+// SRS-5.1zzzzzzz555 (audit chat Zalo P1-1): bật selfListen — thiếu cờ này zca-js bỏ mọi tin acc tự gửi, nhánh "người thật vào cuộc" (FR-141) chưa từng chạy.
+const zalo = new Zalo({ imageMetadataGetter, selfListen: true });
 let api;
 // SRS-5.1zzzzzzz543 (audit ECC P2-3): khởi động lúc mạng chưa lên (máy vừa reboot, DNS chưa chạy) thì `zalo.login` ném lỗi MẠNG — bản trước
 // coi mọi lỗi là "session hết hạn" và vào luồng QR chờ người quét, dù phiên vẫn sống. Nay lỗi mạng / Zalo trả HTTP lỗi lúc lấy thông tin
@@ -254,13 +255,25 @@ const dungKhoaNoiBo = (v) => {
 
 // FR-141: phân biệt tin bot vừa gửi vs NGƯỜI THẬT gõ tay trên acc clone —
 // nhớ ~80 tin bot gửi gần nhất (10 phút); tin đi ra không nằm trong đó = người thật.
+// SRS-5.1zzzzzzz555 (audit chat Zalo P1-1): so chữ đã chuẩn hoá (NFC, khoảng trắng / xuống dòng) và msgId Zalo trả khi gửi — bật selfListen mà
+// nhận nhầm tin bot thành tin người thật thì bot tự nhường sân 30 phút.
 const botSent = [];
+const botMsgIds = new Map();
+const chuanTin = (t) => String(t ?? "").normalize("NFC").replace(/\s+/g, " ").trim();
 const rememberSent = (t) => {
-  botSent.push({ t, at: Date.now() });
-  if (botSent.length > 80) botSent.shift();
+  botSent.push({ t: chuanTin(t), at: Date.now() });
+  if (botSent.length > 300) botSent.shift();
 };
-const wasBotSent = (t) =>
-  botSent.some((b) => b.t === t && Date.now() - b.at < 10 * 60e3);
+const rememberMsgId = (res) => {
+  const id = res?.message?.msgId;
+  if (id == null) return;
+  botMsgIds.set(String(id), Date.now());
+  if (botMsgIds.size > 300) botMsgIds.delete(botMsgIds.keys().next().value);
+};
+const wasBotSent = (t, msgId) =>
+  (msgId != null && botMsgIds.has(String(msgId))) ||
+  botSent.some((b) => b.t === chuanTin(t) && Date.now() - b.at < 10 * 60e3);
+const CHO_XET_TIN_MINH_MS = 2000;   // tin vọng lại có thể tới trước khi lượt gửi trả msgId
 
 // undici chỉ ném "fetch failed"; mã lỗi thật (ENOTFOUND/ECONNRESET/UND_ERR_*,
 // lỗi chứng thư TLS…) nằm ở e.cause — không in ra thì không cách nào chẩn đoán.
@@ -430,12 +443,12 @@ async function thaTim(threadId, dich) {
 const CHO_GUI_LAI_BONG_BONG_MS = 1500;
 async function guiBongBong(bubble, threadId) {
   try {
-    await api.sendMessage(bubble, String(threadId), ThreadType.User);
+    rememberMsgId(await api.sendMessage(bubble, String(threadId), ThreadType.User));
   } catch (e) {
     if (laPhienChet(e)) throw e;
     console.warn(`[Bridge] gửi bong bóng hụt (${errDetail(e)}) — thử lại một lần`);
     await new Promise((r) => setTimeout(r, CHO_GUI_LAI_BONG_BONG_MS));
-    await api.sendMessage(bubble, String(threadId), ThreadType.User);
+    rememberMsgId(await api.sendMessage(bubble, String(threadId), ThreadType.User));
   }
 }
 
@@ -639,6 +652,12 @@ function vuotTranLuot(tid, textGom, bayGio = Date.now(), coTep = false) {
 
 function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId, quote) {
   const tid = String(threadId);
+  const cu = bufferTin.get(tid);
+  if (cu && tep && cu.tep) {   // SRS-5.1zzzzzzz555 (audit chat Zalo P1-3): tệp thứ hai trong một lần gom — xả lượt có tệp trước (bản trước ghi đè)
+    clearTimeout(cu.timer);
+    bufferTin.delete(tid);
+    xaTinGom(tid, cu);
+  }
   const hienTai = bufferTin.get(tid) || {
     texts: [],
     imageUrls: [],
@@ -662,41 +681,45 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId, 
 
   if (hienTai.timer) clearTimeout(hienTai.timer);
 
-  hienTai.timer = setTimeout(async () => {
+  hienTai.timer = setTimeout(() => {
     bufferTin.delete(tid);
-    const textGom = hienTai.texts.filter(Boolean).join("\n");
-    if (!textGom && !hienTai.imageUrls.length && !hienTai.tep) return;
-    const coTep = Boolean(hienTai.imageUrls.length || hienTai.tep || hienTai.sticker?.url);
-    const vuot = vuotTranLuot(tid, textGom, Date.now(), coTep);
-    if (vuot) {
-      console.log(`⏸️ khách [...${tid.slice(-4)}] ${vuot} — không cho bot trả lời, chỉ ghi CRM`);
-      if (vuot !== "đang nghỉ") {
-        await ghiLoi("tran luot khach", `khách ...${tid.slice(-4)}: ${vuot} — bot ngừng trả lời khách này ${NGHI_KHI_VUOT_MS / 60000} phút, tin vẫn ghi CRM`);
-      }
-      // SRS-5.1zzzzzzz545: tin lúc nghỉ vẫn sang lõi với cờ `chi_ghi_crm` — lõi chỉ ghi CRM, không gọi model (bản 544 bỏ hẳn, admin không đọc được).
-      try {
-        await postJson(CHAT_REPLY_URL, brainHeaders, {
-          external_user_id: tid,
-          text: textGom || (hienTai.tep ? "[Khách gửi tệp]" : hienTai.imageUrls.length ? `[Khách gửi ${hienTai.imageUrls.length} ảnh]` : "[Khách gửi tin nhắn]"),
-          msg_id: hienTai.lastMsgId || undefined,
-          channel: "zalo_personal_test",
-          so_nhan: SO_NHAN,
-          chi_ghi_crm: true,
-        }, HAN_CHO_NGAN);
-      } catch (e) {
-        await ghiLoi("tran luot khach ghi crm", errDetail(e));
-      }
-      return;
-    }
-    try {
-      await handleIncoming(tid, textGom, hienTai.imageUrls, hienTai.lastMsgId, hienTai.tep, hienTai.sticker, hienTai.lastCliMsgId, hienTai.quote);
-    } catch (e) {
-      if (laPhienChet(e)) return await phienChet(errDetail(e));
-      await ghiLoi("xử lý tin gom", errDetail(e));
-    }
+    xaTinGom(tid, hienTai);
   }, choGom(text, Boolean(imageUrl || tep || sticker?.url), hienTai.batDau));
 
   bufferTin.set(tid, hienTai);
+}
+
+async function xaTinGom(tid, hienTai) {
+  const textGom = hienTai.texts.filter(Boolean).join("\n");
+  if (!textGom && !hienTai.imageUrls.length && !hienTai.tep) return;
+  const coTep = Boolean(hienTai.imageUrls.length || hienTai.tep || hienTai.sticker?.url);
+  const vuot = vuotTranLuot(tid, textGom, Date.now(), coTep);
+  if (vuot) {
+    console.log(`⏸️ khách [...${tid.slice(-4)}] ${vuot} — không cho bot trả lời, chỉ ghi CRM`);
+    if (vuot !== "đang nghỉ") {
+      await ghiLoi("tran luot khach", `khách ...${tid.slice(-4)}: ${vuot} — bot ngừng trả lời khách này ${NGHI_KHI_VUOT_MS / 60000} phút, tin vẫn ghi CRM`);
+    }
+    // SRS-5.1zzzzzzz545: tin lúc nghỉ vẫn sang lõi với cờ `chi_ghi_crm` — lõi chỉ ghi CRM, không gọi model (bản 544 bỏ hẳn, admin không đọc được).
+    try {
+      await postJson(CHAT_REPLY_URL, brainHeaders, {
+        external_user_id: tid,
+        text: textGom || (hienTai.tep ? "[Khách gửi tệp]" : hienTai.imageUrls.length ? `[Khách gửi ${hienTai.imageUrls.length} ảnh]` : "[Khách gửi tin nhắn]"),
+        msg_id: hienTai.lastMsgId || undefined,
+        channel: "zalo_personal_test",
+        so_nhan: SO_NHAN,
+        chi_ghi_crm: true,
+      }, HAN_CHO_NGAN);
+    } catch (e) {
+      await ghiLoi("tran luot khach ghi crm", errDetail(e));
+    }
+    return;
+  }
+  try {
+    await handleIncoming(tid, textGom, hienTai.imageUrls, hienTai.lastMsgId, hienTai.tep, hienTai.sticker, hienTai.lastCliMsgId, hienTai.quote);
+  } catch (e) {
+    if (laPhienChet(e)) return await phienChet(errDetail(e));
+    await ghiLoi("xử lý tin gom", errDetail(e));
+  }
 }
 
 async function xuLyTin(message) {
@@ -707,7 +730,9 @@ async function xuLyTin(message) {
     // gõ tay → báo bộ não ghi log + nhường sân 30 phút, đừng trả lời chen ngang.
     if (message.isSelf) {
       const selfText = typeof message.data?.content === "string" ? message.data.content : "";
-      if (!selfText || wasBotSent(selfText)) return;
+      if (!selfText) return;
+      await new Promise((r) => setTimeout(r, CHO_XET_TIN_MINH_MS));
+      if (wasBotSent(selfText, message.data?.msgId)) return;
       // Ghi hụt chỗ này KHÔNG được nuốt. Đây là tin báo "người thật đã vào
       // cuộc"; mất nó là bot không biết mà nhường sân, rồi chen ngang đúng lúc
       // cộng tác viên đang thương lượng giá với khách. Bản trước dùng
@@ -717,8 +742,9 @@ async function xuLyTin(message) {
           external_user_id: String(message.threadId),
           text: selfText,
           human_note: true,
+          msg_id: message.data?.msgId != null ? String(message.data.msgId) : undefined,   // SRS-5.1zzzzzzz555 (P1-14): gửi lại không ghi hai lần
           channel: "zalo_personal_test",
-        }, HAN_CHO_NGAN);
+        }, HAN_CHO_BO_NAO);   // lõi đặt nhường sân ngay, phần ghi chờ lượt bot đang soạn xong
       } catch (e) {
         await ghiLoi("bao nguoi that vao cuoc", errDetail(e));
       }
@@ -945,7 +971,7 @@ async function pumpEscalations() {
         // Tin cho khách thật (chủ nhà / người mua) không có tiền tố. Cờ do escalation-feed quyết theo đích (`noi_bo`).
         const msg = (it.noi_bo ? "$$$$$ " : "") + (it.text ?? `🔔 nhadat.cc: ${it.note}. Anh/chị check giúp rồi trả lời khách sớm nha.`);
         rememberSent(msg);
-        await api.sendMessage(msg, String(uid), ThreadType.User);
+        rememberMsgId(await api.sendMessage(msg, String(uid), ThreadType.User));
       } catch (e) {
         if (laPhienChet(e)) return await phienChet(errDetail(e));
         await ghiLoi("escalation", `${it.id}: ${errDetail(e)}`);
@@ -1066,7 +1092,7 @@ try {
           if (threadId && message) {
             rememberSent(message);
             if (/^\d{6,}$/.test(String(threadId))) {
-              await api.sendMessage(message, String(threadId), ThreadType.User);
+              rememberMsgId(await api.sendMessage(message, String(threadId), ThreadType.User));
             } else {
               console.log('📡 [Proactive Mock Test] -> [' + threadId + ']: ' + message.slice(0, 80));
             }

@@ -408,6 +408,8 @@ def _nguoi_that_noi(user_key: str, text: str, ten: str | None = None, vai: str |
     `human_touch_at` để CRM hiện "người thật đã vào"."""
     from .engine import Turn
     bay_gio = time.time()
+    # SRS-5.1zzzzzzz555 (audit chat Zalo P1-14): mốc nhường sân đặt NGAY, không chờ khoá lượt — lượt bot đang soạn kiểm mốc trước khi gửi.
+    _engine.conversation(user_key).nhuong_san_den = bay_gio + NHUONG_SAN_GIAY
     with _engine.khoa_luot(user_key):
         conv = _engine.conversation(user_key)
         conv.nhuong_san_den = bay_gio + NHUONG_SAN_GIAY
@@ -454,6 +456,27 @@ def _gui_boa(viec: str):
                 pass
         return _gui_nhac_mot(zalo_id, text)
     return gui
+
+
+def _ghi_loi_khach(user_key: str, text: str) -> None:
+    """SRS-5.1zzzzzzz555 (audit chat Zalo P1-13): lời khách lúc người thật giữ / nhường sân vào lịch sử lõi — bot quay lại biết khách đã nói gì."""
+    from .engine import Turn
+    with _engine.khoa_luot(user_key):
+        conv = _engine.conversation(user_key)
+        conv.history.append(Turn(role="user", content=text, at=time.time()))
+        if _engine._convstore is not None:
+            try:
+                _engine._convstore.save(conv)
+            except Exception as e:  # noqa: BLE001
+                _so_loi.ghi_loi("nguoi that noi", f"lưu lời khách hụt: {type(e).__name__}"[:200])
+
+
+def _vai_giu_ket_noi(zalo_id: str) -> str | None:
+    """SRS-5.1zzzzzzz555 (audit chat Zalo P1-16): vai nhận tin giữ kết nối theo hội thoại lõi — người bán; người mua chỉ khi phía mua bật; chưa rõ → không gửi."""
+    from .engine import PHIA_MUA_BAT
+    from .qc_anh import _conv_co_san
+    vai = getattr(_conv_co_san(_engine, zalo_id), "role", None)
+    return vai if vai == "seller" or (vai == "buyer" and PHIA_MUA_BAT) else None
 
 
 def _lqc_chan(zalo_id: str, loai: str) -> str | None:
@@ -546,7 +569,8 @@ def _vong_giu_ket_noi() -> None:
         try:
             kho = _engine._convstore
             if getattr(kho, "is_configured", False):
-                ra = giu_ket_noi.chay_mot_luot(kho, _gui_boa("giữ kết nối, câu mẫu"), _xung_ho_khach, _ghi_lich_su_nhac, lqc_chan=_lqc_chan)
+                ra = giu_ket_noi.chay_mot_luot(kho, _gui_boa("giữ kết nối, câu mẫu"), _xung_ho_khach, _ghi_lich_su_nhac, lqc_chan=_lqc_chan,
+                                                  vai_cua=_vai_giu_ket_noi)
                 if ra:
                     log.warning("Giữ kết nối: đã nhắn %d khách", len(ra))
         except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
@@ -847,6 +871,7 @@ def _chat_reply_that(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     giu = getattr(_engine._convstore, "dang_giu_hoi_thoai", None)
     if (giu is not None and giu(payload.external_user_id)) or _dang_nhuong_san(payload.external_user_id):
         followup_manager.cancel_followup(payload.external_user_id)
+        _ghi_loi_khach(payload.external_user_id, (payload.text or "").strip() or "[Khách gửi tin nhắn]")
         sync_to_supabase_async(external_user_id=payload.external_user_id, incoming_text=(payload.text or "").strip()
                                or "[Khách gửi tin nhắn]", bot_reply="", zalo_msg_id=payload.msg_id, user_name=zalo_name,
                                nhan_luc=nhan_luc)
@@ -978,6 +1003,7 @@ def _chat_reply_that(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
                 van_gom = "\n".join(gom)
                 lam = lambda: _engine.handle(uk, van_gom)  # noqa: E731
         moc = len(_engine.conversation(uk).history)
+        co_truoc = _engine.chup_co_da_noi(uk)
         t0 = time.perf_counter()
         try:
             r = lam()
@@ -991,11 +1017,22 @@ def _chat_reply_that(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         # như người thật đọc tin mới rồi mới gửi: bỏ lời này (cắt lịch sử về mốc), trả tin vừa xử lý về đầu hàng chờ để lượt kế đọc gộp.
         if loi_luot is None and not media_urls and _bo_loi_cu_neu_co_tin_moi(uk, moc, "\n".join(gom)):
             log.warning("bỏ lời lượt cũ: khách nhắn thêm trong lúc soạn (%d ms)", tong)
+            _engine.tra_co_da_noi(uk, co_truoc)   # SRS-5.1zzzzzzz555 (audit chat Zalo P1-15): khách chưa thấy lời này — cờ "đã nói" trả lại
             sync_to_supabase_async(external_user_id=uk, incoming_text=incoming_text, bot_reply="",
                                    zalo_msg_id=payload.msg_id, role=_engine.conversation(uk).role, user_name=zalo_name,
                                    nhan_luc=nhan_luc)
             return ZaloBridgeResponse(reply="", replies=[], nhip_go=[], assistant_name="", captured=[], next_field=None,
                                       property_score=0.0, user_score=0.0, tier="", completeness=0.0)
+        # SRS-5.1zzzzzzz555 (audit chat Zalo P1-14): người thật gõ tay trong lúc bot soạn → bỏ lời bot (khách chưa thấy), giữ lời khách.
+        if _dang_nhuong_san(uk):   # cả khi lượt lỗi: không gửi câu giữ chỗ chen lời người thật, không thử lại nền
+            hs = _engine.conversation(uk).history
+            while len(hs) > moc and hs[-1].role == "assistant":
+                hs.pop()
+            _engine.tra_co_da_noi(uk, co_truoc, giu=("_sau_da_hoi",))   # lượt khách giữ, không đọc lại: điều khách vừa nói (sổ / ảnh) giữ
+            log.warning("bỏ lời lượt: người thật vào cuộc trong lúc soạn")
+            sync_to_supabase_async(external_user_id=uk, incoming_text=incoming_text, bot_reply="", zalo_msg_id=payload.msg_id,
+                                   role=_engine.conversation(uk).role, user_name=zalo_name, nhan_luc=nhan_luc)
+            return _dap_rong()
     thoi_gian["con_lai"] = max(0, tong - sum(thoi_gian.values()))
     thoi_gian["tong"] = tong
     thoi_gian["cho_luot"] = cho_luot          # chờ lượt trước của cùng khách xong (khoa_luot)

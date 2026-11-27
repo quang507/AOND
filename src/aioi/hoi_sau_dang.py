@@ -126,6 +126,7 @@ def _nhac_mot(engine: Any, uk: str, lid: str, bay_gio: datetime, gui: Callable[[
             log.warning("hoi_sau_dang: bridge hụt (%s)", type(e).__name__)
             return None
         f["_sau_da_hoi"] = ",".join(sorted(da_hoi | {moc}))
+        conv.active_listing_id = li.listing_id   # SRS-5.1zzzzzzz555 (audit chat Zalo P0-4): vừa hỏi căn này — ảnh / lời đáp không nêu căn vào đúng căn
         if engine._convstore is not None:
             engine._convstore.save(conv)
     return tin, cum[0]

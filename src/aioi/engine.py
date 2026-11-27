@@ -64,6 +64,7 @@ from .projects import (
     ProjectStore,
     UnitType,
     dong_ke_thua,
+    la_chac_chan,
     la_ma_phieu,
     ma_phieu,
     merge_facts,
@@ -83,6 +84,7 @@ from .prompts import (
     SOAT_O_HOI_SYSTEM,
     soat_o_hoi_schema,
     build_column_map_system,
+    NHAN_CHUA_CHAC,
     build_project_docs_block,
     build_transcribe_instruction,
     build_fee_followup_system,
@@ -2414,6 +2416,10 @@ class Engine:
         # title that embeds the owner's name) before storing anywhere AOND can relay it.
         title = _redact_doc_title(title)
         markdown = _redact_personal_data(markdown)
+        project = self._projects.get(project_name) or Project(name=project_name)
+        ma = self._ma_phieu(nguoi_gui) if nguoi_gui else ""
+        if not la_chac_chan(ma) and any(d.get("title") == title and la_chac_chan(d.get("nguoi_gui")) for d in project.docs):
+            title += " (người bán gửi)"   # SRS-5.1zzzzzzz555 (audit chat Zalo P1-6): không thay tài liệu admin cùng tiêu đề — lưu bản riêng
         web_url = item_id = ""
         if self._media_store is not None:
             try:
@@ -2425,9 +2431,8 @@ class Engine:
                 pass  # DB copy still kept; kho tệp is best-effort
         doc = {"kind": kind, "title": title, "markdown": markdown,
                "web_url": web_url, "item_id": item_id, "fetched_at": str(int(time.time()))}
-        if nguoi_gui:   # SRS-249: tài liệu một người bán gửi chờ duyệt — người khác chưa thấy (`Project.docs_cho`); admin gửi → vào kho chung
-            doc["nguoi_gui"] = self._ma_phieu(nguoi_gui)
-        project = self._projects.get(project_name) or Project(name=project_name)
+        if ma:   # SRS-249: tài liệu một người bán gửi (nhãn chưa chắc chắn); admin gửi → phiếu chắc chắn
+            doc["nguoi_gui"] = ma
         project.docs = [d for d in project.docs if d.get("title") != title]  # re-ingest replaces
         project.docs.append(doc)
         self._projects.save(project)
@@ -2857,7 +2862,8 @@ class Engine:
         if (structured := self._structured_shared_block(project)):
             sections.append(structured)
         for d in project.docs_cho(conv.user_key if conv is not None else None):   # tài liệu chưa duyệt của người khác: không đọc (SRS-249)
-            sections.append(f'### {d.get("title", "tài liệu")}\n{d.get("markdown", "")}')
+            nhan = "" if la_chac_chan(d.get("nguoi_gui")) else NHAN_CHUA_CHAC   # SRS-5.1zzzzzzz555 (P1-6): bộ nhớ dự án cũng gắn nhãn nguồn
+            sections.append(f'### {d.get("title", "tài liệu")}{nhan}\n{d.get("markdown", "")}')
         if not sections:
             return ""
         docs = "\n\n".join(sections)
@@ -2935,6 +2941,34 @@ class Engine:
                 MODEL_CHAT_LUOT.reset(dau)
             if dau_nguon is not None:
                 NGUON_LUOT.reset(dau_nguon)
+
+    # SRS-5.1zzzzzzz555 (audit chat Zalo P1-15): cờ "bot đã nói" — lượt bị bỏ lời (khách chưa thấy) thì trả lại để lượt sau nói lại. Cờ việc đã làm
+    # ngoài lời (đã báo admin, lọc khách…) giữ nguyên.
+    CO_DA_NOI = ("_da_hoi", "_sau_da_hoi", "_pl_da_hoi", "_coc_da_hoi", "_phi_da_hoi", "_phi_da_bao", "_da_bao_dang")
+
+    def chup_co_da_noi(self, uk: str) -> tuple[list, bool]:
+        conv = self.conversation(uk)
+        return ([(li, li.listing_proposed, {k: li.prop.fields.get(k) for k in self.CO_DA_NOI}) for li in conv.listings],
+                uk in self._da_xin_sao)
+
+    def tra_co_da_noi(self, uk: str, chup: tuple[list, bool], giu: tuple[str, ...] = ()) -> None:
+        ds, xin_sao = chup
+        for li, de_xuat, co in ds:
+            li.listing_proposed = de_xuat
+            for k, v in co.items():
+                if k in giu:
+                    continue
+                if v is None:
+                    li.prop.fields.pop(k, None)
+                else:
+                    li.prop.fields[k] = v
+        if not xin_sao:
+            self._da_xin_sao.discard(uk)
+        if self._convstore is not None:
+            try:
+                self._convstore.save(self.conversation(uk))
+            except Exception as e:  # noqa: BLE001
+                log.warning("Trả cờ đã nói: lưu hụt (%s)", type(e).__name__)
 
     def _ai_xac_nhan_nghia(self, cau_hoi: str, trich: str, bot: str, khach: list[str]) -> bool | None:
         """SRS-5.1zzzzzzz530: AI trả lời MỘT câu có / không theo NGHĨA lời khách — dùng khi mã rủi ro (sổ riêng / chung, mặt tiền, hẻm xe hơi,
@@ -3788,6 +3822,8 @@ class Engine:
             kq = "dong_y"
         if kq == "dong_y" and conv.y_luot.get("yeu_cau_viet"):
             kq = "khong_dong_y"
+        if kq == "khong_dong_y" and not cho_duyet:
+            kq = None   # SRS-5.1zzzzzzz555 (audit chat Zalo P1-9): bản nháp đã duyệt (tin đã hiện) — khách sửa tin không hạ tin xuống
         return kq
 
     @staticmethod
@@ -6544,11 +6580,14 @@ class Engine:
         def _data(exclude_code: bool = False) -> dict[str, str]:
             return self._loc_o_tin(conv, {k: v for k, v in fields.items() if not (exclude_code and k == "ma_so_can")}, bang_chung)
 
-        thue = op.get("is_rental") is True and kind in ("update", "add")   # SRS-5.1zzzzzzz485: cho thuê là ô của căn trong thao tác này
+        # SRS-5.1zzzzzzz485: cho thuê là ô của căn trong thao tác này; SRS-5.1zzzzzzz555 (audit chat Zalo P1-11): false (khách nói rõ để bán) cũng ghi
+        thue = op.get("is_rental") if isinstance(op.get("is_rental"), bool) and kind in ("update", "add") else None
+        if thue is False and not _trich_dan_khop(bang_chung.get("is_rental"), conv.loi_khach_luot):
+            thue = None   # false chỉ khi có cụm khách nói rõ để bán — model yếu hay điền false mặc định, không được lật tin cho thuê
 
         def _ghi(li, data: dict[str, str]) -> set[str]:
-            if thue:
-                li.prop.is_rental = True
+            if thue is not None:
+                li.prop.is_rental = thue
             return li.prop.update(data)
 
         if kind == "an_anh":   # SRS-5.1zzzzzzz425: chủ đồng ý ẩn tấm ảnh LQC xin — ẩn trên web (không xoá file), ảnh ẩn không tính điểm
@@ -6694,7 +6733,7 @@ class Engine:
             return self._cau_khach(conv, "da_an_bot", n=self._rao_count(conv))
         return None
 
-    def _fan_out_units(self, conv: Conversation, shared: dict[str, str], codes: list[str], thue: bool = False) -> list[str]:
+    def _fan_out_units(self, conv: Conversation, shared: dict[str, str], codes: list[str], thue: bool | None = None) -> list[str]:
         """One listing per unit code, all sharing `shared` (du_an, unit_type, giá...). A code
         that ALREADY exists in the basket UPDATES that căn (one seller can't list the same căn
         twice); a new code fills the empty starter first, then a fresh listing. New units point
@@ -6708,8 +6747,8 @@ class Engine:
             if target is None:
                 target = conv.active if self._listing_empty(conv.active) else conv.new_listing()
                 target.history_start = start
-            if thue:
-                target.prop.is_rental = True
+            if thue is not None:
+                target.prop.is_rental = thue
             names.update(target.prop.update({**shared, "ma_so_can": code}))
         return sorted(names)
 

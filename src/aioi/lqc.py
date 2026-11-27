@@ -158,6 +158,8 @@ def ly_do_khong_nhan(conv: Any, bay_gio: datetime, loai: str = "hoi", kho: Any =
     hs = list(getattr(conv, "history", None) or [])
     if not hs:
         return "chưa có chat"
+    if any(li.prop.fields.get("_loc_khach") for li in getattr(conv, "listings", None) or []):
+        return "khách đã lọc"   # SRS-5.1zzzzzzz555 (audit chat Zalo P1-16): rác / hỏi dạo / đã chuyển người phụ trách — không nhắn chủ động
     ts = bay_gio.timestamp()
     hen = chu_dang_hen(conv, ts, loai)
     if hen:

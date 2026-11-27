@@ -40,6 +40,11 @@ Tally = dict[str, list[str]]  # value -> voter codes
 CHAC_CHAN = "chac_chan:"
 
 
+def la_chac_chan(ma: str | None) -> bool:
+    """Phiếu / người gửi tài liệu là nguồn chắc chắn: admin (`chac_chan:…`) hoặc không có người gửi (nạp sẵn)."""
+    return not ma or str(ma).startswith(CHAC_CHAN)
+
+
 def ma_phieu(user_key: str, hang: str | None = None, admin: bool = False) -> str:
     """Mã phiếu của một người: admin → `chac_chan:admin:<id>` (ghi thẳng); khách → `<hạng>:<id>` (hạng vang / bac / dong)."""
     if admin:

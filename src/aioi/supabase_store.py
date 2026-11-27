@@ -658,7 +658,8 @@ class SupabaseConversationStore(KhoNguoiMua):
         báo phí 1%, bản tin được ghi "Chính chủ", ghi_deal tính 1%. Vai đã rõ (AI đọc kèm cụm trích, `conv.user_type`) → ghi cột, nguồn `tu_nhan`;
         không ghi đè vai admin đặt tay. Nhớ trong bộ nhớ để không PATCH mỗi lượt."""
         vai = getattr(getattr(conv, "user_type", None), "value", None)
-        ma = {"chu_nha": "ccrb", "moi_gioi": "nmg"}.get(str(vai or ""))
+        # SRS-5.1zzzzzzz555 (audit chat Zalo P1-10): vai hạ về chưa rõ (người nhà nhờ bán) cũng ghi — bản trước khởi động lại thành "Chính chủ", phí 1%.
+        ma = {"chu_nha": "ccrb", "moi_gioi": "nmg", "unknown": "unknown"}.get(str(vai or ""))
         if not ma:
             return
         nho = self.__dict__.setdefault("_vai_da_ghi", {})
@@ -666,7 +667,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             return
         try:
             self._patch(f"sellers?id=eq.{seller_id}&or=(seller_type_source.is.null,seller_type_source.neq.admin)",
-                        {"seller_type": ma, "seller_type_source": "tu_nhan"})
+                        {"seller_type": ma, "seller_type_source": "suy_doan" if ma == "unknown" else "tu_nhan"})
             nho[seller_id] = ma
         except Exception as e:  # noqa: BLE001
             log.warning("Ghi vai người bán lỗi: %s", e)
@@ -1442,7 +1443,9 @@ class SupabaseConversationStore(KhoNguoiMua):
                     ts = datetime.fromisoformat(m["created_at"].replace("Z", "+00:00")).timestamp()
                 except Exception:  # noqa: BLE001
                     pass
-            ra.append(Turn(role="assistant" if m.get("sender", "") in ("bot", "assistant") else "user", content=m.get("body", ""), at=ts))
+            # SRS-5.1zzzzzzz555 (audit chat Zalo P1-13): lời admin / CTV gõ tay là lời phía mình — bản trước nạp lại thành lời KHÁCH (lọt vào bằng chứng ô tin).
+            vai = "assistant" if m.get("sender", "") in ("bot", "assistant", "human", "ctv") else "user"
+            ra.append(Turn(role=vai, content=m.get("body", ""), at=ts))
         return ra
 
     def _phien_mua(self, user_key: str) -> list:
