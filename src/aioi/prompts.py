@@ -557,16 +557,20 @@ def _cau_khach_gt(kq: dict | None) -> str:
 LOC_KHACH = ("spam", "hoi_dao")   # SRS-5.1zzzzzzz521: mã lọc khách (ô nội bộ `_loc_khach` trên mọi căn của hội thoại)
 
 
-def khoi_loc_khach(loai: str | None, khach_gt: dict | None = None) -> str:
+def khoi_loc_khach(loai: str | None, khach_gt: dict | None = None, da_bao: bool = True) -> str:
     """Việc của lượt khi tin khách là tin rác / hỏi dạo (SRS-5.1zzzzzzz521): đáp ngắn, không hỏi dồn, không mở tin."""
     if loai == "spam":
         return ("\n\n=== ƯU TIÊN LƯỢT NÀY — TIN VỪA NHẮN LÀ QUẢNG CÁO / TIN RÁC (hệ thống đã đọc): ===\n"
                 "Việc lượt này: đáp MỘT câu ngắn rằng bên em chỉ nhận gửi bán, cho thuê, tìm mua nhà đất. Không hỏi gì, không "
                 "mời chào, không nhắc lại nội dung tin đó.\n")
     if loai == "mua":   # SRS-5.1zzzzzzz526: phía mua tắt (PHIA_MUA) — FDA chỉ nhận rao bán / cho thuê, khách mua về người phụ trách
-        return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH CẦN MUA / THUÊ NHÀ ĐẤT (hệ thống đã chuyển cho người phụ trách): ===\n"
+        # SRS-5.1zzzzzzz553 (audit 25/11 P2): báo người phụ trách hụt thì không nói "đã chuyển" — lượt sau engine báo lại.
+        tieu_de = "hệ thống đã chuyển cho người phụ trách" if da_bao else "hệ thống CHƯA báo được người phụ trách, lượt sau báo lại"
+        viec = ("nói em đã chuyển cho anh/chị phụ trách liên hệ lại ngay trên Zalo này" if da_bao
+                else "nói em sẽ nhắn anh/chị phụ trách liên hệ lại trên Zalo này (chưa nói là đã chuyển)")
+        return (f"\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH CẦN MUA / THUÊ NHÀ ĐẤT ({tieu_de}): ===\n"
                 "Trên Zalo này em nhận ký gửi bán và cho thuê; nhu cầu tìm mua, tìm thuê do anh/chị phụ trách bên em tư vấn trực tiếp. Việc lượt "
-                "này: ghi nhận ngắn điều khách cần, nói em đã chuyển cho anh/chị phụ trách liên hệ lại ngay trên Zalo này, và mời khách xem "
+                f"này: ghi nhận ngắn điều khách cần, {viec}, và mời khách xem "
                 f"trước các căn đang rao ở {_WEB}. Không tự gợi ý căn, không báo giá, không hẹn lịch xem, không xin số điện thoại.\n"
                 + _cau_khach_gt(khach_gt))
     if loai == "hoi_dao":
@@ -3004,9 +3008,12 @@ def operations_schema() -> dict[str, Any]:
                                  "/ nhà phố / nhà riêng / nhà đất → nha_pho; căn hộ / chung cư → chung_cu. Chỉ nói \"mua nhà\" chung chung thì bỏ trống."},
                     "ngan_sach": {"type": "string", "description": "Ngân sách khách nói, giữ nguyên ý (vd: 5 tỷ, 10-15 tỷ, dưới 6 tỷ, 15 tr/tháng)"},
                     "ngan_sach_tu": {"type": "string", "description": "MỨC THẤP NHẤT khách chịu trả, một số kèm đơn vị (\"10-15 tỷ\" → \"10 tỷ\"; "
-                                     "\"từ 8 tỷ trở lên\" → \"8 tỷ\"). Khách không nêu mức sàn (\"dưới 6 tỷ\", \"tầm 5 tỷ\") thì bỏ trống."},
+                                     "\"từ 8 tỷ trở lên\" → \"8 tỷ\"). Khách không nêu mức sàn (\"dưới 6 tỷ\", \"tầm 5 tỷ\") thì bỏ trống. "
+                                     "Số trơn không đơn vị: ghi kèm đơn vị như ngan_sach_den."},
                     "ngan_sach_den": {"type": "string", "description": "MỨC CAO NHẤT khách chịu trả, một số kèm đơn vị (\"10-15 tỷ\" → \"15 tỷ\"; "
-                                      "\"dưới 6 tỷ\" / \"tầm 6 tỷ\" → \"6 tỷ\"; \"7-9 triệu/tháng\" → \"9 triệu\"). Khách chỉ nêu sàn thì bỏ trống."},
+                                      "\"dưới 6 tỷ\" / \"tầm 6 tỷ\" → \"6 tỷ\"; \"7-9 triệu/tháng\" → \"9 triệu\"). Khách chỉ nêu sàn thì bỏ trống. "
+                                      "Khách nói số trơn (\"tầm 5\", \"5-6\") thì ghi kèm đơn vị khách ngầm hiểu theo việc mua / thuê (mua nhà "
+                                      "\"tầm 5\" → \"5 tỷ\"); không chắc thì bỏ trống."},
                     "khu_vuc": {"type": "string", "description": "Quận, huyện, tên dự án tìm kiếm"},
                     "so_phong_ngu": {"type": "string", "description": "Số phòng ngủ (vd: 2PN, 3PN)"},
                     "yeu_cau_xe_hoi": {"type": "string", "description": "Hẻm xe hơi, xe hơi vào nhà, chỗ đậu ô tô..."},

@@ -5,7 +5,7 @@ Trigger DB đẻ bốn loại nhắc mà từ 18/10 (gỡ edge function `nudge`,
 - `followup` — chủ nhà / admin trả lời câu khách mua hỏi (`info_request_bao_lai_khach`), hoặc admin chốt lịch xem (`#mã: ok giờ`, có
   `viewing_id`); bot từng nói "có trả lời em báo lại khách ngay" mà khách không bao giờ nhận.
 - `sold` — căn khách đã quan tâm chuyển sang đã chốt (`bao_can_da_chot`).
-- `feedback` — 4 giờ sau giờ hẹn xem (`reminders_hen_hoi_cam_nhan`).
+- `feedback` — 4 giờ sau giờ xem đã chốt (`viewings_hen_hoi_cam_nhan`, SRS-5.1zzzzzzz553; lịch huỷ thì không gửi).
 - `admin_reply` — admin gõ ở ô gửi tin trên /admin/tin-nhan (`admin_gui_tin`, migration 20261027c); chữ nằm ở `note`, lõi gửi
   nguyên văn và bot nhường sân 30 phút (cùng cơ chế `human_note` của bridge).
 
@@ -80,7 +80,10 @@ def _ma_can(kho: Any, listing_id: str | None, viewing: dict | None = None) -> st
 
 def _cau_da_tra(kho: Any, r: dict, loc: str) -> dict | None:
     """Câu khách hỏi của (khách, căn) vừa được trả lời gần nhất, lọc theo `loc` (câu xác nhận lịch / câu thường); None = không có lời."""
-    if not (r.get("buyer_id") and r.get("listing_id")):
+    if r.get("info_request_id"):   # SRS-5.1zzzzzzz553 (audit 25/11 P1): nhắc gắn đúng câu — hai câu trả lời liền nhau, câu trước không bị đè
+        ir = kho._get(f"info_requests?id=eq.{_q(r['info_request_id'])}&status=eq.answered&select=question,answer")
+        return ir[0] if ir and (ir[0].get("answer") or "").strip() else None
+    if not (r.get("buyer_id") and r.get("listing_id")):   # nhắc cũ chưa có `info_request_id`: câu trả lời gần nhất của (khách, căn)
         return None
     ir = kho._get(f"info_requests?buyer_id=eq.{_q(r['buyer_id'])}&listing_id=eq.{_q(r['listing_id'])}&status=eq.answered{loc}"
                   "&select=question,answer&order=answered_at.desc.nullslast&limit=1")
@@ -107,6 +110,9 @@ def soan_tin(kho: Any, r: dict, goi: str, toi: str) -> str | None:
         ir = _cau_da_tra(kho, r, "&question=neq.xac_nhan_lich")
         if not ir:
             return None
+        if (ir.get("question") or "").strip() == "xac_nhan_lich":   # SRS-5.1zzzzzzz553: câu lịch mà trigger không tìm ra lịch (đã huỷ / chỉ có
+            return cau_mau.cau("bao_lich_chu_tra_loi", goi, toi=toi, ma=_ma_can(kho, r.get("listing_id")),   # mã căn) — nguyên lời, không lộ mã nội bộ
+                               tra_loi=che_loi_chuyen(ir["answer"].strip())[:600])
         if (ir.get("question") or "").strip() == XIN_THEM_ANH:   # SRS-5.1zzzzzzz254: chủ nhà gửi thêm ảnh khách xin
             ma = _ma_can(kho, r.get("listing_id"))
             return cau_mau.cau("bao_them_anh", goi, toi=toi, ma=ma, url=link_tin(ma if ma != "?" else None))
@@ -115,7 +121,13 @@ def soan_tin(kho: Any, r: dict, goi: str, toi: str) -> str | None:
     if kind == "sold":
         return cau_mau.cau("bao_can_da_ban", goi, toi=toi, ma=_ma_can(kho, r.get("listing_id")))
     if kind == "feedback":
-        return cau_mau.cau("hoi_cam_nhan_sau_xem", goi, toi=toi, ma=_ma_can(kho, r.get("listing_id")))
+        v0 = None
+        if r.get("viewing_id"):   # SRS-5.1zzzzzzz553: buổi xem đã huỷ / chưa chốt thì không hỏi cảm nhận
+            v = kho._get(f"viewings?id=eq.{_q(r['viewing_id'])}&select=status,listing_code")
+            v0 = v[0] if v else None
+            if not v0 or v0.get("status") not in ("confirmed", "done"):
+                return None
+        return cau_mau.cau("hoi_cam_nhan_sau_xem", goi, toi=toi, ma=_ma_can(kho, r.get("listing_id"), v0))
     if kind == "len_web":
         ma = _ma_can(kho, r.get("listing_id"))
         return cau_mau.cau("bao_tin_len_web", goi, toi=toi, url=link_tin(ma)) if ma != "?" else None
@@ -187,7 +199,7 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str], bool], xung_ho_cua: Callab
     now = _iso(bay_gio)
     rows = kho._get(f"reminders?status=eq.pending&kind=in.({','.join(KIND_LOI)})&due_at=lte.{_q(now)}"
                     f"&or=(next_retry_at.is.null,next_retry_at.lte.{_q(now)})"
-                    "&select=id,kind,note,buyer_id,seller_id,listing_id,viewing_id,attempts,created_at&order=due_at.asc"
+                    "&select=id,kind,note,buyer_id,seller_id,listing_id,viewing_id,info_request_id,attempts,created_at&order=due_at.asc"
                     f"&limit={TOI_DA_MOT_LUOT}")
     trong_gio = trong_khung_gio(bay_gio)
     ra: list[dict] = []

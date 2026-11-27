@@ -144,6 +144,7 @@ from .xung_ho import goi_toi as goi_toi_khach, tre as _xung_tre
 # SRS-5.1zzzzzzz546: giọng ở MỘT chỗ — khối xưng hô + làm sạch hình thức lời gửi khách nằm ở giong.py (tên cũ giữ cho các chỗ gọi).
 from .giong import (bo_da_dau as _bo_da_dau, bo_gach_cheo as _bo_gach_cheo, bo_markdown as _bo_markdown, khoi_xung_ho,  # noqa: F401
                     mo_dau_da as _mo_dau_da)
+from .mua import hom_nay_vn, luc_xem_iso  # SRS-5.1zzzzzzz553
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
                   lenh_tra_loi, nhan_nhu_cau, nhan_tu_du_lieu, nhu_cau_cua, tim_sdt)
 from . import agent_ban, agent_gop, agent_mua
@@ -3156,7 +3157,9 @@ class Engine:
             viec, can = self._viec_mua(conv, text)
             self._gan_ke_thua(can)   # SRS-5.1zzzzzzz283: căn trong dự án mang phần chung của dự án / mẫu nhà
             if getattr(self._convstore, "can_phu_hop", None) is not None:
-                system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
+                chua_ro = getattr(self._convstore, "ngan_sach_chua_ro", None)   # SRS-5.1zzzzzzz553: ngân sách thiếu đơn vị → hỏi lại, chưa tìm căn
+                ns_chua_ro = bool(not can and chua_ro is not None and co_tieu_chi(conv.buyer_lead) and chua_ro(conv.buyer_lead))
+                system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead), ns_chua_ro) + khoi_viec_vua_ghi(viec)
                            + khoi_lich_dang_cho(conv.y_luot.get("lich_cho"), customer_pronoun, conv.assistant.name))
             system += khoi_nhu_cau(conv.buyer_lead, conv.nhu_cau_khac) if conv.nhu_cau_khac else ""   # SRS-5.1zzzzzzz286
             system += du_an_mua.khoi_du_an(conv.y_luot.get("du_an_mua"))   # SRS-5.1zzzzzzz184: dữ kiện dự án trong kho cho câu khách hỏi
@@ -3507,7 +3510,8 @@ class Engine:
         uu_tien = ""
         for ten_ut, lay in (("kich_hoat_mg", lambda: khoi_kich_hoat_mg(conv.y_luot.get("kich_hoat_mg"))),   # SRS-5.1zzzzzzz524
                             ("can_nguoi", lambda: khoi_can_nguoi(conv)), ("phap_ly", lambda: khoi_phap_ly(conv, self._can_cua_chu(conv))),
-                            ("loc_khach", lambda: khoi_loc_khach(conv.y_luot.get("loc_khach"), conv.y_luot.get("khach_gt"))),   # SRS-5.1zzzzzzz521
+                            ("loc_khach", lambda: khoi_loc_khach(conv.y_luot.get("loc_khach"), conv.y_luot.get("khach_gt"),
+                                                                   conv.y_luot.get("bao_mua_ok", True))),   # SRS-5.1zzzzzzz521 / 553
                             ("ngoai_viec", lambda: khoi_ngoai_viec(conv)), ("hoi_ve", lambda: hoi_ve_khoi),
                             ("hoi_trung_ten", lambda: self._khoi_hoi_trung_ten(conv))):   # cùng thứ tự / cùng ngắt sớm như chuỗi `or` cũ
             note_cu = conv.pending_name_note
@@ -5558,13 +5562,16 @@ class Engine:
         mua_cu = (not PHIA_MUA_BAT and kich_hoat is None and intent != "sell" and not has_seller_context
                   and any(x.prop.fields.get("_loc_khach") == "mua" for x in conv.listings))
         la_mua = kich_hoat is None and (chuyen_mua or mua_cu)
+        bao_mua_ok = True
         if la_mua:
             la_loc, loc = True, "mua"
             if not has_seller_context:
                 for x in conv.listings:
                     x.prop.fields["_loc_khach"] = "mua"
-            da_bao_mua = any(x.prop.fields.get("_da_bao_mua") for x in conv.listings)
-            if chuyen_mua and (not da_bao_mua or gt_moi is not None):   # báo một lần; hồ sơ giới thiệu vừa nối thì báo thêm một tin có tên môi giới
+            da_bao_mua = bao_mua_ok = any(x.prop.fields.get("_da_bao_mua") for x in conv.listings)
+            # Báo một lần; hồ sơ giới thiệu vừa nối thì báo thêm một tin có tên môi giới. SRS-5.1zzzzzzz553 (audit 25/11 P2): lần báo trước hụt
+            # thì lượt mua kế báo lại (cả lượt khách nói tiếp không mang ý mua), và lời đáp chỉ nói "đã chuyển" khi đã báo được (`bao_mua_ok`).
+            if not da_bao_mua or (chuyen_mua and gt_moi is not None):
                 bao = getattr(self._convstore, "bao_can_nguoi", None)
                 try:
                     gt_bao = khach_gt if (khach_gt or {}).get("ok") else None
@@ -5575,6 +5582,7 @@ class Engine:
                                                _them_khach_gt(gt_bao)):
                         for x in conv.listings:
                             x.prop.fields["_da_bao_mua"] = "1"
+                        bao_mua_ok = True
                 except Exception as e:  # noqa: BLE001 — báo hụt thì lượt vẫn đáp khách, lượt sau báo lại
                     log.warning("Báo người phụ trách (khách mua) lỗi: %s", type(e).__name__)
             log.warning("Khách cần mua / thuê: chuyển người phụ trách")
@@ -5651,6 +5659,8 @@ class Engine:
             conv.y_luot["ngoai_viec"] = conv.so_luot_ngoai_viec   # SRS-5.1zzzzzzz177
         if la_loc:
             conv.y_luot["loc_khach"] = loc   # SRS-5.1zzzzzzz521
+            if loc == "mua":
+                conv.y_luot["bao_mua_ok"] = bao_mua_ok   # SRS-5.1zzzzzzz553
             if loc == "mua" and khach_gt is not None:
                 conv.y_luot["khach_gt"] = khach_gt   # SRS-5.1zzzzzzz527
         if kich_hoat is not None:
@@ -5991,7 +6001,10 @@ class Engine:
                     f"Nhắn lại kèm mã câu giúp em, ví dụ “#{ma}/{ds[0]['ma_ngan']}: {tra_loi[:40]}”.")
         c = ds[0]
         lich = c["question"] == "xac_nhan_lich"
-        chot = bool(lich and c.get("viewing_id") and self._doc_y_chot_lich(c.get("gio") or "", tra_loi) and kho.chot_lich(c["viewing_id"]))
+        chot = False
+        if lich and c.get("viewing_id"):
+            dong_y, luc_xem = self._doc_y_chot_lich(c.get("gio") or "", tra_loi)
+            chot = bool(dong_y and kho.chot_lich(c["viewing_id"], luc_xem))
         if not kho.tra_loi_cau_hoi(c["id"], tra_loi):
             return f"Em chưa chuyển được câu trả lời về #{ma} (lỗi kho), nhắn lại giúp em nha."
         ten = c["ten_khach"] or "khách"
@@ -6000,19 +6013,25 @@ class Engine:
                     else f"Em đã chuyển nguyên lời cho {ten}; lịch xem #{ma} chưa chốt (lời này chưa phải đồng ý đúng giờ khách hẹn).")
         return f"Em đã chuyển câu trả lời về #{ma} cho {ten} rồi ạ."
 
-    def _doc_y_chot_lich(self, gio: str, loi: str) -> bool:
-        """AI đọc lời admin về lịch xem (SRS-5.1zzzzzzz552): True CHỈ KHI đồng ý cho xem đúng giờ khách hẹn, không đổi, không kèm điều kiện.
-        Lỗi / không chắc → False: khách nhận nguyên lời, lịch chưa chốt — không báo "đã chốt" sai."""
-        schema = {"type": "object", "properties": {"dong_y": {"type": "boolean"}}, "required": ["dong_y"]}
+    def _doc_y_chot_lich(self, gio: str, loi: str) -> tuple[bool, str | None]:
+        """AI đọc lời admin về lịch xem (SRS-5.1zzzzzzz552): đồng ý CHỈ KHI cho xem đúng giờ khách hẹn, không đổi, không kèm điều kiện.
+        Lỗi / không chắc → (False, None): khách nhận nguyên lời, lịch chưa chốt — không báo "đã chốt" sai. SRS-5.1zzzzzzz553 (audit 25/11 P2):
+        cùng lượt đọc ra ngày giờ buổi xem (`luc_xem`, ISO) để hẹn hỏi cảm nhận sau xem; không đọc ra thì None — lịch vẫn chốt, chỉ không hỏi."""
+        schema = {"type": "object", "properties": {
+            "dong_y": {"type": "boolean"},
+            "luc_xem": {"type": "string", "description": "Ngày giờ buổi xem đã hẹn, dạng YYYY-MM-DD HH:MM theo giờ Việt Nam; thiếu ngày hoặc giờ thì để trống"},
+        }, "required": ["dong_y"]}
         he = ("Khách mua hẹn đi xem nhà lúc: " + (gio or "(không rõ giờ)") + ". Tin dưới là lời admin nhắn sau khi hỏi chủ nhà về lịch đó. "
               "dong_y = true CHỈ KHI lời đó đồng ý cho xem đúng giờ khách hẹn (\"ok\", \"được em\", \"chủ ok 15h thứ 7\" khi khách hẹn 15h thứ 7). "
-              "Đổi giờ / ngày, hỏi lại, kèm điều kiện, từ chối hoặc không rõ → false.")
+              "Đổi giờ / ngày, hỏi lại, kèm điều kiện, từ chối hoặc không rõ → false. Bây giờ là " + hom_nay_vn() + " (giờ Việt Nam).")
         try:
             kq = self._provider.extract(he, [Message("user", (loi or "")[:500])], schema)
         except Exception as e:  # noqa: BLE001
             log.warning("Đọc lời chốt lịch lỗi (%s) — không chốt", type(e).__name__)
-            return False
-        return isinstance(kq, dict) and kq.get("dong_y") is True
+            return False, None
+        if not (isinstance(kq, dict) and kq.get("dong_y") is True):
+            return False, None
+        return True, luc_xem_iso(kq.get("luc_xem"))
 
     def _viec_mua(self, conv: Conversation, text: str) -> tuple[list[str], list[dict]]:
         """Ghi việc khách mua vừa nói (quan tâm / hẹn xem / hỏi chủ nhà) lên DB — chỉ khi mã căn có thật và đang hiện; ý việc do AI đọc

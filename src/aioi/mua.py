@@ -20,6 +20,7 @@ import logging
 import re
 import time
 import urllib.parse
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from .prompts import nhan_o_ngan
@@ -114,6 +115,44 @@ def _sach_khu(chu: str) -> str | None:
     """Chữ khu vực khách nói → mẫu tìm: bỏ ký tự đại diện của ILIKE, lấy cụm đầu."""
     k = re.sub(r"[%_\\,()*\"]+", " ", chu).strip()
     return re.split(r"\s{2,}", k)[0].strip() or None
+
+
+_KY_TU_REGEX = re.compile(r"[.+?|${}()*]")
+
+
+def mau_khu_tron(khu: str | None) -> str | None:
+    """Mẫu regex (PostgREST `imatch`) khớp TRỌN tên khu — SRS-5.1zzzzzzz553 (audit 25/11 P1): số không được dính số khác, "Quận 1" không ra
+    Quận 10 / 11 / 12 (`ilike *Quận 1*` cũ ra cả ba rồi gắn "đúng khu vực"). Ký tự đặc biệt của regex bọc trong [] — không dùng dấu gạch
+    ngược vì PostgREST đọc nó trong chuỗi ngoặc kép là ký tự thoát."""
+    k = re.sub(r"\s+", " ", re.sub(r"[\[\]^\\]+", " ", khu or "")).strip()
+    if not k:
+        return None
+    return "(^|[^0-9])" + _KY_TU_REGEX.sub(lambda m: f"[{m.group(0)}]", k) + "([^0-9]|$)"
+
+
+_THU = ("thứ Hai", "thứ Ba", "thứ Tư", "thứ Năm", "thứ Sáu", "thứ Bảy", "Chủ nhật")
+_GIO_VN = timezone(timedelta(hours=7))
+
+
+def hom_nay_vn(bay_gio: datetime | None = None) -> str:
+    """Bây giờ theo giờ Việt Nam, dạng "thứ Bảy 30/11/2026, 14:05" — cho AI đổi chữ giờ hẹn ("15h thứ 7") ra ngày giờ cụ thể."""
+    t = (bay_gio or datetime.now(timezone.utc)).astimezone(_GIO_VN)
+    return f"{_THU[t.weekday()]} {t:%d/%m/%Y}, {t:%H:%M}"
+
+
+def luc_xem_iso(chu: Any, bay_gio: datetime | None = None) -> str | None:
+    """Ngày giờ buổi xem AI đọc ra ("YYYY-MM-DD HH:MM", giờ Việt Nam) → ISO có múi giờ — SRS-5.1zzzzzzz553 (audit 25/11 P2: không có nhắc hỏi
+    cảm nhận sau xem). Sai dạng, không sau bây giờ hoặc xa quá 60 ngày → None (thà không hỏi còn hơn hỏi sai lúc)."""
+    s = str(chu or "").strip()
+    if not s[:1].isdigit():
+        return None
+    try:
+        t = datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    t = (t.replace(tzinfo=_GIO_VN) if t.tzinfo is None else t).astimezone(_GIO_VN)
+    hien = (bay_gio or datetime.now(timezone.utc)).astimezone(_GIO_VN)
+    return t.isoformat() if hien < t <= hien + timedelta(days=60) else None   # lịch chốt TRƯỚC buổi xem: giờ đã qua là AI đọc nhầm ngày
 
 
 _SO_NHA_RE = re.compile(r"^\s*(?:số\s*)?(\d+[a-z]?(?:/\d+[a-z]?)*)\b", re.IGNORECASE)
@@ -478,8 +517,8 @@ class KhoNguoiMua:
         """Căn gợi ý cho khách: `tim_nha` (lọc cứng bán / thuê / loại / giá, điểm mềm khu vực / diện tích / phòng ngủ / xe hơi + vector).
         Hàm DB lỗi / chưa có thì về cách lọc cứng cũ — bot không mất rổ hàng. `loai_tru` = id căn khách đã chê (SRS-5.1zzzzzzz175): không
         đưa lại — xin thêm bấy nhiêu căn rồi lọc ở đây (hàm DB không nhận danh sách loại trừ)."""
-        if not self.is_configured or lead is None or not co_tieu_chi(lead):
-            return []   # SRS-5.1zzzzzzz146 / 214: chưa đủ khu vực + ngân sách thì không đoán căn — hỏi trước
+        if not self.is_configured or lead is None or not co_tieu_chi(lead) or self.ngan_sach_chua_ro(lead):
+            return []   # SRS-5.1zzzzzzz146 / 214: chưa đủ khu vực + ngân sách thì không đoán căn — hỏi trước; SRS-553: ngân sách chưa ra số cũng vậy
         loai_tru = set(loai_tru or ())
         try:
             can = self.tim_nha(lead, toi_da + len(loai_tru) + 2)
@@ -588,6 +627,20 @@ class KhoNguoiMua:
         v = nho[ns]
         return int(v) if isinstance(v, (int, float)) and v > 0 else None
 
+    def ngan_sach_chua_ro(self, lead: Any) -> bool:
+        """Khách nêu ngân sách CÓ SỐ mà không đọc ra tiền (thiếu đơn vị — "tầm 5", "5-6": số dưới 500 nghìn bị bỏ) — SRS-5.1zzzzzzz553 (audit
+        25/11 P2): bản trước vẫn tìm căn KHÔNG trần giá (khách nhắm 5 tỷ được đưa căn 20 tỷ). Nay chưa tìm; lời đáp hỏi lại đơn vị. Ngân sách
+        không có số ("linh hoạt", "chưa biết") thì không chặn — tìm như trước; `parse_vnd` lỗi mạng (không nhớ kết quả) cũng không chặn."""
+        if lead is None:
+            return False
+        f = getattr(lead, "fields", {}) or {}
+        co_so = [c for c in (str(getattr(lead, k, None) or f.get(k) or "").strip() for k in ("ngan_sach", "ngan_sach_tu", "ngan_sach_den"))
+                 if re.search(r"\d", c)]
+        if not co_so or self.khoang_gia(lead) != (None, None):
+            return False
+        nho = self.__dict__.get("_nho_parse_vnd", {})
+        return all(c in nho for c in co_so)
+
     def _gia_toi_da(self, lead: Any) -> int | None:
         """Trần giá (đồng) đưa vào `tim_nha`: mức trần ngân sách nới 20 %. Khách chỉ nêu sàn ("từ 8 tỷ") → không trần."""
         v = self.khoang_gia(lead)[1]
@@ -645,11 +698,11 @@ class KhoNguoiMua:
         loai = _LOAI_MUA_SANG_DB.get(str(getattr(lead, "loai_bds", None) or f.get("loai_bds") or "").strip().lower())
         if loai:
             loc.append(f"property_type=eq.{loai}")
-        # Ký tự cú pháp của PostgREST (`,` `(` `)` `*` `"`) trong chữ khách làm hỏng bộ lọc `or=(…)` — bỏ trước khi ghép.
-        kv = re.sub(r"[,()*\"\\]+", " ", str(getattr(lead, "khu_vuc", None) or f.get("khu_vuc") or "")).split("  ")[0].strip()
-        if kv:
-            mau = _q(f"*{kv}*")
-            loc.append(f"or=(district.ilike.{mau},ward.ilike.{mau},street.ilike.{mau})")
+        # Ký tự cú pháp của PostgREST (`,` `(` `)` `*` `"`) trong chữ khách làm hỏng bộ lọc `or=(…)` — `_sach_khu` bỏ trước khi ghép.
+        mau = mau_khu_tron(_sach_khu(str(getattr(lead, "khu_vuc", None) or f.get("khu_vuc") or "")))
+        if mau:   # SRS-5.1zzzzzzz553: khớp trọn tên khu ("Quận 1" không ra Quận 10)
+            m = _q(mau)
+            loc.append(f'or=(district.imatch."{m}",ward.imatch."{m}",street.imatch."{m}")')
         ns = str(getattr(lead, "ngan_sach", None) or f.get("ngan_sach") or "").strip()
         if ns:
             try:
@@ -677,10 +730,10 @@ class KhoNguoiMua:
         loai = _LOAI_MUA_SANG_DB.get(str(getattr(lead, "loai_bds", None) or f.get("loai_bds") or "").strip().lower())
         if loai:
             loc.append(f"property_type=eq.{loai}")
-        khu = _sach_khu(str(getattr(lead, "khu_vuc", None) or f.get("khu_vuc") or ""))
-        if khu:
-            mau = _q(f"*{khu}*")
-            loc.append(f"or=(district.ilike.{mau},ward.ilike.{mau},street.ilike.{mau})")
+        mau = mau_khu_tron(_sach_khu(str(getattr(lead, "khu_vuc", None) or f.get("khu_vuc") or "")))
+        if mau:   # SRS-5.1zzzzzzz553 (audit 25/11 P1): khớp trọn tên khu — "Quận 1" không ra Quận 10 / 11 / 12
+            m = _q(mau)
+            loc.append(f'or=(district.imatch."{m}",ward.imatch."{m}",street.imatch."{m}")')
         ns_chu = str(getattr(lead, "ngan_sach", None) or f.get("ngan_sach") or "")
         san, ns = self.khoang_gia(lead)
         if ns:
@@ -934,11 +987,12 @@ class KhoNguoiMua:
                        "gio": (v.get("time_text") or "").strip()})
         return ra
 
-    def chot_lich(self, viewing_id: str) -> bool:
+    def chot_lich(self, viewing_id: str, slot: str | None = None) -> bool:
         """Admin đồng ý đúng giờ khách hẹn (AI đọc, `Engine._doc_y_chot_lich`) → lịch `confirmed`. SRS-5.1zzzzzzz552: trigger DB không tự chốt
-        nữa (bản cũ chốt mọi câu admin trả lời, kể cả "chủ bận thứ 7")."""
+        nữa (bản cũ chốt mọi câu admin trả lời, kể cả "chủ bận thứ 7"). SRS-5.1zzzzzzz553: kèm `slot` (giờ xem AI đọc ra, ISO) thì trigger
+        `viewings_hen_hoi_cam_nhan` hẹn hỏi cảm nhận 4 giờ sau buổi xem."""
         try:
-            self._patch(f"viewings?id=eq.{_q(viewing_id)}&status=in.(proposed,pending)", {"status": "confirmed"})
+            self._patch(f"viewings?id=eq.{_q(viewing_id)}&status=in.(proposed,pending)", {"status": "confirmed", **({"slot": slot} if slot else {})})
             return True
         except Exception as e:  # noqa: BLE001
             log.warning("chot_lich lỗi: %s", e)
@@ -1147,10 +1201,14 @@ def co_tieu_chi(lead: Any) -> bool:
     return all(str(getattr(lead, k, None) or f.get(k) or "").strip() for k in ("khu_vuc", "ngan_sach"))
 
 
-def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
+def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False, ngan_sach_chua_ro: bool = False) -> str:
     """Khối căn đưa cho model phía mua. SRS-5.1zzzzzzz145 (chủ dự án 23/10: "sợ sếp chửi", "sếp thích trả lời như người"): bản trước dạy model
     "luôn kèm mã #" và đặt tên khối "RỔ" — model đọc mã tin, nói "trong rổ", liệt kê bằng dấu "·"; và viết "em" giữa lời xưng "cháu".
     SRS-5.1zzzzzzz146 (cùng ngày: "gửi luôn căn gợi ý rồi sau mới hỏi thêm"): thứ tự tin là căn → MỘT câu hỏi ngắn (giọng theo `GIONG`)."""
+    if not can and ngan_sach_chua_ro:   # SRS-5.1zzzzzzz553: ngân sách thiếu đơn vị — chưa tìm căn (`KhoNguoiMua.ngan_sach_chua_ro`)
+        return ("\nCĂN ĐANG RAO: ngân sách khách nêu chưa rõ đơn vị (tỷ hay triệu) nên chưa tìm căn. Lượt này CHƯA giới thiệu căn nào và KHÔNG "
+                "nói \"chưa có căn\"; hỏi lại thật ngắn tầm ngân sách bao nhiêu tỷ (mua) hay bao nhiêu triệu một tháng (thuê) (xưng hô y như các "
+                "lượt trước).\n")
     if not can and chua_co_tieu_chi:
         return ("\nCĂN ĐANG RAO: khách chưa nêu đủ khu vực và ngân sách nên chưa tìm căn. Lượt này CHƯA giới thiệu căn nào và KHÔNG nói \"chưa có "
                 "căn\"; chỉ hỏi đúng câu thông tin ở trên, thật ngắn (xưng hô y như các lượt trước).\n")
@@ -1158,7 +1216,7 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
         # AU-04 (Đợt 4, SRS-5.1zzzzzzz328): lời hứa báo lại thành DỮ KIỆN — vòng `bao_can_moi` thật sự nhắn khách khi có căn mới khớp (8–21 giờ,
         # `buyers.bao_can_moi` mặc định bật), nên được nói; bản trước "nói sẽ báo" đụng "không hứa sẽ báo lại" của `khoi_viec_vua_ghi([])`.
         return ("\nCĂN ĐANG RAO: chưa có căn nào khớp nhu cầu khách. KHÔNG giới thiệu căn nào, KHÔNG bịa căn. DỮ KIỆN: hệ thống tự nhắn khách khi "
-                "có căn mới khớp nhu cầu (chỉ gửi trong khung giờ 8h–20h hằng ngày) — được nói có căn phù hợp em nhắn liền, trừ khi khách đã bảo đừng báo "
+                "có căn mới khớp nhu cầu (chỉ gửi trong khung 8–21 giờ hằng ngày) — được nói có căn phù hợp em nhắn liền, trừ khi khách đã bảo đừng báo "
                 "(xưng hô y như các lượt trước).\n")
     # SRS-5.1zzzzzzz212 (bắn thử 5 khách, anh M.: "căn nào đang có HĐ thuê thì gửi" → bot "em sẽ hỏi chủ nhà rồi báo lại" mà không có việc nào
     # được ghi): lời hứa chỉ khi đã ghi việc thật. SRS-5.1zzzzzzz335 (ca thật 02/11 "nhà Q8 dưới 7 tỉ yên tĩnh": rổ 3 căn hợp mà bot đưa 1 căn

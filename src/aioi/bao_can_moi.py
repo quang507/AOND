@@ -123,6 +123,8 @@ def viet_tin(c: dict, xung_ho: str = "unknown", lead: Any = None, kieu: int = 0,
     vi_sao = vi_sao_hop(c, lead, kieu)
     if nhan:   # SRS-5.1zzzzzzz289: khách có ≥ 2 bộ nhu cầu — nói căn này cho bộ nào ("mua ở" hay "cho con")
         vi_sao = (vi_sao[:-1] if vi_sao.endswith(".") else vi_sao) + f" (nhu cầu «{nhan}»)." if vi_sao else f"Căn này cho nhu cầu «{nhan}»."
+    if c.get("can_kiem_chung"):   # SRS-5.1zzzzzzz553 (audit 25/11 P2): người rao hạng Đồng, căn thứ 6 trở đi — nói rõ như lời chat (`dong_can`)
+        vi_sao = (vi_sao + " " if vi_sao else "") + "Lưu ý thông tin căn này còn cần kiểm chứng thêm."
     bien = {"toi": toi, "mo_ta": mo_ta, "Mo_ta": mo_ta[:1].upper() + mo_ta[1:], "vi_sao": vi_sao,
             "link": f"{SITE_URL}/nha-dat/{c.get('code')}"}
     kieu = kieu % SO_KIEU

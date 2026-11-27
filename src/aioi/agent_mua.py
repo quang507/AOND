@@ -365,35 +365,27 @@ def chay_cong_cu(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -
             ns = _chu(lead.fields.get("ngan_sach") or getattr(lead, "ngan_sach", ""))
 
             if not co_tieu_chi(lead):
+                # SRS-5.1zzzzzzz553 (audit 25/11 P1): bản trước dặn "khẳng định có rổ hàng tốt" và nêu giá m² từ bảng ước lượng cứng khi CHƯA tra
+                # kho — model nói chắc điều không có dữ liệu. Nay chỉ đưa dữ kiện thật (dự án có trong kho) và hỏi tiêu chí còn thiếu.
                 if kv and not ns:
-                    from . import dinh_gia
-                    vung = dinh_gia._phan_vung(kv)
-                    bg = dinh_gia._BANG_GIA_BENCHMARK.get(vung, dinh_gia._BANG_GIA_BENCHMARK["noi_thanh"])
-                    ch_min, ch_max = bg.get("can_ho", (40, 75))
-                    np_min, np_max = bg.get("nha_pho", (80, 150))
                     du_an_ds = []
                     if getattr(kho, "du_an_theo_khu", None) is not None:
                         try:
-                            da_list = kho.du_an_theo_khu(kv)
-                            if da_list:
-                                du_an_ds = [d.get("name") for d in da_list[:3] if d.get("name")]
-                        except Exception:
-                            pass
-                    da_str = f" Dự án tiêu biểu: {', '.join(du_an_ds)}." if du_an_ds else ""
-                    return (
-                        f"Khách đã nêu khu vực '{kv}' nhưng CHƯA CÓ NGÂN SÁCH. Hướng dẫn tư vấn MOSO: "
-                        f"(1) Khẳng định bên em có rổ hàng tốt tại {kv}; "
-                        f"(2) Nêu dải giá thị trường tham khảo (căn hộ ~{ch_min}-{ch_max} triệu/m², nhà phố ~{np_min}-{np_max} triệu/m² đất.{da_str}); "
-                        f"(3) Hỏi khách đang nhắm tầm tài chính khoảng bao nhiêu (hoặc nhu cầu mấy phòng ngủ) để em lọc đúng căn phù hợp nhất."
-                    )
+                            du_an_ds = [d.get("name") for d in (kho.du_an_theo_khu(kv) or [])[:3] if d.get("name")]
+                        except Exception as e:  # noqa: BLE001 — không có tên dự án thì vẫn hỏi ngân sách
+                            log.warning("tim_can: du_an_theo_khu lỗi (%s)", type(e).__name__)
+                    da_str = f" Dự án có trong kho ở khu này: {', '.join(du_an_ds)}." if du_an_ds else ""
+                    return (f"Khách đã nêu khu vực '{kv}' nhưng CHƯA NÊU NGÂN SÁCH nên chưa tra căn.{da_str} Hỏi khách tầm tài chính khoảng bao nhiêu "
+                            "(hoặc cần mấy phòng ngủ) để lọc đúng căn. Chưa tra căn nên chưa nói kho có hay không có căn, và không nêu giá m² hay mặt bằng "
+                            "giá khu vực — kết quả này không có số đó.")
                 if ns and not kv:
-                    return (
-                        f"Khách đã nêu ngân sách '{ns}' nhưng CHƯA CHỌN KHU VỰC. Hướng dẫn tư vấn MOSO: "
-                        f"(1) Khẳng định tầm tài chính {ns} có nhiều lựa chọn tốt; "
-                        f"(2) Gợi ý một số khu vực sôi động tại TP.HCM phù hợp tầm giá này; "
-                        f"(3) Hỏi khách muốn ưu tiên gần nơi làm việc hoặc trường học nào để em khoanh vùng chính xác nhất."
-                    )
+                    return (f"Khách đã nêu ngân sách '{ns}' nhưng CHƯA CHỌN KHU VỰC nên chưa tra căn. Hỏi khách muốn tìm ở quận / khu nào (hoặc gần "
+                            "chỗ làm, trường học nào) để khoanh vùng. Chưa tra căn nên chưa nói tầm tiền đó nhiều hay ít lựa chọn.")
                 return "Chưa đủ khu vực và ngân sách để tìm — hỏi khách khu vực mong muốn và tầm tài chính dự kiến."
+            chua_ro = getattr(kho, "ngan_sach_chua_ro", None)
+            if chua_ro is not None and chua_ro(lead):   # SRS-5.1zzzzzzz553 (audit 25/11 P2): "tầm 5" không ra số → không tìm căn không trần giá
+                return (f"Ngân sách khách nêu ('{ns}') chưa rõ đơn vị (tỷ hay triệu) nên chưa tra căn. Hỏi lại thật ngắn tầm bao nhiêu tỷ (mua) hay "
+                        "bao nhiêu triệu một tháng (thuê).")
 
             lay = getattr(kho, "can_khong_hop", None)
             can = kho.can_phu_hop(lead, loai_tru=lay(conv.user_key) if lay is not None else None)
